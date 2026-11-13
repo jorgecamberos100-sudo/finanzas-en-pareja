@@ -1,0 +1,90 @@
+import { useMemo, useState } from 'react'
+import type { AppData } from '../App'
+import { formatMoney } from '../lib/format'
+import { supabase } from '../lib/supabase'
+import GoalCard from '../components/GoalCard'
+import type { Goal } from '../types'
+
+interface Props { data: AppData; onRefresh: () => void }
+
+export default function Plan({ data, onRefresh }: Props) {
+  const currency = data.household?.currency ?? 'MXN'
+  const [goalName, setGoalName] = useState('')
+  const [goalTarget, setGoalTarget] = useState('')
+  const [goalDate, setGoalDate] = useState('')
+  const [moneyNotes, setMoneyNotes] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+
+  const patrimonio = useMemo(() => data.accounts.reduce((acc, a) => acc + (a.type === 'deuda' || a.type === 'tarjeta' ? -a.balance : a.balance), 0), [data.accounts])
+
+  async function createGoal() {
+    if (!data.household || !goalName || !goalTarget) return
+    const { error } = await supabase.from('goals').insert({
+      household_id: data.household.id, name: goalName, target: Number(goalTarget),
+      current: 0, due_date: goalDate || null,
+    })
+    if (error) { setMessage(error.message); return }
+    setGoalName(''); setGoalTarget(''); setGoalDate(''); setMessage('Meta creada 🎉')
+    onRefresh()
+  }
+
+  async function contribute(goal: Goal, amount: number) {
+    if (!data.me) return
+    const { error } = await supabase.from('goal_contributions').insert({ goal_id: goal.id, user_id: data.me.id, amount, date: new Date().toISOString().slice(0, 10) })
+    if (error) { setMessage(error.message); return }
+    await supabase.from('goals').update({ current: goal.current + amount }).eq('id', goal.id)
+    setMessage(`Aportaste ${formatMoney(amount, currency)} a “${goal.name}”.`)
+    onRefresh()
+  }
+
+  async function saveMoneyDate() {
+    if (!data.household) return
+    const { error } = await supabase.from('money_dates').insert({
+      household_id: data.household.id, date: new Date().toISOString().slice(0, 10),
+      notes: moneyNotes || null, settled_amount: 0,
+    })
+    if (error) { setMessage(error.message); return }
+    setMoneyNotes(''); setMessage('Money date guardado 💬. Recuerden exportar su CSV de respaldo en Movimientos.')
+    onRefresh()
+  }
+
+  return (
+    <main className="space-y-4 p-4">
+      <h1 className="text-2xl font-bold">Plan</h1>
+
+      <section>
+        <h2 className="mb-2 font-bold">Metas compartidas</h2>
+        {data.goals.map((g) => <div key={g.id} className="mb-3"><GoalCard goal={g} currency={currency} onContribute={contribute} /></div>)}
+        {data.goals.length === 0 && <p className="mb-3 text-sm text-stone-500">Sin metas todavía. Crea la primera abajo.</p>}
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+          <h3 className="mb-2 font-bold">Nueva meta</h3>
+          <input value={goalName} onChange={(e) => setGoalName(e.target.value)} placeholder="Nombre (ej. Vacaciones en la playa)" className="mb-2 w-full rounded-xl border p-2" />
+          <div className="flex gap-2">
+            <input value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} inputMode="decimal" placeholder="Monto objetivo" className="flex-1 rounded-xl border p-2" />
+            <input value={goalDate} onChange={(e) => setGoalDate(e.target.value)} type="date" className="flex-1 rounded-xl border p-2" />
+          </div>
+          <button onClick={createGoal} className="mt-2 w-full rounded-xl bg-teal-700 py-2 font-bold text-white">Crear meta</button>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 font-bold">Cuentas y patrimonio</h2>
+        {data.accounts.map((a) => (
+          <div key={a.id} className="mb-2 flex justify-between rounded-2xl border border-stone-200 bg-white p-3 text-sm dark:border-stone-800 dark:bg-stone-900">
+            <span>{a.name} · {a.type} · {a.visibility === 'privada' ? '🔒 privada' : a.visibility === 'solo_saldo' ? '👁️ solo saldo' : '👥 compartida'}</span>
+            <strong className={a.type === 'deuda' || a.type === 'tarjeta' ? 'text-red-600' : ''}>{formatMoney(a.balance, currency)}</strong>
+          </div>
+        ))}
+        <p className="text-sm">Patrimonio (activos − deudas): <strong>{formatMoney(patrimonio, currency)}</strong></p>
+      </section>
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+        <h2 className="font-bold">💬 Money date</h2>
+        <p className="mb-2 text-sm text-stone-500">Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde Inicio).</p>
+        <textarea value={moneyNotes} onChange={(e) => setMoneyNotes(e.target.value)} placeholder="Notas y acuerdos de hoy…" rows={3} className="mb-2 w-full rounded-xl border p-2" />
+        <button onClick={saveMoneyDate} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white">Guardar money date</button>
+        {message && <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">{message}</p>}
+      </section>
+    </main>
+  )
+}

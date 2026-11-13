@@ -1,0 +1,142 @@
+import { useMemo, useState } from 'react'
+import type { AppData } from '../App'
+import { dedupeHashSync } from '../lib/format'
+import { supabase } from '../lib/supabase'
+
+interface Props {
+  data: AppData
+  onDone: () => void
+}
+
+interface ParsedRow {
+  date: string
+  merchant: string
+  amount: number
+  type: 'gasto' | 'ingreso'
+  category_id: string | null
+  hash: string
+  duplicate: boolean
+  ruleApplied: boolean
+}
+
+/** Parsea CSV simple (coma o punto y coma), con encabezados flexibles. */
+function parseCsv(text: string): Array<Record<string, string>> {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return []
+  const sep = lines[0].includes(';') ? ';' : ','
+  const headers = lines[0].split(sep).map((h) => h.trim().toLowerCase().replace(/["\ufeff]/g, ''))
+  return lines.slice(1).map((line) => {
+    const cells = line.split(sep).map((c) => c.trim().replace(/^"|"$/g, ''))
+    const row: Record<string, string> = {}
+    headers.forEach((h, i) => { row[h] = cells[i] ?? '' })
+    return row
+  })
+}
+
+const DATE_KEYS = ['fecha', 'date']
+const MERCHANT_KEYS = ['comercio', 'merchant', 'descripcion', 'description', 'concepto']
+const AMOUNT_KEYS = ['monto', 'amount', 'importe', 'total']
+
+export default function CsvImport({ data, onDone }: Props) {
+  const [rows, setRows] = useState<ParsedRow[]>([])
+  const [accountId, setAccountId] = useState(data.accounts[0]?.id ?? '')
+  const [importing, setImporting] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+
+  const existingHashes = useMemo(
+    () => new Set(data.transactions.map((t) => t.dedupe_hash).filter(Boolean)),
+    [data.transactions],
+  )
+
+  async function handleFile(file: File) {
+    const text = await file.text()
+    const raw = parseCsv(text)
+    const parsed: ParsedRow[] = []
+    for (const r of raw) {
+      const date = DATE_KEYS.map((k) => r[k]).find(Boolean) ?? ''
+      const merchant = MERCHANT_KEYS.map((k) => r[k]).find(Boolean) ?? 'Sin comercio'
+      const amountRaw = AMOUNT_KEYS.map((k) => r[k]).find(Boolean) ?? '0'
+      const amount = Math.abs(Number(amountRaw.replace(/[$,\s]/g, ''))) || 0
+      if (!date || !amount) continue
+      const hash = dedupeHashSync({ date, amount, merchant, account_id: accountId })
+      // Regla por comercio: si ya corregiste este comercio antes, se aplica sola.
+      const rule = await supabase.from('rules').select('category_id').eq('household_id', data.household!.id).ilike('pattern', `%${merchant.toLowerCase()}%`).maybeSingle()
+      parsed.push({
+        date, merchant, amount,
+        type: Number(amountRaw.replace(/[$,\s]/g, '')) < 0 ? 'gasto' : 'ingreso',
+        category_id: rule.data?.category_id ?? null,
+        hash,
+        duplicate: existingHashes.has(hash),
+        ruleApplied: Boolean(rule.data),
+      })
+    }
+    setRows(parsed)
+  }
+
+  async function importRows() {
+    if (!data.household || !data.me) return
+    setImporting(true)
+    const fresh = rows.filter((r) => !r.duplicate)
+    const payload = fresh.map((r) => ({
+      household_id: data.household!.id,
+      account_id: accountId,
+      category_id: r.category_id,
+      created_by: data.me!.id,
+      paid_by: data.me!.id,
+      type: r.type,
+      amount: r.amount,
+      date: r.date,
+      merchant: r.merchant,
+      note: 'Importado por CSV',
+      split_pct: data.household!.default_split,
+      visibility: 'compartida' as const,
+      review_status: 'pendiente' as const, // van a la cola "Por revisar"
+      dedupe_hash: r.hash,
+    }))
+    const { error } = await supabase.from('transactions').insert(payload)
+    setImporting(false)
+    if (error) { setResult(`Error al importar: ${error.message}`); return }
+    setResult(`Importados ${fresh.length} movimientos. ${rows.length - fresh.length} duplicados se omitieron. Los nuevos quedan en "Por revisar".`)
+    onDone()
+  }
+
+  return (
+    <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+      <h3 className="mb-2 font-bold">Importar CSV</h3>
+      <p className="mb-3 text-sm text-stone-500">
+        Columnas esperadas: fecha, comercio/descripción y monto. Se deduplica por hash (fecha + monto + comercio + cuenta) y se aplican tus reglas por comercio.
+      </p>
+      <div className="mb-3 flex gap-2">
+        <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="flex-1 rounded-xl border border-stone-300 p-2 dark:border-stone-700">
+          {data.accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+        <label className="cursor-pointer rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white">
+          Elegir archivo CSV
+          <input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f) }} />
+        </label>
+      </div>
+
+      {rows.length > 0 && (
+        <>
+          <div className="mb-3 max-h-64 overflow-auto text-sm">
+            <table className="w-full">
+              <thead><tr className="text-left text-stone-500"><th>Fecha</th><th>Comercio</th><th>Monto</th><th>Estado</th></tr></thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.hash} className={r.duplicate ? 'text-stone-400 line-through' : ''}>
+                    <td>{r.date}</td><td>{r.merchant}</td><td>${r.amount.toFixed(2)}</td>
+                    <td>{r.duplicate ? 'Duplicado — se omite' : r.ruleApplied ? 'Regla aplicada' : 'Nuevo'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button onClick={importRows} disabled={importing} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
+            {importing ? 'Importando…' : `Importar ${rows.filter((r) => !r.duplicate).length} movimientos nuevos`}
+          </button>
+        </>
+      )}
+      {result && <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-400">{result}</p>}
+    </div>
+  )
+}
