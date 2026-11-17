@@ -328,7 +328,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       {done.length > 0 && (
         <section>
           <div className="mb-2 flex items-center gap-3">
-            <Mascota src="/mascota-celebrando.png" alt="El cerdito celebrando un pago hecho" className="h-12 w-12 shrink-0" />
+            <Mascota pose="celebrando" alt="El cerdito celebrando un pago hecho" className="h-12 w-12 shrink-0" />
             <h2 className="font-bold">Ya pagados</h2>
           </div>
           {done.map((r) => (

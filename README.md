@@ -155,7 +155,7 @@ Sin el cron y las claves, todo lo demás (lista, chat, notificación local con l
 
 ## Estética: el cerdito 🐷
 
-La mascota es el cerdito rosa 3D de la hoja de personaje (recortes en `public/mascota.png`, `public/mascota-celebrando.png` y `public/mascota-ahorrando.png`, con fondo azul marino a juego; también es el icono de la PWA en `public/icons/`). El tema es oscuro en toda la app, sin modo claro:
+La mascota es el cerdito rosa 3D de la hoja de personaje: los recortes (de frente, celebrando y sentado con moneda) van incrustados en `src/lib/mascota-images.ts` y se usan con el componente `src/components/Mascota.tsx` (`pose="frente" | "celebrando" | "ahorrando"`). El icono de la PWA es `public/icons/icon.svg` (🐷 sobre azul marino). El tema es oscuro en toda la app, sin modo claro:
 
 | Uso | Color |
 | --- | --- |
