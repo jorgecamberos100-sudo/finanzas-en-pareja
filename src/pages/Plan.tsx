@@ -3,6 +3,7 @@ import type { AppData } from '../App'
 import { formatMoney, todayIso } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import GoalCard from '../components/GoalCard'
+import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
 import type { Goal } from '../types'
 
 interface Props { data: AppData; onRefresh: () => void }
@@ -14,6 +15,8 @@ export default function Plan({ data, onRefresh }: Props) {
   const [goalDate, setGoalDate] = useState('')
   const [moneyNotes, setMoneyNotes] = useState('')
   const [message, setMessage] = useState<string | null>(null)
+  // PIBBI reacciona al crear una meta, aportar y guardar la revisión.
+  const [reaction, setReaction] = useState<ReactionContext | null>(null)
 
   const patrimonio = useMemo(() => data.accounts.reduce((acc, a) => acc + (a.type === 'deuda' || a.type === 'tarjeta' ? -a.balance : a.balance), 0), [data.accounts])
 
@@ -25,6 +28,7 @@ export default function Plan({ data, onRefresh }: Props) {
     })
     if (error) { setMessage(error.message); return }
     setGoalName(''); setGoalTarget(''); setGoalDate(''); setMessage('Meta creada 🎉')
+    setReaction('ahorrando')
     onRefresh()
   }
 
@@ -34,6 +38,7 @@ export default function Plan({ data, onRefresh }: Props) {
     if (error) { setMessage(error.message); return }
     await supabase.from('goals').update({ current: goal.current + amount }).eq('id', goal.id)
     setMessage(`Aportaste ${formatMoney(amount, currency)} a “${goal.name}”.`)
+    setReaction(goal.current + amount >= goal.target ? 'celebrando' : 'progreso')
     onRefresh()
   }
 
@@ -44,7 +49,8 @@ export default function Plan({ data, onRefresh }: Props) {
       notes: moneyNotes || null, settled_amount: 0,
     })
     if (error) { setMessage(error.message); return }
-    setMoneyNotes(''); setMessage('Money date guardado 💬. Recuerden exportar su CSV de respaldo en Movimientos.')
+    setMoneyNotes(''); setMessage(data.partner ? 'Money date guardado 💬. Recuerden exportar su CSV de respaldo en Movimientos.' : 'Revisión guardada 💬. Recuerda exportar tu CSV de respaldo en Movimientos.')
+    setReaction('pensando')
     onRefresh()
   }
 
@@ -53,7 +59,7 @@ export default function Plan({ data, onRefresh }: Props) {
       <h1 className="text-2xl font-bold">Plan</h1>
 
       <section>
-        <h2 className="mb-2 font-bold">Metas compartidas</h2>
+        <h2 className="mb-2 font-bold">{data.partner ? 'Metas compartidas' : 'Mis metas'}</h2>
         {data.goals.map((g) => <div key={g.id} className="mb-3"><GoalCard goal={g} currency={currency} onContribute={contribute} /></div>)}
         {data.goals.length === 0 && <p className="mb-3 text-sm text-humo">Sin metas todavía. Crea la primera abajo.</p>}
         <div className="rounded-2xl border border-borde bg-tarjeta p-4  ">
@@ -79,11 +85,12 @@ export default function Plan({ data, onRefresh }: Props) {
       </section>
 
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
-        <h2 className="font-bold">💬 Money date</h2>
-        <p className="mb-2 text-sm text-humo">Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde Inicio).</p>
+        <h2 className="font-bold">💬 {data.partner ? 'Money date' : 'Mi revisión'}</h2>
+        <p className="mb-2 text-sm text-humo">{data.partner ? 'Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde Inicio).' : 'Tu revisión: resumen del período, notas y acuerdos.'}</p>
         <textarea value={moneyNotes} onChange={(e) => setMoneyNotes(e.target.value)} placeholder="Notas y acuerdos de hoy…" rows={3} className="mb-2 w-full rounded-xl border p-2" />
         <button onClick={saveMoneyDate} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche">Guardar money date</button>
         {message && <p className="mt-2 text-sm text-verde ">{message}</p>}
+        {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
       </section>
     </main>
   )

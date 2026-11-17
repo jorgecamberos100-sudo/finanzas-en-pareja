@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, setHouseholdId } from '../lib/supabase'
 import Mascota from '../components/Mascota'
+import PibbiDresser from '../components/PibbiDresser'
 
 interface Props { onDone: () => void }
 
@@ -20,7 +21,7 @@ const SEED_CATEGORIES = [
   { group: 'Ingresos', name: 'Sueldo', icon: '💼', monthly_limit: 0, rollover: false },
 ]
 
-/** Wizard de 5 pasos: cuenta → hogar + invitación → cuentas → categorías/presupuesto → primer movimiento. */
+/** Wizard de 5 pasos: cuenta → modo (solo o en pareja) → invitación opcional → viste a PIBBI → listo. */
 export default function Onboarding({ onDone }: Props) {
   const [step, setStep] = useState(1)
   const [name, setName] = useState('')
@@ -32,6 +33,8 @@ export default function Onboarding({ onDone }: Props) {
   const [inviteCode, setInviteCode] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [joinExpanded, setJoinExpanded] = useState(false)
+  /** null = aún no elige; true = solo por ahora; false = en pareja. */
+  const [soloMode, setSoloMode] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -56,17 +59,22 @@ export default function Onboarding({ onDone }: Props) {
     setBusy(false); setStep(2)
   }
 
-  async function createHousehold() {
+  /**
+   * Crea el hogar. Solo (1 persona): el reparto es 100% para quien lo crea
+   * y la invitación queda como opción para después. En pareja: 50/50.
+   */
+  async function createHousehold(solo: boolean) {
     setBusy(true); setError(null)
     const { data: session } = await supabase.auth.getSession()
     const user = session.session?.user
     if (!user) { setError('Primero crea tu cuenta.'); setBusy(false); return }
     const code = Math.random().toString(36).slice(2, 8).toUpperCase()
     const { data: hh, error } = await supabase.from('households').insert({
-      name: householdName, currency: 'MXN', default_split: 50, invite_code: code,
+      name: solo ? 'Mi hogar' : householdName, currency: 'MXN', default_split: solo ? 100 : 50, invite_code: code,
     }).select().single()
     if (error || !hh) { setError(error?.message ?? 'No se pudo crear el hogar.'); setBusy(false); return }
     await supabase.from('household_members').insert({ household_id: hh.id, user_id: user.id, role: 'admin' })
+    setSoloMode(solo)
     setInviteCode(code)
     setHouseholdId(hh.id)
     setBusy(false); setStep(3)
@@ -112,7 +120,7 @@ export default function Onboarding({ onDone }: Props) {
             <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">¡Hola! Soy PIBBI, tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.</p>
           </div>
           <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
-          <p className="mb-4 text-humo">Tu pareja tendrá su propio login. Todo se sincroniza en tiempo real.</p>
+          <p className="mb-4 text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
           <div className="relative mb-2">
@@ -133,15 +141,28 @@ export default function Onboarding({ onDone }: Props) {
 
       {step === 2 && (
         <section>
-          <h1 className="text-2xl font-bold">Crea o únete a un hogar</h1>
-          <p className="mb-4 text-humo">Un hogar = exactamente 2 personas.</p>
+          <h1 className="text-2xl font-bold">¿Cómo quieres usar la app?</h1>
+          <p className="mb-4 text-humo">Puedes usarla solo por ahora e invitar a tu pareja después, o en pareja desde el inicio.</p>
 
-          {/* Ruta principal: el primero crea el hogar. No necesita ningún código. */}
+          {/* Modo individual: hogar de 1 persona, sin código ni invitación obligatoria. */}
+          <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
+            <p className="text-lg font-bold">🙋 Solo yo por ahora</p>
+            <p className="mb-3 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
+            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Usar solo por ahora</button>
+          </div>
+
+          <div className="mb-4 flex items-center gap-3 text-sm text-humo">
+            <span className="h-px flex-1 bg-borde " />
+            <span>o en pareja</span>
+            <span className="h-px flex-1 bg-borde " />
+          </div>
+
+          {/* Ruta principal en pareja: el primero crea el hogar. No necesita ningún código. */}
           <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
             <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
             <p className="mb-3 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
             <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-            <button onClick={createHousehold} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear hogar</button>
+            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear hogar</button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
@@ -171,25 +192,25 @@ export default function Onboarding({ onDone }: Props) {
 
       {step === 3 && (
         <section>
-          <h1 className="text-2xl font-bold">Invita a tu pareja</h1>
-          <p className="mb-4 text-humo">Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.</p>
+          <h1 className="text-2xl font-bold">{soloMode ? 'Invita a tu pareja (opcional)' : 'Invita a tu pareja'}</h1>
+          <p className="mb-4 text-humo">{soloMode ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.' : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}</p>
           <div className="mb-4 rounded-2xl bg-[#F4728F1A] p-4 text-center ">
             <p className="text-3xl font-black tracking-widest text-rosaclaro ">{inviteCode}</p>
             <p className="mt-1 text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
           </div>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Continuar (puede unirse después)</button>
+          <button onClick={() => setStep(4)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">{soloMode ? 'Lo haré después' : 'Continuar (puede unirse después)'}</button>
         </section>
       )}
 
       {step === 4 && (
         <section>
-          <h1 className="text-2xl font-bold">Cuentas y presupuesto inicial</h1>
-          <p className="mb-4 text-humo">Crearemos 3 cuentas (efectivo, banco y tarjeta) y 13 categorías LatAm con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
-          <ul className="mb-4 list-disc pl-5 text-sm text-humo ">
-            <li>Despensa $6,000 · Renta $8,000 · Transporte $2,500</li>
-            <li>Servicios $1,500 · Restaurantes $2,000 · Metas $2,000</li>
-          </ul>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear cuentas y categorías</button>
+          <h1 className="text-2xl font-bold">Viste a PIBBI</h1>
+          <p className="mb-4 text-humo">Elige la prenda de tu PIBBI. Puedes cambiarla cuando quieras desde Inicio. Este paso es opcional.</p>
+          <div className="mb-4 rounded-2xl border border-borde bg-tarjeta p-4">
+            <PibbiDresser />
+          </div>
+          <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
+          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear mis cuentas y terminar</button>
         </section>
       )}
 

@@ -1,14 +1,16 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import { formatDateEs, formatMoney, monthKey, todayIso } from '../lib/format'
 import { computeMutualBalance, monthTotals } from '../lib/split'
 import { reminderStatus } from '../lib/reminders'
 import { supabase } from '../lib/supabase'
 import Mascota from '../components/Mascota'
+import PibbiDresser from '../components/PibbiDresser'
 
 interface Props { data: AppData; onRefresh: () => void }
 
 export default function Dashboard({ data, onRefresh }: Props) {
+  const [copied, setCopied] = useState(false)
   const currency = data.household?.currency ?? 'MXN'
   const month = monthKey()
 
@@ -62,6 +64,18 @@ export default function Dashboard({ data, onRefresh }: Props) {
     onRefresh()
   }
 
+  async function copyInvite() {
+    const code = data.household?.invite_code ?? ''
+    const link = `${window.location.origin}/onboarding?codigo=${code}`
+    try {
+      await navigator.clipboard.writeText(`Únete a mi hogar en Finanzas en Pareja 🐷 Código: ${code} · Enlace: ${link}`)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 3000)
+    } catch {
+      // Sin portapapeles: el código y el enlace se ven en la tarjeta.
+    }
+  }
+
   return (
     <main className="space-y-4 p-4">
       <header>
@@ -78,6 +92,25 @@ export default function Dashboard({ data, onRefresh }: Props) {
           </div>
         </section>
       )}
+
+      {/* Hogar de 1 persona: invitar a la pareja es una opción, no un requisito. */}
+      {!data.partner && data.household && (
+        <section className="rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+          <p className="font-bold">💌 Invita a tu pareja (opcional)</p>
+          <p className="mb-3 text-sm text-humo">Usas la app solo por ahora. Cuando quieras, tu pareja crea su cuenta y se une con este código.</p>
+          <div className="mb-3 rounded-2xl bg-[#F4728F1A] p-3 text-center">
+            <p className="text-2xl font-black tracking-widest text-rosaclaro">{data.household.invite_code}</p>
+            <p className="mt-1 break-all text-xs text-humo">{`${window.location.origin}/onboarding?codigo=${data.household.invite_code}`}</p>
+          </div>
+          <button onClick={copyInvite} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche">
+            {copied ? '¡Copiado! ✅' : 'Copiar código y enlace'}
+          </button>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-borde bg-tarjeta p-4">
+        <PibbiDresser />
+      </section>
 
       <section className="rounded-2xl border border-rosafuerte/40 bg-tarjeta p-5">
         <p className="text-sm text-rosaclaro">Patrimonio total</p>
@@ -97,7 +130,8 @@ export default function Dashboard({ data, onRefresh }: Props) {
         </div>
       </section>
 
-      {mutual ? (
+      {/* La deuda mutua solo existe cuando hay pareja en el hogar. */}
+      {data.partner && (mutual ? (
         <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
           <p className="font-bold">⚖️ Deuda mutua</p>
           <p className="text-sm">{debtorName} le debe <strong>{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
@@ -107,7 +141,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
         <section className="rounded-2xl border border-verde/30 bg-[#4ADE8014] p-4  ">
           <p className="font-bold">✅ Están a mano</p><p className="text-sm text-humo ">No hay deuda mutua pendiente.</p>
         </section>
-      )}
+      ))}
 
       {dueReminders.length > 0 && (
         <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">

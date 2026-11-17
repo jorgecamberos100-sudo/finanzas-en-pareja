@@ -168,6 +168,14 @@ La mascota se llama PIBBI: es el cerdito rosa 3D de la hoja de personaje: los re
 
 PIBBI aparece en: bienvenida del Onboarding, pantalla de “¡Listo!”, estado vacío del Dashboard y de Movimientos, saludo del Chat, meta alcanzada (celebrando) y recordatorios ya pagados (celebrando).
 
+### PIBBI reactivo, personalizable y modo individual
+
+- **Reactivo:** cada que alguien registra un dato, PIBBI aparece reaccionando según el contexto (`src/components/PibbiReaction.tsx`): saludando/apuntando al crear un recordatorio, haciendo cuentas (contando monedas) al guardar un movimiento, pensativo mientras revisa un mensaje del chat, con la gráfica de progreso al aportar a una meta y celebrando al lograrla o al pagar un recordatorio. Las poses nuevas (saludando, pensativo, contando monedas, mostrando progreso) son recortes de la misma hoja de personaje.
+- **Personalizable:** cada persona viste a su propio PIBBI con lentes, gorra, moño, corona o sin accesorios (`src/components/PibbiDresser.tsx`). La prenda se dibuja en SVG sobre la foto y se guarda por usuario en la tabla `pibbi_customization` (migración `003_pibbi.sql`, RLS por usuario) y en el dispositivo al instante. Se elige en el Onboarding (paso “Viste a PIBBI”, opcional) y se cambia después desde Inicio.
+- **Modo individual:** en el Onboarding se puede elegir “Solo yo por ahora”: el hogar se crea con un solo miembro y reparto 100% (sin 50/50 roto ni deuda mutua). Invitar a la pareja es una opción, no un requisito: en Inicio aparece la tarjeta “Invita a tu pareja (opcional)” con el código y el enlace `/onboarding?codigo=`, y la pareja se une después igual que siempre. El modo en pareja sigue igual.
+
+**Pruebas:** `npm run test:pibbi` (32 casos: accesorios válidos, poses de reacción y reparto 100% en solo vs 50/50 en pareja).
+
 ## Stack
 
 React + Vite + TypeScript + Tailwind CSS · Supabase (Auth email/password, PostgreSQL con RLS, Realtime) · PWA (manifest + service worker) · Deploy gratuito en Vercel.

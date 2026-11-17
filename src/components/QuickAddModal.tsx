@@ -21,7 +21,8 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
   const [categoryId, setCategoryId] = useState<string>('')
   const [accountId, setAccountId] = useState(data.accounts[0]?.id ?? '')
   const [paidBy, setPaidBy] = useState(data.me?.id ?? '')
-  const [splitMode, setSplitMode] = useState<SplitMode>('50/50')
+  // Hogar de 1 persona: no hay con quién dividir, quien paga lo absorbe todo.
+  const [splitMode, setSplitMode] = useState<SplitMode>(data.partner ? '50/50' : 'absorbe_todo')
   const [customPct, setCustomPct] = useState(50)
   const [merchant, setMerchant] = useState('')
   const [note, setNote] = useState('')
@@ -118,7 +119,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
           </div>
         </div>
 
-        {type === 'gasto' && (
+        {type === 'gasto' && data.partner && (
           <div className="mb-3">
             <label className="mb-1 block text-sm text-humo">¿Cómo se divide?</label>
             <div className="grid grid-cols-3 gap-2">

@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { supabase, getHouseholdId } from './lib/supabase'
 import { useReminderNotifications } from './lib/reminders'
+import { PibbiProvider } from './lib/pibbi'
+import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
 import type { Account, Category, Goal, Household, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
@@ -34,7 +36,16 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
+  const [reaction, setReaction] = useState<{ ctx: ReactionContext; msg: string; key: number } | null>(null)
+  const reactionTimer = useRef<number | null>(null)
   const navigate = useNavigate()
+
+  /** PIBBI reacciona cada que se registra un dato, sin bloquear nada. */
+  function showReaction(ctx: ReactionContext, msg: string) {
+    if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
+    setReaction({ ctx, msg, key: Date.now() })
+    reactionTimer.current = window.setTimeout(() => setReaction(null), 4500)
+  }
 
   const householdId = getHouseholdId()
 
@@ -112,12 +123,13 @@ export default function App() {
       setData((d) => ({ ...d, transactions: d.transactions.filter((t) => t.id !== optimistic.id) }))
     } else {
       setSyncError(null)
+      showReaction('calculando', '¡Guardado! PIBBI ya hizo las cuentas 🧮')
       await loadAll()
     }
   }
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div>
-  if (!householdId || !data.household) return <Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} />
+  if (loading) return <PibbiProvider><div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div></PibbiProvider>
+  if (!householdId || !data.household) return <PibbiProvider><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
 
   const tabs = [
     { to: '/', label: 'Inicio', icon: '🏠' },
@@ -129,10 +141,16 @@ export default function App() {
   ]
 
   return (
+    <PibbiProvider>
     <div className="mx-auto min-h-screen max-w-lg pb-28">
       {syncError && (
         <div role="alert" className="m-3 rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave  ">
           ⚠️ {syncError}
+        </div>
+      )}
+      {reaction && (
+        <div className="px-3 pt-3">
+          <PibbiReaction key={reaction.key} contexto={reaction.ctx} mensaje={reaction.msg} />
         </div>
       )}
       <Routes>
@@ -166,5 +184,6 @@ export default function App() {
         <QuickAddModal data={data} onClose={() => setQuickAddOpen(false)} onSave={async (tx) => { await addTransaction(tx); setQuickAddOpen(false) }} />
       )}
     </div>
+    </PibbiProvider>
   )
 }
