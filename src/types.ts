@@ -85,6 +85,61 @@ export interface Recurring {
   active: boolean
 }
 
+export type ReminderRecurrence = 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+
+/**
+ * Recordatorio de pago futuro. Distinto de Recurring: un recordatorio es
+ * un pago concreto con fecha (y hora opcional) y alarma; Recurring solo
+ * describe un gasto fijo mensual (due_day) sin fecha ni estado.
+ * amount está en UNIDADES (MXN), como Transaction.amount.
+ */
+export interface Reminder {
+  id: string
+  household_id: string
+  created_by: string
+  title: string
+  amount: number | null
+  due_date: string // YYYY-MM-DD, en la zona horaria del dispositivo que lo creó
+  due_time: string | null // "HH:MM" o null (por defecto 09:00)
+  recurrence: ReminderRecurrence
+  category_id: string | null
+  recurring_id: string | null
+  note: string | null
+  timezone: string
+  is_done: boolean
+  done_at: string | null
+  last_notified_at: string | null
+  created_at: string
+}
+
+export interface PushSubscriptionRow {
+  id: string
+  user_id: string
+  household_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  user_agent: string | null
+  created_at: string
+}
+
+/**
+ * Propuesta de recordatorio (del chat o de la IA). Nunca se guarda sin
+ * confirmación explícita del usuario. amount_minor en centavos (o null).
+ */
+export interface ProposedReminder {
+  title: string
+  amount_minor: number | null
+  due_date: string // YYYY-MM-DD
+  due_time: string | null // "HH:MM" o null
+  recurrence: ReminderRecurrence
+  category: string | null
+  category_id?: string | null
+  note: string | null
+  original_text: string
+  needs_review: string[]
+}
+
 export interface Goal {
   id: string
   household_id: string

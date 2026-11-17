@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { supabase, getHouseholdId } from './lib/supabase'
-import type { Account, Category, Goal, Household, Recurring, Transaction, UserProfile } from './types'
+import { useReminderAlarms } from './lib/reminders'
+import type { Account, Category, Goal, Household, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
 import Presupuesto from './pages/Presupuesto'
 import Plan from './pages/Plan'
 import Chat from './pages/Chat'
+import Reminders from './pages/Reminders'
 import QuickAddModal from './components/QuickAddModal'
 
 export interface AppData {
@@ -19,11 +21,12 @@ export interface AppData {
   transactions: Transaction[]
   goals: Goal[]
   recurring: Recurring[]
+  reminders: Reminder[]
 }
 
 const EMPTY: AppData = {
   household: null, me: null, partner: null,
-  accounts: [], categories: [], transactions: [], goals: [], recurring: [],
+  accounts: [], categories: [], transactions: [], goals: [], recurring: [], reminders: [],
 }
 
 export default function App() {
@@ -41,7 +44,7 @@ export default function App() {
     const user = session.session?.user
     if (!user) { setLoading(false); return }
 
-    const [hh, members, accounts, categories, txs, goals, recurring] = await Promise.all([
+    const [hh, members, accounts, categories, txs, goals, recurring, reminders] = await Promise.all([
       supabase.from('households').select('*').eq('id', householdId).single(),
       supabase.from('household_members').select('*, user:users(*)').eq('household_id', householdId),
       supabase.from('accounts').select('*').eq('household_id', householdId).order('name'),
@@ -49,6 +52,7 @@ export default function App() {
       supabase.from('transactions').select('*').eq('household_id', householdId).order('date', { ascending: false }).limit(500),
       supabase.from('goals').select('*').eq('household_id', householdId).order('due_date'),
       supabase.from('recurring').select('*').eq('household_id', householdId).eq('active', true),
+      supabase.from('reminders').select('*').eq('household_id', householdId).order('due_date'),
     ])
     if (hh.error) { setSyncError(hh.error.message); setLoading(false); return }
 
@@ -64,9 +68,14 @@ export default function App() {
       transactions: (txs.data ?? []) as Transaction[],
       goals: (goals.data ?? []) as Goal[],
       recurring: (recurring.data ?? []) as Recurring[],
+      reminders: (reminders.data ?? []) as Reminder[],
     })
     setLoading(false)
   }
+
+  // Alarmas locales: con el permiso de notificaciones, la app revisa cada
+  // 30 s si hay un recordatorio que deba sonar en este celular.
+  useReminderAlarms(data.reminders)
 
   // Carga inicial + Realtime: todo cambio se refleja al instante en ambos teléfonos.
   useEffect(() => {
@@ -78,6 +87,7 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goal_contributions' }, () => loadAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,6 +125,7 @@ export default function App() {
     { to: '/presupuesto', label: 'Presupuesto', icon: '💰' },
     { to: '/plan', label: 'Plan', icon: '🎯' },
     { to: '/chat', label: 'Chat', icon: '💬' },
+    { to: '/recordatorios', label: 'Avisos', icon: '🔔' },
   ]
 
   return (
@@ -129,7 +140,8 @@ export default function App() {
         <Route path="/movimientos" element={<Movimientos data={data} onRefresh={loadAll} />} />
         <Route path="/presupuesto" element={<Presupuesto data={data} onRefresh={loadAll} />} />
         <Route path="/plan" element={<Plan data={data} onRefresh={loadAll} />} />
-        <Route path="/chat" element={<Chat data={data} onSave={addTransaction} />} />
+        <Route path="/chat" element={<Chat data={data} onSave={addTransaction} onRefresh={loadAll} />} />
+        <Route path="/recordatorios" element={<Reminders data={data} onRefresh={loadAll} />} />
         <Route path="/onboarding" element={<Onboarding onDone={() => navigate('/')} />} />
       </Routes>
 

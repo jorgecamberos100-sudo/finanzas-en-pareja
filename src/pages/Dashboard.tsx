@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import type { AppData } from '../App'
-import { formatMoney, monthKey, todayIso } from '../lib/format'
+import { formatDateEs, formatMoney, monthKey, todayIso } from '../lib/format'
 import { computeMutualBalance, monthTotals } from '../lib/split'
+import { reminderStatus } from '../lib/reminders'
 import { supabase } from '../lib/supabase'
 
 interface Props { data: AppData; onRefresh: () => void }
@@ -38,6 +39,15 @@ export default function Dashboard({ data, onRefresh }: Props) {
     const today = new Date().getDate()
     return [...data.recurring].filter((r) => r.due_day >= today).sort((a, b) => a.due_day - b.due_day).slice(0, 3)
   }, [data.recurring])
+
+  // Recordatorios que vencen hoy, mañana o ya vencieron (sin hacer).
+  const dueReminders = useMemo(
+    () =>
+      (data.reminders ?? [])
+        .filter((r) => !r.is_done && ['overdue', 'today', 'tomorrow'].includes(reminderStatus(r)))
+        .sort((a, b) => a.due_date.localeCompare(b.due_date)),
+    [data.reminders],
+  )
 
   async function liquidar() {
     if (!mutual || !data.me || !data.household) return
@@ -85,6 +95,21 @@ export default function Dashboard({ data, onRefresh }: Props) {
       ) : (
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950">
           <p className="font-bold">✅ Están a mano</p><p className="text-sm text-stone-600 dark:text-stone-300">No hay deuda mutua pendiente.</p>
+        </section>
+      )}
+
+      {dueReminders.length > 0 && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+          <p className="font-bold">🔔 Recordatorios de pago</p>
+          {dueReminders.map((r) => (
+            <div key={r.id} className="mt-2 flex items-center justify-between gap-2 text-sm">
+              <span>
+                {r.title} · {reminderStatus(r) === 'overdue' ? `vencido (${formatDateEs(r.due_date)})` : reminderStatus(r) === 'today' ? 'hoy' : 'mañana'}
+                {r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}
+              </span>
+              <a href="/recordatorios" className="shrink-0 rounded-xl bg-amber-600 px-3 py-1.5 font-bold text-white">Ver</a>
+            </div>
+          ))}
         </section>
       )}
 

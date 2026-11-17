@@ -1,4 +1,4 @@
-import type { Category, TxType } from '../types'
+import type { Category, ProposedReminder, ReminderRecurrence, TxType } from '../types'
 
 /**
  * Chat de captura — tipos y parser local (fallback $0, sin red).
@@ -44,6 +44,12 @@ export interface CaptureResult {
   raw_text?: string
   /** Cuando no se pudo proponer nada (ej. falta el monto). */
   message?: string
+  /**
+   * Propuestas de RECORDATORIO (no movimientos): el usuario pidió que le
+   * avisaran de un pago futuro ("recuérdame pagar..."). Se confirman por
+   * separado y nunca se guardan como movimientos. Ver lib/reminders.ts.
+   */
+  reminders?: ProposedReminder[]
 }
 
 export function amountMinorToUnits(amountMinor: number): number {
@@ -304,10 +310,38 @@ export function parseCaptureText(text: string, opts: ParseOptions): CaptureResul
   return { currency: 'MXN', source_type: sourceType, entries, requires_confirmation: true, provider: 'local', raw_text: text.slice(0, 1000) }
 }
 
+/** Sanea una propuesta de recordatorio que viene de la IA (capture-parse). */
+export function sanitizeProposedReminder(raw: unknown, timezone?: string | null): ProposedReminder | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const title = typeof r.title === 'string' && r.title.trim() ? r.title.trim().slice(0, 200) : null
+  if (!title) return null
+  const amountMinor = r.amount_minor === null || r.amount_minor === undefined ? null : Number(r.amount_minor)
+  if (amountMinor !== null && (!Number.isFinite(amountMinor) || amountMinor <= 0 || amountMinor > 100_000_000)) return null
+  const dueDate =
+    typeof r.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.due_date) && !Number.isNaN(Date.parse(`${r.due_date}T12:00:00`))
+      ? r.due_date
+      : todayIsoForTimezone(timezone)
+  const recurrence: ReminderRecurrence =
+    r.recurrence === 'daily' || r.recurrence === 'weekly' || r.recurrence === 'monthly' || r.recurrence === 'yearly' ? r.recurrence : 'once'
+  return {
+    title,
+    amount_minor: amountMinor !== null ? Math.round(amountMinor) : null,
+    due_date: dueDate,
+    due_time: typeof r.due_time === 'string' && /^\d{2}:\d{2}$/.test(r.due_time) ? r.due_time : null,
+    recurrence,
+    category: typeof r.category === 'string' && r.category.trim() ? r.category.trim().slice(0, 120) : null,
+    category_id: typeof r.category_id === 'string' ? r.category_id : null,
+    note: typeof r.note === 'string' ? r.note.slice(0, 300) : null,
+    original_text: typeof r.original_text === 'string' ? r.original_text.slice(0, 500) : '',
+    needs_review: Array.isArray(r.needs_review) ? r.needs_review.filter((x): x is string => typeof x === 'string') : [],
+  }
+}
+
 /** Valida / sanea una propuesta que viene de la IA antes de mostrarla. */
 export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceType): CaptureResult | null {
   if (!raw || typeof raw !== 'object') return null
-  const r = raw as { entries?: unknown; currency?: unknown }
+  const r = raw as { entries?: unknown; currency?: unknown; reminders?: unknown }
   if (!Array.isArray(r.entries)) return null
   const entries: ProposedEntry[] = []
   for (const item of r.entries as Array<Record<string, unknown>>) {
@@ -333,6 +367,11 @@ export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceTyp
       needs_review: Array.isArray(item.needs_review) ? item.needs_review.filter((x): x is string => typeof x === 'string') : [],
     })
   }
-  if (entries.length === 0) return null
-  return { currency: 'MXN', source_type: sourceType, entries, requires_confirmation: true }
+  // Recordatorios: se pasan tal cual, aunque no haya movimientos (un
+  // "recuérdame pagar..." no es un gasto, no va en entries).
+  const reminders = Array.isArray(r.reminders)
+    ? r.reminders.map((x) => sanitizeProposedReminder(x)).filter((x): x is ProposedReminder => x !== null)
+    : []
+  if (entries.length === 0 && reminders.length === 0) return null
+  return { currency: 'MXN', source_type: sourceType, entries, requires_confirmation: true, reminders }
 }
