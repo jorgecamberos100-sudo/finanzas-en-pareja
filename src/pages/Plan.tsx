@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
-import { formatMoney } from '../lib/format'
+import { formatMoney, todayIso } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import GoalCard from '../components/GoalCard'
 import type { Goal } from '../types'
@@ -30,7 +30,7 @@ export default function Plan({ data, onRefresh }: Props) {
 
   async function contribute(goal: Goal, amount: number) {
     if (!data.me) return
-    const { error } = await supabase.from('goal_contributions').insert({ goal_id: goal.id, user_id: data.me.id, amount, date: new Date().toISOString().slice(0, 10) })
+    const { error } = await supabase.from('goal_contributions').insert({ goal_id: goal.id, user_id: data.me.id, amount, date: todayIso() })
     if (error) { setMessage(error.message); return }
     await supabase.from('goals').update({ current: goal.current + amount }).eq('id', goal.id)
     setMessage(`Aportaste ${formatMoney(amount, currency)} a “${goal.name}”.`)
@@ -40,7 +40,7 @@ export default function Plan({ data, onRefresh }: Props) {
   async function saveMoneyDate() {
     if (!data.household) return
     const { error } = await supabase.from('money_dates').insert({
-      household_id: data.household.id, date: new Date().toISOString().slice(0, 10),
+      household_id: data.household.id, date: todayIso(),
       notes: moneyNotes || null, settled_amount: 0,
     })
     if (error) { setMessage(error.message); return }

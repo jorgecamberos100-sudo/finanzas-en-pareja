@@ -1,0 +1,10 @@
+# Supabase — configuración de Edge Functions del chat de captura.
+# verify_jwt = true: solo usuarios con sesión válida pueden llamarlas.
+# Los secretos NO van aquí: se ponen con `supabase secrets set ...`
+# (ver README, sección "Chat de captura").
+
+[functions.capture-parse]
+verify_jwt = true
+
+[functions.capture-confirm]
+verify_jwt = true

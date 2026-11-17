@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
-import { formatDateEs, formatMoney } from '../lib/format'
+import { formatDateEs, formatMoney, todayIso } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import CsvImport from '../components/CsvImport'
 
@@ -43,7 +43,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
     const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `finanzas-en-pareja-${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `finanzas-en-pareja-${todayIso()}.csv`
     a.click()
   }
 
