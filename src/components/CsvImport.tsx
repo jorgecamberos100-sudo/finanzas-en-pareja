@@ -101,16 +101,16 @@ export default function CsvImport({ data, onDone }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+    <div className="rounded-2xl border border-borde bg-tarjeta p-4  ">
       <h3 className="mb-2 font-bold">Importar CSV</h3>
-      <p className="mb-3 text-sm text-stone-500">
+      <p className="mb-3 text-sm text-humo">
         Columnas esperadas: fecha, comercio/descripción y monto. Se deduplica por hash (fecha + monto + comercio + cuenta) y se aplican tus reglas por comercio.
       </p>
       <div className="mb-3 flex gap-2">
-        <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="flex-1 rounded-xl border border-stone-300 p-2 dark:border-stone-700">
+        <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="flex-1 rounded-xl border border-borde p-2 ">
           {data.accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
-        <label className="cursor-pointer rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white">
+        <label className="cursor-pointer rounded-xl bg-rosafuerte px-4 py-2 text-sm font-semibold text-noche">
           Elegir archivo CSV
           <input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f) }} />
         </label>
@@ -120,10 +120,10 @@ export default function CsvImport({ data, onDone }: Props) {
         <>
           <div className="mb-3 max-h-64 overflow-auto text-sm">
             <table className="w-full">
-              <thead><tr className="text-left text-stone-500"><th>Fecha</th><th>Comercio</th><th>Monto</th><th>Estado</th></tr></thead>
+              <thead><tr className="text-left text-humo"><th>Fecha</th><th>Comercio</th><th>Monto</th><th>Estado</th></tr></thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.hash} className={r.duplicate ? 'text-stone-400 line-through' : ''}>
+                  <tr key={r.hash} className={r.duplicate ? 'text-humo line-through' : ''}>
                     <td>{r.date}</td><td>{r.merchant}</td><td>${r.amount.toFixed(2)}</td>
                     <td>{r.duplicate ? 'Duplicado — se omite' : r.ruleApplied ? 'Regla aplicada' : 'Nuevo'}</td>
                   </tr>
@@ -131,12 +131,12 @@ export default function CsvImport({ data, onDone }: Props) {
               </tbody>
             </table>
           </div>
-          <button onClick={importRows} disabled={importing} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
+          <button onClick={importRows} disabled={importing} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
             {importing ? 'Importando…' : `Importar ${rows.filter((r) => !r.duplicate).length} movimientos nuevos`}
           </button>
         </>
       )}
-      {result && <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-400">{result}</p>}
+      {result && <p className="mt-3 text-sm text-verde ">{result}</p>}
     </div>
   )
 }

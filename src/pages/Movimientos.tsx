@@ -3,6 +3,7 @@ import type { AppData } from '../App'
 import { formatDateEs, formatMoney, todayIso } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import CsvImport from '../components/CsvImport'
+import Mascota from '../components/Mascota'
 
 interface Props { data: AppData; onRefresh: () => void }
 
@@ -52,8 +53,8 @@ export default function Movimientos({ data, onRefresh }: Props) {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Movimientos</h1>
         <div className="flex gap-2">
-          <button onClick={() => setShowImport((v) => !v)} className="rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold dark:bg-stone-800">Importar CSV</button>
-          <button onClick={exportCsv} className="rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold dark:bg-stone-800">Exportar CSV</button>
+          <button onClick={() => setShowImport((v) => !v)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Importar CSV</button>
+          <button onClick={exportCsv} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Exportar CSV</button>
         </div>
       </div>
 
@@ -77,17 +78,25 @@ export default function Movimientos({ data, onRefresh }: Props) {
       {pending.length > 0 && (
         <section>
           <h2 className="mb-2 font-bold">⏳ Por revisar ({pending.length})</h2>
-          <p className="mb-2 text-sm text-stone-500">Movimientos importados o con nota. Tu pareja puede aprobarlos.</p>
+          <p className="mb-2 text-sm text-humo">Movimientos importados o con nota. Tu pareja puede aprobarlos.</p>
           {pending.map((tx) => (
             <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
-              action={<button onClick={() => approve(tx.id)} className="rounded-lg bg-teal-700 px-3 py-1 text-xs font-bold text-white">Aprobar</button>} />
+              action={<button onClick={() => approve(tx.id)} className="rounded-lg bg-rosafuerte px-3 py-1 text-xs font-bold text-noche">Aprobar</button>} />
           ))}
         </section>
       )}
 
       <section>
         <h2 className="mb-2 font-bold">Historial</h2>
-        {approved.length === 0 && <p className="text-sm text-stone-500">Aún no hay movimientos. Toca “+” para registrar el primero.</p>}
+        {approved.length === 0 && pending.length === 0 && (
+          <div className="flex items-start gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+            <Mascota src="/mascota-ahorrando.png" alt="El cerdito sentado con una moneda" className="h-20 w-20 shrink-0" />
+            <div>
+              <p className="font-bold">Aún no hay movimientos 🐷</p>
+              <p className="text-sm text-humo">Toca “+” para registrar el primero, o mándame la foto de un ticket en el Chat.</p>
+            </div>
+          </div>
+        )}
         {approved.map((tx) => (
           <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById} />
         ))}
@@ -106,12 +115,12 @@ function TxRow({ tx, currency, categoryById, accountById, userById, action }: {
 }) {
   const cat = tx.category_id ? categoryById.get(tx.category_id) : undefined
   const sign = tx.type === 'ingreso' ? '+' : tx.type === 'gasto' ? '−' : '⇄'
-  const color = tx.type === 'ingreso' ? 'text-emerald-600' : tx.type === 'gasto' ? 'text-red-600' : 'text-sky-600'
+  const color = tx.type === 'ingreso' ? 'text-verde' : tx.type === 'gasto' ? 'text-rojosuave' : 'text-menta'
   return (
-    <div className="mb-2 flex items-center justify-between rounded-2xl border border-stone-200 bg-white p-3 dark:border-stone-800 dark:bg-stone-900">
+    <div className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3  ">
       <div className="min-w-0">
         <p className="truncate font-semibold">{cat ? `${cat.icon} ${cat.name}` : tx.type === 'transferencia' ? '⇄ Transferencia' : 'Sin categoría'}</p>
-        <p className="truncate text-xs text-stone-500">
+        <p className="truncate text-xs text-humo">
           {tx.merchant ? `${tx.merchant} · ` : ''}{formatDateEs(tx.date)} · {accountById.get(tx.account_id)?.name} · pagó {userById.get(tx.paid_by) ?? '—'}
           {tx.note ? ` · ${tx.note}` : ''}
         </p>

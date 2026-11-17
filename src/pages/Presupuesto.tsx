@@ -56,44 +56,44 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       <h1 className="text-2xl font-bold">Presupuesto</h1>
 
       <section className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-2xl bg-white p-3 dark:bg-stone-900"><p className="text-xs text-stone-500">Ingresos</p><p className="font-bold text-emerald-600">{formatMoney(ingresos, currency)}</p></div>
-        <div className="rounded-2xl bg-white p-3 dark:bg-stone-900"><p className="text-xs text-stone-500">Presupuestado</p><p className="font-bold">{formatMoney(totalBudget, currency)}</p></div>
-        <div className="rounded-2xl bg-white p-3 dark:bg-stone-900"><p className="text-xs text-stone-500">Por asignar</p><p className="font-bold text-teal-700">{formatMoney(porAsignar, currency)}</p></div>
+        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Ingresos</p><p className="font-bold text-verde">{formatMoney(ingresos, currency)}</p></div>
+        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Presupuestado</p><p className="font-bold">{formatMoney(totalBudget, currency)}</p></div>
+        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Por asignar</p><p className="font-bold text-rosaclaro">{formatMoney(porAsignar, currency)}</p></div>
       </section>
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-humo">
         Recurrentes proyectados este mes: <strong>{formatMoney(recurringTotal, currency)}</strong> · Disponible real tras recurrentes: <strong>{formatMoney(disponibleReal, currency)}</strong>
       </p>
 
       {budgeted.map((c) => (
         <EnvelopeCard key={c.id} category={c} spent={spentByCategory.get(c.id) ?? 0} currency={currency} onTransfer={setTransferFrom} />
       ))}
-      {budgeted.length === 0 && <p className="text-sm text-stone-500">Sin sobres todavía. Termina el onboarding para crear las categorías.</p>}
+      {budgeted.length === 0 && <p className="text-sm text-humo">Sin sobres todavía. Termina el onboarding para crear las categorías.</p>}
 
       {transferFrom && (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-900 dark:bg-teal-950">
+        <div className="rounded-2xl border border-rosafuerte bg-[#F4728F1A] p-4  ">
           <h3 className="font-bold">Traspasar desde {transferFrom.name}</h3>
           <select value={transferTo} onChange={(e) => setTransferTo(e.target.value)} className="mb-2 mt-2 w-full rounded-xl border p-2">
             <option value="">Hacia…</option>
             {budgeted.filter((c) => c.id !== transferFrom.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <input value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} inputMode="decimal" placeholder="Monto" className="mb-2 w-full rounded-xl border p-2" />
-          {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="mb-2 text-sm text-rojosuave">{error}</p>}
           <div className="flex gap-2">
-            <button onClick={doTransfer} className="flex-1 rounded-xl bg-teal-700 py-2 font-bold text-white">Confirmar traspaso</button>
-            <button onClick={() => setTransferFrom(null)} className="rounded-xl bg-stone-200 px-4 dark:bg-stone-800">Cancelar</button>
+            <button onClick={doTransfer} className="flex-1 rounded-xl bg-rosafuerte py-2 font-bold text-noche">Confirmar traspaso</button>
+            <button onClick={() => setTransferFrom(null)} className="rounded-xl bg-borde px-4 ">Cancelar</button>
           </div>
         </div>
       )}
 
       <section>
         <h2 className="mb-2 font-bold">Recurrentes (gastos fijos y suscripciones)</h2>
-        {data.recurring.length === 0 && <p className="text-sm text-stone-500">Sin recurrentes. Las suscripciones se restan del disponible del mes.</p>}
+        {data.recurring.length === 0 && <p className="text-sm text-humo">Sin recurrentes. Las suscripciones se restan del disponible del mes.</p>}
         {data.recurring.map((r) => (
-          <div key={r.id} className="mb-2 flex justify-between rounded-2xl border border-stone-200 bg-white p-3 text-sm dark:border-stone-800 dark:bg-stone-900">
+          <div key={r.id} className="mb-2 flex justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
             <span>🔁 {r.title} · día {r.due_day}</span><strong>{formatMoney(r.amount, currency)}</strong>
           </div>
         ))}
-        <p className="text-xs text-stone-500">Total gastado en sobres este mes: {formatMoney(totalSpent, currency)} de {formatMoney(totalBudget, currency)} presupuestados.</p>
+        <p className="text-xs text-humo">Total gastado en sobres este mes: {formatMoney(totalSpent, currency)} de {formatMoney(totalBudget, currency)} presupuestados.</p>
       </section>
     </main>
   )
