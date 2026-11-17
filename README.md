@@ -23,6 +23,74 @@ App de finanzas para una pareja (exactamente 2 usuarios): control mutuo de todo 
 | Recurrentes | Gastos fijos / suscripciones con día de cobro; se proyectan y se restan del disponible |
 | Alertas | Sobre al 80 % y 100 %, vencimientos y resumen semanal |
 | Money date | Revisión en pareja con notas/acuerdos, liquidación y export CSV de respaldo |
+| Chat de captura | Texto, foto de ticket/libreta o nota de voz → propuesta editable → confirmación explícita. La captura manual sigue igual. |
+
+## Chat de captura 💬
+
+Nueva pestaña **Chat**: escribe, manda foto o graba voz y la app propone los movimientos. **Nada se guarda sin tu confirmación.**
+
+- **Texto:** "Gasté $350 en Walmart en despensa, pagué yo" → gasto, categoría Despensa, 50/50.
+- **Foto de ticket:** lee total, comercio y fecha. **Foto de libreta:** varias líneas → varios movimientos.
+- **Voz:** nota de voz en es-MX, se transcribe y se convierte en propuesta.
+- **Siempre editable:** monto, categoría, cuenta, quién pagó y fecha se corrigen en la tarjeta antes de pulsar **Confirmar y guardar**. Los campos dudosos salen marcados como "Revisar".
+- **La captura manual no cambia:** el botón `+` y `QuickAddModal` siguen tal cual.
+
+### Motor de IA ($0 real, investigación 17-nov-2026)
+
+| Tarea | Principal | Respaldo $0 |
+| --- | --- | --- |
+| Texto → JSON | Cloudflare Workers AI `@cf/zai-org/glm-4.7-flash` | Groq `openai/gpt-oss-20b` |
+| Foto → JSON | Cloudflare `@cf/mistralai/mistral-small-3.1-24b-instruct` (`guided_json`) | Z.AI `glm-4.6v-flash` |
+| Voz → texto | Cloudflare `@cf/openai/whisper-large-v3-turbo` | Groq `whisper-large-v3-turbo` |
+
+Cloudflare Workers AI: cuota gratuita recurrente de **10,000 Neurons/día, sin tarjeta**, con cero retención de contenido y sin entrenamiento. A ~15 capturas/día se usa ~7% de la cuota: **$0/mes**. Si se agota, falla con error, no cobra. **No se usa Gemini free en producción**: su nivel gratuito entrena con tu contenido y tiene revisores humanos.
+
+Si la Edge Function no está configurada, el chat cae al **parser local en español** (`src/lib/capture.ts`) para texto simple, y te avisa para que uses el botón `+` en fotos/voz.
+
+### Arquitectura
+
+```
+PWA (texto / foto / voz) — JWT de Supabase Auth
+        │
+        ▼
+Edge Function "capture-parse" (Deno) — valida JWT, llama a Cloudflare/Groq/Z.AI
+        │  devuelve SOLO propuestas JSON, NUNCA escribe en BD
+        ▼
+Tarjeta editable en el chat (needs_review marcado)
+        │  confirmación explícita del usuario
+        ▼
+App.addTransaction() → Supabase (RLS) → Realtime a la pareja
+```
+
+También existe `capture-confirm`, una Edge Function que valida entradas, resuelve `current_user`/`partner` al ID real del usuario autenticado, calcula `dedupe_hash` y escribe en `transactions` con RLS. La app actual confirma desde el frontend con `addTransaction()`; `capture-confirm` queda lista para uso directo desde otros clientes.
+
+**Reglas:** la IA nunca guarda directo; "pagué yo" se resuelve en el servidor con el usuario autenticado; pago ≠ reparto (las transferencias no se dividen ni cuentan como gasto); montos en centavos enteros (`amount_minor`) en el JSON de la IA y en unidades MXN en `Transaction.amount`; timezone `America/Mexico_City`.
+
+### Configurar el chat (paso a paso)
+
+1. **Cloudflare (gratis, sin tarjeta):** crea cuenta en [dash.cloudflare.com](https://dash.cloudflare.com) → Workers & Pages → AI. Copia tu **Account ID** (esquina inferior derecha del dashboard).
+2. **Token:** My Profile → API Tokens → Create Token → plantilla "Edit Cloudflare Workers" (o un token personalizado con permiso `Workers AI: Edit`). Guárdalo, solo se muestra una vez.
+3. **Secretos en Supabase (nunca en el código ni en `.env`):** Dashboard → Edge Functions → Secrets, o con la CLI:
+   ```bash
+   supabase secrets set CLOUDFLARE_ACCOUNT_ID=tu-account-id CLOUDFLARE_API_TOKEN=tu-token
+   # Opcionales (respaldos $0):
+   supabase secrets set GROQ_API_KEY=tu-llave-groq ZAI_API_KEY=tu-llave-zai
+   ```
+4. **Desplegar las funciones:**
+   ```bash
+   supabase functions deploy capture-parse
+   supabase functions deploy capture-confirm
+   ```
+5. **Probar:** abre la pestaña Chat, escribe "Gasté $350 en Walmart en despensa, pagué yo", revisa la tarjeta y confirma. Luego prueba con una foto de ticket real.
+
+### Batería de pruebas antes de lanzar
+
+Nadie publica precisión en letra manuscrita mexicana: hay que probarlo con tus datos.
+- **20 tickets impresos** (fotos claras y deficientes) · **20 fotos de libreta** (varias líneas, montos, fechas) · **30 audios de 15 s** (expresiones mexicanas, ruido moderado) · **30 textos** (gastos, ingresos, transferencias, "pagué yo", frases ambiguas).
+- Mide por separado: monto exacto, comercio correcto, número de movimientos detectados (que no omita líneas) y fidelidad de transcripción.
+- Compara Mistral 3.1 vs GLM-4.6V-Flash en tu libreta, y Whisper turbo vs Groq en audios ruidosos.
+- **Criterio de lanzamiento:** las cifras son correctas **o están marcadas para revisión**. Mejor "no estoy seguro" que inventar una compra de $850.
+
 
 ## Stack
 
@@ -46,20 +114,28 @@ finanzas-en-pareja/
 │   ├── lib/
 │   │   ├── supabase.ts  # cliente + hogar activo
 │   │   ├── format.ts    # es-MX, MXN, hash de deduplicación CSV
+│   │   ├── capture.ts   # tipos ProposedEntry/CaptureResult + parser local es-MX
 │   │   └── split.ts     # split 50/50 y personalizado, deuda mutua,
 │   │                    # totales del mes (transferencias excluidas)
 │   ├── pages/
 │   │   ├── Onboarding.tsx   # wizard de 5 pasos
+│   │   ├── Chat.tsx         # pestaña Chat: envuelve ChatCapture
 │   │   ├── Dashboard.tsx    # saldo, mes, por asignar, deuda, metas, vencimientos
 │   │   ├── Movimientos.tsx  # historial, filtros, cola "Por revisar", CSV
 │   │   ├── Presupuesto.tsx  # sobres, traspasos, rollover, recurrentes
 │   │   └── Plan.tsx         # metas, cuentas/patrimonio, money date
 │   └── components/
-│       ├── QuickAddModal.tsx  # captura rápida global
+│       ├── QuickAddModal.tsx  # captura rápida global (manual, sin cambios)
+│       ├── ChatCapture.tsx    # chat texto/foto/voz, propuestas editables, confirmación
 │       ├── CsvImport.tsx      # mapeo, preview, dedupe, reglas por comercio
 │       ├── GoalCard.tsx       # progreso + marcador de ritmo esperado
 │       └── EnvelopeCard.tsx   # sobre con alertas 80 % / 100 %
 └── supabase/
+    ├── config.toml            # verify_jwt en capture-parse / capture-confirm
+    ├── functions/
+    │   ├── _shared/capture.ts # validación JSON + hash dedupe (Deno)
+    │   ├── capture-parse/index.ts   # texto/foto/voz -> propuestas (Cloudflare/Groq/Z.AI)
+    │   └── capture-confirm/index.ts # escribe en transactions tras confirmación
     ├── migrations/001_init.sql  # todas las tablas + RLS
     └── seed.sql                 # categorías LatAm, cuentas y usuarios de ejemplo
 ```

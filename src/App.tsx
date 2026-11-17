@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
 import Presupuesto from './pages/Presupuesto'
 import Plan from './pages/Plan'
+import Chat from './pages/Chat'
 import QuickAddModal from './components/QuickAddModal'
 
 export interface AppData {
@@ -113,6 +114,7 @@ export default function App() {
     { to: '/movimientos', label: 'Movimientos', icon: '🧾' },
     { to: '/presupuesto', label: 'Presupuesto', icon: '💰' },
     { to: '/plan', label: 'Plan', icon: '🎯' },
+    { to: '/chat', label: 'Chat', icon: '💬' },
   ]
 
   return (
@@ -127,6 +129,7 @@ export default function App() {
         <Route path="/movimientos" element={<Movimientos data={data} onRefresh={loadAll} />} />
         <Route path="/presupuesto" element={<Presupuesto data={data} onRefresh={loadAll} />} />
         <Route path="/plan" element={<Plan data={data} onRefresh={loadAll} />} />
+        <Route path="/chat" element={<Chat data={data} onSave={addTransaction} />} />
         <Route path="/onboarding" element={<Onboarding onDone={() => navigate('/')} />} />
       </Routes>
 
