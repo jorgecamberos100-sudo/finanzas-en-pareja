@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { AppData } from '../App'
-import type { Transaction, TxType } from '../types'
+import type { ProposedReminder, ReminderRecurrence, Transaction, TxType } from '../types'
 import { dedupeHashSync, formatMoney, parseAmount } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import {
@@ -11,10 +11,17 @@ import {
   type CaptureResult,
   type ProposedEntry,
 } from '../lib/capture'
+import {
+  DEFAULT_ALARM_TIME,
+  RECURRENCE_LABELS,
+  detectReminderIntent,
+  parseReminderText,
+} from '../lib/reminders'
 
 interface Props {
   data: AppData
   onSave: (tx: Omit<Transaction, 'id' | 'created_at' | 'household_id' | 'dedupe_hash'> & { dedupe_hash?: string | null }) => Promise<void>
+  onRefresh: () => void
 }
 
 interface ChatMessage {
@@ -36,6 +43,19 @@ interface Draft {
   note: string
   type: TxType
   splitPct: number
+}
+
+/** Tarjeta editable de un recordatorio propuesto (nunca se guarda sin confirmar). */
+interface ReminderDraft {
+  id: string
+  proposal: ProposedReminder
+  title: string
+  amount: string
+  dueDate: string
+  dueTime: string
+  recurrence: ReminderRecurrence
+  categoryId: string
+  note: string
 }
 
 interface SpeechRecognitionInstance {
@@ -93,15 +113,16 @@ const REVIEW_LABELS: Record<string, string> = {
  * La IA solo PROPONE. Nada se guarda sin que el usuario confirme
  * cada tarjeta editable. La captura manual (botón +) sigue intacta.
  */
-export default function ChatCapture({ data, onSave }: Props) {
+export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'bienvenida',
       role: 'assistant',
-      text: 'Escríbeme un gasto, mándame la foto de un ticket o de tu libreta, o graba una nota de voz. Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo.',
+      text: 'Escríbeme un gasto, mándame la foto de un ticket o de tu libreta, o graba una nota de voz. Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo. Y si quieres un aviso, dime “recuérdame pagar la renta el 1ro”.',
     },
   ])
   const [drafts, setDrafts] = useState<Draft[]>([])
+  const [reminderDrafts, setReminderDrafts] = useState<ReminderDraft[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -145,9 +166,41 @@ export default function ChatCapture({ data, onSave }: Props) {
     }
   }
 
+  function proposalToReminderDraft(p: ProposedReminder, index: number): ReminderDraft {
+    const categoryId =
+      (p.category_id && categories.some((c) => c.id === p.category_id) ? p.category_id : null) ??
+      categories.find((c) => c.name === p.category)?.id ??
+      ''
+    return {
+      id: `reminder-draft-${Date.now()}-${index}`,
+      proposal: p,
+      title: p.title,
+      amount: p.amount_minor !== null ? amountMinorToUnits(p.amount_minor).toFixed(2) : '',
+      dueDate: p.due_date,
+      dueTime: p.due_time ?? DEFAULT_ALARM_TIME,
+      recurrence: p.recurrence,
+      categoryId,
+      note: p.note ?? '',
+    }
+  }
+
+  function showReminderProposals(proposals: ProposedReminder[]) {
+    if (proposals.length === 0) return
+    setReminderDrafts((d) => [...d, ...proposals.map((p, i) => proposalToReminderDraft(p, i))])
+    pushMessage(
+      'assistant',
+      proposals.length === 1
+        ? `Te propongo un recordatorio para el ${proposals[0].due_date}. Revísalo abajo y confirma si está bien: no es un gasto, es solo un aviso.`
+        : `Te propongo ${proposals.length} recordatorios. Revisa cada tarjeta y confirma los que estén bien.`,
+    )
+  }
+
   function showResult(result: CaptureResult) {
+    if (result.reminders && result.reminders.length > 0) showReminderProposals(result.reminders)
     if (result.entries.length === 0) {
-      pushMessage('assistant', result.message ?? 'No pude proponer ningún movimiento con eso. ¿Me das el monto?')
+      if (!result.reminders || result.reminders.length === 0) {
+        pushMessage('assistant', result.message ?? 'No pude proponer ningún movimiento con eso. ¿Me das el monto?')
+      }
       return
     }
     setDrafts((d) => [...d, ...result.entries.map((e, i) => entryToDraft(e, i))])
@@ -179,6 +232,28 @@ export default function ChatCapture({ data, onSave }: Props) {
     setError(null)
     pushMessage('user', trimmed)
     setInput('')
+    // Intención de recordatorio: "recuérdame pagar..." no es un movimiento.
+    // - strong (recuérdame/avísame): solo recordatorio, con el parser local.
+    // - weak (habla de pagar a futuro sin el verbo): ambiguo -> propón ambas
+    //   cosas y que el usuario elija; nunca se guarda nada sin confirmar.
+    const intent = detectReminderIntent(trimmed)
+    if (intent === 'strong') {
+      const proposal = parseReminderText(trimmed, { categories, timezone: deviceTimezone })
+      if (proposal) {
+        showReminderProposals([proposal])
+      } else {
+        pushMessage('assistant', '¿De qué pago quieres que te avise y para cuándo? Por ejemplo: “recuérdame pagar $1,500 de renta el 1 de diciembre”.')
+      }
+      setBusy(false)
+      return
+    }
+    if (intent === 'weak') {
+      const proposal = parseReminderText(trimmed, { categories, timezone: deviceTimezone })
+      if (proposal) {
+        showReminderProposals([proposal])
+        pushMessage('assistant', 'No me quedó claro si ya lo pagaste o si quieres que te avise. Arriba te dejé el recordatorio; si ya fue un gasto, revisa también la propuesta de movimiento de abajo y confirma solo la que aplique.')
+      }
+    }
     // 1. Edge Function con Cloudflare (texto -> GLM-4.7-Flash). 2. Parser local.
     const remote = await invokeParse({
       input_type: 'text',
@@ -348,6 +423,54 @@ export default function ChatCapture({ data, onSave }: Props) {
     }
   }
 
+  function updateReminderDraft(id: string, patch: Partial<ReminderDraft>) {
+    setReminderDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)))
+  }
+
+  async function confirmReminderDraft(draft: ReminderDraft) {
+    if (!data.me || !data.household) return
+    if (!draft.title.trim()) {
+      setError('Escribe el título del recordatorio en la tarjeta antes de confirmar.')
+      return
+    }
+    if (!draft.dueDate) {
+      setError('Elige la fecha del recordatorio en la tarjeta antes de confirmar.')
+      return
+    }
+    const amount = draft.amount.trim() ? parseAmount(draft.amount) : null
+    if (draft.amount.trim() && !amount) {
+      setError('El monto del recordatorio debe ser mayor a $0.')
+      return
+    }
+    setSavingId(draft.id)
+    setError(null)
+    try {
+      const { error } = await supabase.from('reminders').insert({
+        household_id: data.household.id,
+        created_by: data.me.id,
+        title: draft.title.trim().slice(0, 200),
+        amount,
+        due_date: draft.dueDate,
+        due_time: draft.dueTime || null,
+        recurrence: draft.recurrence,
+        category_id: draft.categoryId || null,
+        note: draft.note.trim() || null,
+        timezone: deviceTimezone,
+      })
+      if (error) throw new Error(error.message)
+      setReminderDrafts((ds) => ds.filter((d) => d.id !== draft.id))
+      pushMessage(
+        'assistant',
+        `Recordatorio creado 🔔 ${draft.title.trim()} para el ${draft.dueDate}${amount ? ` por ${formatMoney(amount, currency)}` : ''}. Te avisaré ese día; también lo ves en la pestaña Avisos.`,
+      )
+      onRefresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el recordatorio.')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   const speechSupported = getSpeechRecognition() !== null || Boolean(navigator.mediaDevices?.getUserMedia)
 
   return (
@@ -367,6 +490,101 @@ export default function ChatCapture({ data, onSave }: Props) {
         ))}
         {busy && <p className="text-sm text-stone-500">Analizando…</p>}
       </div>
+
+      {reminderDrafts.map((d) => (
+        <article key={d.id} className="rounded-2xl border border-amber-500/40 bg-white p-3 shadow-sm dark:bg-stone-900">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-bold">🔔 Recordatorio propuesto</h3>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Sin guardar aún · no es un gasto</span>
+          </div>
+          {d.proposal.needs_review.length > 0 && (
+            <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">
+              Revisar: {d.proposal.needs_review.map((r) => (r === 'date' ? 'fecha' : r === 'amount' ? 'monto' : r === 'category' ? 'categoría' : r)).join(', ')}
+            </p>
+          )}
+          <label className="mb-1 block text-xs text-stone-500">Título</label>
+          <input
+            value={d.title}
+            onChange={(e) => updateReminderDraft(d.id, { title: e.target.value })}
+            className="mb-2 w-full rounded-xl border border-stone-300 p-2 text-sm font-bold dark:border-stone-700"
+          />
+          <div className="mb-2 grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-xs text-stone-500">Monto ({currency}, opcional)</label>
+              <input
+                inputMode="decimal"
+                value={d.amount}
+                onChange={(e) => updateReminderDraft(d.id, { amount: e.target.value })}
+                placeholder="Sin monto"
+                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-stone-500">Categoría</label>
+              <select
+                value={d.categoryId}
+                onChange={(e) => updateReminderDraft(d.id, { categoryId: e.target.value })}
+                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+              >
+                <option value="">Sin categoría</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="mb-2 grid grid-cols-3 gap-2">
+            <div>
+              <label className="mb-1 block text-xs text-stone-500">Fecha</label>
+              <input
+                type="date"
+                value={d.dueDate}
+                onChange={(e) => updateReminderDraft(d.id, { dueDate: e.target.value })}
+                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-stone-500">Hora</label>
+              <input
+                type="time"
+                value={d.dueTime}
+                onChange={(e) => updateReminderDraft(d.id, { dueTime: e.target.value })}
+                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-stone-500">Se repite</label>
+              <select
+                value={d.recurrence}
+                onChange={(e) => updateReminderDraft(d.id, { recurrence: e.target.value as ReminderRecurrence })}
+                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+              >
+                {(Object.keys(RECURRENCE_LABELS) as ReminderRecurrence[]).map((k) => (
+                  <option key={k} value={k}>{RECURRENCE_LABELS[k]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {d.proposal.original_text && <p className="mb-2 text-xs italic text-stone-500">“{d.proposal.original_text}”</p>}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void confirmReminderDraft(d)}
+              disabled={savingId === d.id}
+              className="flex-1 rounded-xl bg-amber-600 py-2 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {savingId === d.id ? 'Guardando…' : 'Crear recordatorio 🔔'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setReminderDrafts((ds) => ds.filter((x) => x.id !== d.id))}
+              className="rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600 dark:bg-stone-800"
+            >
+              Descartar
+            </button>
+          </div>
+        </article>
+      ))}
 
       {drafts.map((d) => (
         <article key={d.id} className="rounded-2xl border border-teal-700/30 bg-white p-3 shadow-sm dark:bg-stone-900">

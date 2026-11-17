@@ -21,12 +21,27 @@ export interface ProposedEntry {
   needs_review: string[]
 }
 
+export interface ProposedReminder {
+  title: string
+  amount_minor: number | null
+  due_date: string // YYYY-MM-DD, en la zona horaria del dispositivo que captura
+  due_time: string | null // "HH:MM" o null
+  recurrence: 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+  category: string | null
+  category_id?: string | null
+  note: string | null
+  original_text: string
+  needs_review: string[]
+}
+
 export interface CaptureResult {
   currency: 'MXN'
   source_type: CaptureSourceType
   entries: ProposedEntry[]
   requires_confirmation: true
   provider?: string
+  /** Propuestas de RECORDATORIO (pago futuro), no movimientos. */
+  reminders?: ProposedReminder[]
 }
 
 export function isValidTimeZone(tz: unknown): tz is string {
@@ -64,9 +79,36 @@ export function yesterdayIsoForTimezone(timezone?: string | null): string {
   return addDaysToIso(todayIsoForTimezone(timezone), -1)
 }
 
+export function sanitizeProposedReminder(raw: unknown, timezone?: string | null): ProposedReminder | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const title = typeof r.title === 'string' && r.title.trim() ? r.title.trim().slice(0, 200) : null
+  if (!title) return null
+  const amountMinor = r.amount_minor === null || r.amount_minor === undefined ? null : Number(r.amount_minor)
+  if (amountMinor !== null && (!Number.isFinite(amountMinor) || amountMinor <= 0 || amountMinor > 100_000_000)) return null
+  const dueDate =
+    typeof r.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.due_date) && !Number.isNaN(Date.parse(`${r.due_date}T12:00:00`))
+      ? r.due_date
+      : todayIsoForTimezone(timezone)
+  const recurrence: ProposedReminder['recurrence'] =
+    r.recurrence === 'daily' || r.recurrence === 'weekly' || r.recurrence === 'monthly' || r.recurrence === 'yearly' ? r.recurrence : 'once'
+  return {
+    title,
+    amount_minor: amountMinor !== null ? Math.round(amountMinor) : null,
+    due_date: dueDate,
+    due_time: typeof r.due_time === 'string' && /^\d{2}:\d{2}$/.test(r.due_time) ? r.due_time : null,
+    recurrence,
+    category: typeof r.category === 'string' && r.category.trim() ? r.category.trim().slice(0, 120) : null,
+    category_id: typeof r.category_id === 'string' ? r.category_id : null,
+    note: typeof r.note === 'string' ? r.note.slice(0, 300) : null,
+    original_text: typeof r.original_text === 'string' ? r.original_text.slice(0, 500) : '',
+    needs_review: Array.isArray(r.needs_review) ? r.needs_review.filter((x): x is string => typeof x === 'string') : [],
+  }
+}
+
 export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceType, timezone?: string | null): CaptureResult | null {
   if (!raw || typeof raw !== 'object') return null
-  const r = raw as { entries?: unknown }
+  const r = raw as { entries?: unknown; reminders?: unknown }
   if (!Array.isArray(r.entries)) return null
   const entries: ProposedEntry[] = []
   for (const item of r.entries as Array<Record<string, unknown>>) {
@@ -94,8 +136,11 @@ export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceTyp
       needs_review: Array.isArray(item.needs_review) ? item.needs_review.filter((x): x is string => typeof x === 'string') : [],
     })
   }
-  if (entries.length === 0) return null
-  return { currency: 'MXN', source_type: sourceType, entries, requires_confirmation: true }
+  const reminders = Array.isArray(r.reminders)
+    ? r.reminders.map((x) => sanitizeProposedReminder(x, timezone)).filter((x): x is ProposedReminder => x !== null)
+    : []
+  if (entries.length === 0 && reminders.length === 0) return null
+  return { currency: 'MXN', source_type: sourceType, entries, requires_confirmation: true, reminders }
 }
 
 /** Hash de deduplicación: mismo formato que src/lib/format.ts (fecha|monto|comercio|cuenta). */
@@ -123,4 +168,6 @@ Reglas:
 - occurred_at: fecha YYYY-MM-DD en la zona horaria del dispositivo que captura. "hoy" es la fecha de hoy en esa zona (se te indica en el mensaje del sistema como "Hoy es ..."); "ayer" es el día anterior a esa fecha en esa misma zona. Nunca asumas America/Mexico_City ni ninguna otra zona. Si no hay fecha, usa hoy y pon "date" en needs_review.
 - Ticket: 1 movimiento principal (el total) + line_items con los ítems. Libreta con varias líneas: 1 entrada por línea con monto.
 - Si un campo es dudoso, ponlo en needs_review (ej. ["category","payer"]). No inventes comercios, montos ni fechas.
-- Si no hay ningún monto, devuelve entries vacías.`
+- Si no hay ningún monto, devuelve entries vacías.
+- RECORDATORIO (no es un movimiento): si el usuario pide que le recuerdes o le avises de un pago FUTURO ("recuérdame pagar $1,500 de renta el 1 de diciembre", "avísame de la luz el viernes"), NO lo pongas en entries: devuélvelo en "reminders": [{"title":"Renta","amount_minor":150000,"due_date":"2026-12-01","due_time":null,"recurrence":"monthly","category":"Renta / Hipoteca","note":null,"original_text":"...","needs_review":[]}]. recurrence: "once" por defecto; "monthly" si dice cada mes/mensual, "weekly" si cada semana, "daily" si todos los días, "yearly" si cada año. due_time solo si dice una hora ("a las 9" -> "09:00").
+- Si es ambiguo entre gasto ya hecho y recordatorio ("pagar la renta el 1ro", sin decir si ya pagó o si es un aviso), ponlo en AMBOS (entries y reminders) para que el usuario elija; nunca lo guardes directo.`
