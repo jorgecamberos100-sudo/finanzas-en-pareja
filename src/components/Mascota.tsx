@@ -80,8 +80,13 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
   const { accessory: saved } = usePibbi()
   const acc = accessory ?? saved
   return (
-    <div className={`relative shrink-0 ${className}`}>
+    <div className={`pibbi-vivo relative shrink-0 ${className}`}>
       <img src={POSES[pose]} alt={alt} className="h-full w-full rounded-3xl object-cover ring-1 ring-borde" />
+      {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
+          Los ojos están a ~30% de altura y ~28% / ~72% de ancho en las poses
+          de frente; el párpado los cubre por completo al cerrarse. */}
+      <span aria-hidden="true" className="pibbi-parpado" style={{ left: '19%' }} />
+      <span aria-hidden="true" className="pibbi-parpado" style={{ left: '63%' }} />
       <Accesorio accessory={acc} />
     </div>
   )

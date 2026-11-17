@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
-import { supabase, getHouseholdId } from './lib/supabase'
+import { supabase, getHouseholdId, setHouseholdId, findMyHouseholdId } from './lib/supabase'
 import { useReminderNotifications } from './lib/reminders'
 import { PibbiProvider } from './lib/pibbi'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
@@ -50,20 +50,31 @@ export default function App() {
   const householdId = getHouseholdId()
 
   async function loadAll() {
-    if (!householdId) { setLoading(false); return }
+    // Si el localStorage está vacío (otro celular, datos borrados, app
+    // reinstalada) pero hay sesión, recuperar el hogar desde la BD en vez
+    // de mandar al usuario a registrarse de nuevo como si fuera nuevo.
+    let hid: string | null = householdId
+    if (!hid) {
+      const { data: s } = await supabase.auth.getSession()
+      const u = s.session?.user
+      if (!u) { setLoading(false); return }
+      hid = await findMyHouseholdId(u.id)
+      if (hid) setHouseholdId(hid)
+    }
+    if (!hid) { setLoading(false); return }
     const { data: session } = await supabase.auth.getSession()
     const user = session.session?.user
     if (!user) { setLoading(false); return }
 
     const [hh, members, accounts, categories, txs, goals, recurring, reminders] = await Promise.all([
-      supabase.from('households').select('*').eq('id', householdId).single(),
-      supabase.from('household_members').select('*, user:users(*)').eq('household_id', householdId),
-      supabase.from('accounts').select('*').eq('household_id', householdId).order('name'),
-      supabase.from('categories').select('*').eq('household_id', householdId).order('group').order('name'),
-      supabase.from('transactions').select('*').eq('household_id', householdId).order('date', { ascending: false }).limit(500),
-      supabase.from('goals').select('*').eq('household_id', householdId).order('due_date'),
-      supabase.from('recurring').select('*').eq('household_id', householdId).eq('active', true),
-      supabase.from('reminders').select('*').eq('household_id', householdId).order('due_date'),
+      supabase.from('households').select('*').eq('id', hid).single(),
+      supabase.from('household_members').select('*, user:users(*)').eq('household_id', hid),
+      supabase.from('accounts').select('*').eq('household_id', hid).order('name'),
+      supabase.from('categories').select('*').eq('household_id', hid).order('group').order('name'),
+      supabase.from('transactions').select('*').eq('household_id', hid).order('date', { ascending: false }).limit(500),
+      supabase.from('goals').select('*').eq('household_id', hid).order('due_date'),
+      supabase.from('recurring').select('*').eq('household_id', hid).eq('active', true),
+      supabase.from('reminders').select('*').eq('household_id', hid).order('due_date'),
     ])
     if (hh.error) { setSyncError(hh.error.message); setLoading(false); return }
 

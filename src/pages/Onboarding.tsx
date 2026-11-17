@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase, setHouseholdId } from '../lib/supabase'
+import { supabase, setHouseholdId, findMyHouseholdId } from '../lib/supabase'
+import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
 
@@ -24,6 +25,8 @@ const SEED_CATEGORIES = [
 /** Wizard de 5 pasos: cuenta → modo (solo o en pareja) → invitación opcional → viste a PIBBI → listo. */
 export default function Onboarding({ onDone }: Props) {
   const [step, setStep] = useState(1)
+  /** Paso 1 tiene dos modos: registrarse (nuevo) o iniciar sesión (ya tiene cuenta). */
+  const [mode, setMode] = useState<'registro' | 'login'>('registro')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -53,10 +56,40 @@ export default function Onboarding({ onDone }: Props) {
     if (password !== confirmPassword) { setError('Las contraseñas no coinciden. Revísalas y vuelve a intentarlo.'); return }
     setBusy(true); setError(null)
     const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) { setError(error.message); setBusy(false); return }
+    if (error) {
+      // Si el correo ya existe, no lo dejamos atorado: lo mandamos al login.
+      if (esCorreoYaRegistrado(error.message)) {
+        setError('Ese correo ya tiene cuenta. Inicia sesión con tu contraseña.')
+        setMode('login')
+      } else {
+        setError(traducirErrorAuth(error.message))
+      }
+      setBusy(false); return
+    }
     const user = data.user
     if (user) await supabase.from('users').upsert({ id: user.id, name: name || email.split('@')[0], email })
     setBusy(false); setStep(2)
+  }
+
+  /**
+   * Iniciar sesión con correo y contraseña. Si el usuario ya tiene hogar,
+   * lo recupera desde la BD y entra directo al Dashboard; si no tiene,
+   * sigue al paso 2 a crear o unirse a uno. Nunca manda al registro a fuerza.
+   */
+  async function login() {
+    setBusy(true); setError(null)
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setError(traducirErrorAuth(error.message)); setBusy(false); return }
+    const user = data.user
+    if (!user) { setError('No se pudo iniciar sesión. Inténtalo de nuevo.'); setBusy(false); return }
+    const householdId = await findMyHouseholdId(user.id)
+    setBusy(false)
+    if (householdId) {
+      setHouseholdId(householdId)
+      onDone()
+    } else {
+      setStep(2)
+    }
   }
 
   /**
@@ -119,23 +152,42 @@ export default function Onboarding({ onDone }: Props) {
             <Mascota className="h-20 w-20 shrink-0" />
             <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">¡Hola! Soy PIBBI, tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.</p>
           </div>
-          <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
-          <p className="mb-4 text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
-          <div className="relative mb-2">
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-            <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-              {showPassword ? '🙈' : '👁️'}
-            </button>
-          </div>
-          <div className="relative mb-4">
-            <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-            <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-              {showPassword ? '🙈' : '👁️'}
-            </button>
-          </div>
-          <button onClick={step1} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Continuar</button>
+          {mode === 'login' ? (
+            <>
+              <h1 className="text-2xl font-bold">Inicia sesión</h1>
+              <p className="mb-4 text-humo">Entra con el correo y la contraseña con los que creaste tu cuenta.</p>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
+              <div className="relative mb-4">
+                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <button onClick={login} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Entrar</button>
+              <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full py-2 text-sm font-semibold text-rosaclaro">¿No tienes cuenta? Crea una</button>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
+              <p className="mb-4 text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
+              <div className="relative mb-2">
+                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <div className="relative mb-4">
+                <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <button onClick={step1} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Continuar</button>
+              <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full py-2 text-sm font-semibold text-rosaclaro">¿Ya tienes cuenta? Inicia sesión</button>
+            </>
+          )}
         </section>
       )}
 
