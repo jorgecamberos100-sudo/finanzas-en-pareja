@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase, setHouseholdId } from '../lib/supabase'
 
 interface Props { onDone: () => void }
@@ -25,13 +25,28 @@ export default function Onboarding({ onDone }: Props) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [householdName, setHouseholdName] = useState('Nuestro hogar')
   const [inviteCode, setInviteCode] = useState('')
   const [joinCode, setJoinCode] = useState('')
+  const [joinExpanded, setJoinExpanded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  // El enlace de invitación del paso 3 es /onboarding?codigo=XXXXXX: prellenar
+  // el código y desplegar la sección de unirse, para que el enlace funcione.
+  useEffect(() => {
+    const codigo = new URLSearchParams(window.location.search).get('codigo')
+    if (codigo) {
+      setJoinCode(codigo.trim().toUpperCase())
+      setJoinExpanded(true)
+    }
+  }, [])
+
   async function step1() {
+    if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
+    if (password !== confirmPassword) { setError('Las contraseñas no coinciden. Revísalas y vuelve a intentarlo.'); return }
     setBusy(true); setError(null)
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) { setError(error.message); setBusy(false); return }
@@ -95,7 +110,18 @@ export default function Onboarding({ onDone }: Props) {
           <p className="mb-4 text-stone-500">Tu pareja tendrá su propio login. Todo se sincroniza en tiempo real.</p>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
-          <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" type="password" className="mb-4 w-full rounded-xl border p-3" />
+          <div className="relative mb-2">
+            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+            <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+          <div className="relative mb-4">
+            <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+            <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
           <button onClick={step1} disabled={busy} className="w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Continuar</button>
         </section>
       )}
@@ -104,12 +130,36 @@ export default function Onboarding({ onDone }: Props) {
         <section>
           <h1 className="text-2xl font-bold">Crea o únete a un hogar</h1>
           <p className="mb-4 text-stone-500">Un hogar = exactamente 2 personas.</p>
-          <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-          <button onClick={createHousehold} disabled={busy} className="mb-6 w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Crear hogar</button>
-          <p className="mb-2 text-sm text-stone-500">¿Tu pareja ya creó el hogar? Únete con su código:</p>
-          <div className="flex gap-2">
-            <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" className="flex-1 rounded-xl border p-3 uppercase" />
-            <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-stone-900 px-4 font-bold text-white dark:bg-stone-100 dark:text-stone-900">Unirme</button>
+
+          {/* Ruta principal: el primero crea el hogar. No necesita ningún código. */}
+          <div className="mb-4 rounded-2xl border-2 border-teal-600 p-4 dark:border-teal-500">
+            <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
+            <p className="mb-3 text-sm text-stone-500">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
+            <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
+            <button onClick={createHousehold} disabled={busy} className="w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Crear hogar</button>
+          </div>
+
+          <div className="mb-4 flex items-center gap-3 text-sm text-stone-400">
+            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+            <span>o</span>
+            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+          </div>
+
+          {/* Ruta secundaria: solo para quien ya recibió un código de su pareja. */}
+          <div className="rounded-2xl bg-stone-100 p-4 dark:bg-stone-800">
+            <p className="text-lg font-bold">Mi pareja ya creó el hogar</p>
+            <p className="mb-3 text-sm text-stone-500">Solo si tu pareja ya creó el hogar y te pasó su código.</p>
+            {joinExpanded ? (
+              <>
+                {joinCode && <p className="mb-2 rounded-lg bg-teal-50 p-2 text-sm text-teal-700 dark:bg-teal-950 dark:text-teal-300">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
+                <div className="flex gap-2">
+                  <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" className="flex-1 rounded-xl border p-3 uppercase" />
+                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-stone-900 px-4 font-bold text-white dark:bg-stone-100 dark:text-stone-900">Unirme</button>
+                </div>
+              </>
+            ) : (
+              <button onClick={() => setJoinExpanded(true)} className="w-full rounded-xl border border-stone-300 bg-white py-3 font-bold dark:border-stone-600 dark:bg-stone-900">Tengo un código de invitación</button>
+            )}
           </div>
         </section>
       )}
