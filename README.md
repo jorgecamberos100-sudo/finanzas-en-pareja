@@ -24,7 +24,7 @@ App de finanzas para una pareja (exactamente 2 usuarios): control mutuo de todo 
 | Alertas | Sobre al 80 % y 100 %, vencimientos y resumen semanal |
 | Money date | Revisión en pareja con notas/acuerdos, liquidación y export CSV de respaldo |
 | Chat de captura | Texto, foto de ticket/libreta o nota de voz → propuesta editable → confirmación explícita. La captura manual sigue igual. También crea recordatorios ("recuérdame pagar la renta el 1ro"). |
-| Recordatorios | Avisos de pago con fecha, hora y recurrencia; se ven en ambos celulares, con alarma local y push cuando la app está cerrada (ver abajo). |
+| Recordatorios | Avisos de pago con fecha, hora y recurrencia; se ven en ambos celulares, con notificación local y push cuando la app está cerrada (ver abajo). |
 
 ## Chat de captura 💬
 
@@ -92,9 +92,9 @@ Nadie publica precisión en letra manuscrita mexicana: hay que probarlo con tus 
 - Compara Mistral 3.1 vs GLM-4.6V-Flash en tu libreta, y Whisper turbo vs Groq en audios ruidosos.
 - **Criterio de lanzamiento:** las cifras son correctas **o están marcadas para revisión**. Mejor "no estoy seguro" que inventar una compra de $850.
 
-## Recordatorios y alarmas 🔔
+## Recordatorios y notificaciones 🔔
 
-Pestaña **Avisos** (`/recordatorios`): recordatorios de pago con título, monto opcional, fecha, hora de alarma (por defecto 09:00) y recurrencia (una vez, diario, semanal, mensual, anual). Los ven ambos miembros del hogar (misma tabla `reminders` con RLS por hogar) y el Dashboard avisa los que vencen hoy, mañana o ya vencieron. Desde un gasto fijo de Presupuesto se crea su alarma mensual en un toque ("Desde tus gastos fijos"). Al marcar uno recurrente como pagado, avanza solo a su siguiente fecha (ej. renta del 1ro → 1ro del mes siguiente, con ajuste al último día del mes: 31 de enero → 28 de febrero).
+Pestaña **Avisos** (`/recordatorios`): recordatorios de pago con título, monto opcional, fecha, hora del aviso (por defecto 09:00) y recurrencia (una vez, diario, semanal, mensual, anual). Los ven ambos miembros del hogar (misma tabla `reminders` con RLS por hogar) y el Dashboard avisa los que vencen hoy, mañana o ya vencieron. Desde un gasto fijo de Presupuesto se crea su aviso mensual en un toque ("Desde tus gastos fijos"). Al marcar uno recurrente como pagado, avanza solo a su siguiente fecha (ej. renta del 1ro → 1ro del mes siguiente, con ajuste al último día del mes: 31 de enero → 28 de febrero).
 
 ### Desde el chat
 
@@ -103,12 +103,12 @@ Pestaña **Avisos** (`/recordatorios`): recordatorios de pago con título, monto
 - "pagar la renta el 1ro" → ambiguo: propone **ambas** cosas (recordatorio y movimiento) y tú eliges; nunca se guarda nada sin confirmar.
 - La IA (`capture-parse`) también devuelve recordatorios en `reminders` cuando el mensaje habla de un pago futuro; si no hay IA, el parser local (`src/lib/reminders.ts`) hace lo mismo.
 
-### Cómo suenan las alarmas
+### Cómo llegan las notificaciones
 
 | Situación | Qué pasa |
 | --- | --- |
-| App abierta o instalada (PWA) | El chequeo en la app (`useReminderAlarms`, cada 30 s) muestra la notificación local a la hora indicada. Solo hay que aceptar el permiso de notificaciones en la pestaña Avisos. Funciona sin ningún paso extra. |
-| App cerrada (Android/escritorio) | Push real con Web Push + VAPID: la Edge Function `reminders-push` la dispara cada 15 min un cron. Requiere los pasos manuales de abajo (claves VAPID + cron). **Sin esos pasos, la alarma solo suena con la app abierta.** |
+| App abierta o instalada (PWA) | El chequeo en la app (`useReminderNotifications`, cada 30 s) muestra la notificación local a la hora indicada. Solo hay que aceptar el permiso de notificaciones en la pestaña Avisos. Funciona sin ningún paso extra. |
+| App cerrada (Android/escritorio) | Push real con Web Push + VAPID: la Edge Function `reminders-push` la dispara cada 15 min un cron. Requiere los pasos manuales de abajo (claves VAPID + cron). **Sin esos pasos, el aviso solo llega con la app abierta.** |
 | iOS | El push web funciona solo si la PWA está instalada en la pantalla de inicio (iOS 16.4+). |
 
 ### Push cuando la app está cerrada (pasos manuales, $0)
@@ -147,9 +147,9 @@ Pestaña **Avisos** (`/recordatorios`): recordatorios de pago con título, monto
    );
    ```
    Requiere las extensiones `pg_cron` y `pg_net` activadas en el proyecto (Database → Extensions).
-6. **Activar el push en cada celular:** en la pestaña Avisos, pulsa "Activar alarmas en este celular" y acepta el permiso de notificaciones. Cada dispositivo queda suscrito con su propia suscripción push.
+6. **Activar el push en cada celular:** en la pestaña Avisos, pulsa "Activar notificaciones en este celular" y acepta el permiso de notificaciones. Cada dispositivo queda suscrito con su propia suscripción push.
 
-Sin el cron y las claves, todo lo demás (lista, chat, alarma local con la app abierta) funciona igual.
+Sin el cron y las claves, todo lo demás (lista, chat, notificación local con la app abierta) funciona igual.
 
 **Pruebas:** `npm run test:reminders` (33 casos: "recuérdame pagar $1,500 de renta el 1 de diciembre", "recuérdame la luz el viernes", mensual "el 1ro de cada mes", horas, y que un monto no se confunda con una hora ni con un día). El cifrado Web Push de `reminders-push` se verificó de punta a punta con Deno (JWT VAPID firmado + payload aes128gcm descifrado con la clave del cliente).
 
@@ -176,7 +176,7 @@ finanzas-en-pareja/
 │   │   ├── supabase.ts  # cliente + hogar activo
 │   │   ├── format.ts    # es-MX, MXN, hash de deduplicación CSV
 │   │   ├── capture.ts   # tipos ProposedEntry/CaptureResult + parser local es-MX
-│   │   ├── reminders.ts # parser de recordatorios, recurrencia, alarmas locales y push
+│   │   ├── reminders.ts # parser de recordatorios, recurrencia, notificaciones locales y push
 │   │   └── split.ts     # split 50/50 y personalizado, deuda mutua,
 │   │                    # totales del mes (transferencias excluidas)
 │   ├── pages/

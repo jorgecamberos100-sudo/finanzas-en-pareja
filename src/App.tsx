@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { supabase, getHouseholdId } from './lib/supabase'
-import { useReminderAlarms } from './lib/reminders'
+import { useReminderNotifications } from './lib/reminders'
 import type { Account, Category, Goal, Household, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
@@ -73,9 +73,9 @@ export default function App() {
     setLoading(false)
   }
 
-  // Alarmas locales: con el permiso de notificaciones, la app revisa cada
+  // Notificaciones locales: con el permiso de notificaciones, la app revisa cada
   // 30 s si hay un recordatorio que deba sonar en este celular.
-  useReminderAlarms(data.reminders)
+  useReminderNotifications(data.reminders)
 
   // Carga inicial + Realtime: todo cambio se refleja al instante en ambos teléfonos.
   useEffect(() => {

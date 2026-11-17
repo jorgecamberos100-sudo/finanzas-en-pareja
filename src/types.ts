@@ -89,7 +89,7 @@ export type ReminderRecurrence = 'once' | 'daily' | 'weekly' | 'monthly' | 'year
 
 /**
  * Recordatorio de pago futuro. Distinto de Recurring: un recordatorio es
- * un pago concreto con fecha (y hora opcional) y alarma; Recurring solo
+ * un pago concreto con fecha (y hora opcional) y aviso; Recurring solo
  * describe un gasto fijo mensual (due_day) sin fecha ni estado.
  * amount está en UNIDADES (MXN), como Transaction.amount.
  */

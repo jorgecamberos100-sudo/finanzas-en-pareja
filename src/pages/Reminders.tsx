@@ -4,7 +4,7 @@ import type { Reminder, ReminderRecurrence } from '../types'
 import { formatDateEs, formatMoney, todayIso } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import {
-  DEFAULT_ALARM_TIME,
+  DEFAULT_NOTIFICATION_TIME,
   RECURRENCE_LABELS,
   daysUntil,
   isPushSubscribed,
@@ -39,7 +39,7 @@ export default function Reminders({ data, onRefresh }: Props) {
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState(todayIso())
-  const [dueTime, setDueTime] = useState(DEFAULT_ALARM_TIME)
+  const [dueTime, setDueTime] = useState(DEFAULT_NOTIFICATION_TIME)
   const [recurrence, setRecurrence] = useState<ReminderRecurrence>('once')
   const [categoryId, setCategoryId] = useState('')
   const [note, setNote] = useState('')
@@ -67,7 +67,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     setTitle('')
     setAmount('')
     setDueDate(todayIso())
-    setDueTime(DEFAULT_ALARM_TIME)
+    setDueTime(DEFAULT_NOTIFICATION_TIME)
     setRecurrence('once')
     setCategoryId('')
     setNote('')
@@ -78,7 +78,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     setTitle(r.title)
     setAmount(r.amount !== null ? String(r.amount) : '')
     setDueDate(r.due_date)
-    setDueTime(r.due_time ?? DEFAULT_ALARM_TIME)
+    setDueTime(r.due_time ?? DEFAULT_NOTIFICATION_TIME)
     setRecurrence(r.recurrence)
     setCategoryId(r.category_id ?? '')
     setNote(r.note ?? '')
@@ -150,7 +150,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       title: rec.title,
       amount: rec.amount,
       due_date: nextRecurringDate(rec.due_day, todayIso()),
-      due_time: DEFAULT_ALARM_TIME,
+      due_time: DEFAULT_NOTIFICATION_TIME,
       recurrence: 'monthly',
       category_id: rec.category_id,
       recurring_id: rec.id,
@@ -161,7 +161,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     onRefresh()
   }
 
-  async function enableAlarms() {
+  async function enableNotifications() {
     const p = await requestNotificationPermission()
     setPerm(p)
     if (p !== 'granted') { setMessage('Activa el permiso de notificaciones para este sitio en los ajustes del navegador.'); return }
@@ -170,12 +170,12 @@ export default function Reminders({ data, onRefresh }: Props) {
     const res = await subscribePush(supabase, data.household.id, data.me.id)
     setPushBusy(false)
     if (!res.ok) {
-      // Sin push, las alarmas locales (app abierta) ya funcionan con el permiso.
-      setMessage(`Alarma local activada ✅. Push en este celular: ${res.error}`)
+      // Sin push, las notificaciones locales (app abierta) ya funcionan con el permiso.
+      setMessage(`Notificación local activada ✅. Push en este celular: ${res.error}`)
       return
     }
     setPushOn(true)
-    setMessage('Alarmas activadas en este celular 🔔 También te avisaré aunque la app esté cerrada.')
+    setMessage('Notificaciones activadas en este celular 🔔 También te avisaré aunque la app esté cerrada.')
   }
 
   async function disablePush() {
@@ -184,7 +184,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     await unsubscribePush(supabase, data.me.id)
     setPushBusy(false)
     setPushOn(false)
-    setMessage('Push desactivado en este celular. Las alarmas locales (app abierta) siguen con el permiso de notificaciones.')
+    setMessage('Push desactivado en este celular. Las notificaciones locales (app abierta) siguen con el permiso de notificaciones.')
   }
 
   function card(r: Reminder) {
@@ -236,7 +236,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       </header>
 
       <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-        <h2 className="font-bold">📱 Alarmas en este celular</h2>
+        <h2 className="font-bold">📱 Notificaciones en este celular</h2>
         <p className="mb-2 text-sm text-stone-500">
           Con la app abierta o instalada te aviso a la hora del recordatorio. Para avisar aunque la app esté cerrada, activa también el push (gratis, con claves VAPID).
         </p>
@@ -245,12 +245,12 @@ export default function Reminders({ data, onRefresh }: Props) {
           {pushSupported() && <> · Push: <strong>{pushOn ? 'activado ✅' : 'apagado'}</strong></>}
         </p>
         {notificationsSupported() && perm !== 'granted' && (
-          <button onClick={() => void enableAlarms()} disabled={pushBusy} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
-            Activar alarmas en este celular
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
+            Activar notificaciones en este celular
           </button>
         )}
         {perm === 'granted' && pushSupported() && !pushOn && (
-          <button onClick={() => void enableAlarms()} disabled={pushBusy} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
             {pushBusy ? 'Activando…' : 'Activar también cuando la app esté cerrada (push)'}
           </button>
         )}
@@ -279,7 +279,7 @@ export default function Reminders({ data, onRefresh }: Props) {
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full rounded-xl border p-2" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-stone-500">Hora de la alarma</label>
+            <label className="mb-1 block text-xs text-stone-500">Hora del aviso</label>
             <input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="w-full rounded-xl border p-2" />
           </div>
         </div>
@@ -302,15 +302,15 @@ export default function Reminders({ data, onRefresh }: Props) {
       {data.recurring.length > 0 && (
         <section>
           <h2 className="mb-2 font-bold">Desde tus gastos fijos</h2>
-          <p className="mb-2 text-sm text-stone-500">Tus recurrentes (renta, luz, suscripciones) también pueden tener su alarma mensual:</p>
+          <p className="mb-2 text-sm text-stone-500">Tus recurrentes (renta, luz, suscripciones) también pueden tener su aviso mensual:</p>
           {data.recurring.map((rec) => {
             const has = reminders.some((r) => r.recurring_id === rec.id && !r.is_done)
             return (
               <div key={rec.id} className="mb-2 flex items-center justify-between rounded-2xl border border-stone-200 bg-white p-3 text-sm dark:border-stone-800 dark:bg-stone-900">
                 <span>📅 Día {rec.due_day} · {rec.title} · <strong>{formatMoney(rec.amount, currency)}</strong></span>
                 {has
-                  ? <span className="text-xs font-semibold text-emerald-700">🔔 Ya tiene alarma</span>
-                  : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-teal-700 px-3 py-1.5 text-xs font-bold text-white">+ Alarma mensual</button>}
+                  ? <span className="text-xs font-semibold text-emerald-700">🔔 Ya tiene aviso</span>
+                  : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-teal-700 px-3 py-1.5 text-xs font-bold text-white">+ Aviso mensual</button>}
               </div>
             )
           })}

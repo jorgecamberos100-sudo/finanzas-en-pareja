@@ -20,8 +20,8 @@ export const RECURRENCE_LABELS: Record<ReminderRecurrence, string> = {
   yearly: 'Cada año',
 }
 
-/** Hora por defecto de la alarma cuando no se dice una: 9 de la mañana. */
-export const DEFAULT_ALARM_TIME = '09:00'
+/** Hora por defecto del aviso cuando no se dice una: 9 de la mañana. */
+export const DEFAULT_NOTIFICATION_TIME = '09:00'
 
 function normalize(text: string): string {
   return text
@@ -198,6 +198,8 @@ export type ReminderIntent = 'strong' | 'weak' | 'none'
 /**
  * Intención de recordatorio en un mensaje de chat.
  * - strong: "recuérdame / avísame / ponme una alarma / recordatorio" (claro).
+ *   Si el usuario dice "alarma", se interpreta como un recordatorio
+ *   (notificación): no existe alarma sonora en la app.
  * - weak: habla de pagar algo a futuro ("pagar la renta el 1ro", "la luz vence
  *   el viernes") sin el verbo de recordar: es ambiguo, puede ser gasto o aviso.
  * - none: ni rastro de recordatorio.
@@ -266,7 +268,7 @@ export function parseReminderText(text: string, opts: ReminderParseOptions): Pro
   }
 }
 
-// ================= Alarmas locales (navegador / PWA) =================
+// ================= Notificaciones locales (navegador / PWA) =================
 
 export function notificationsSupported(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window
@@ -290,7 +292,7 @@ function notifiedKey(reminderId: string, dueDate: string): string {
   return `fp-reminder-fired-${reminderId}-${dueDate}`
 }
 
-/** ¿Este recordatorio ya avisó hoy (en este dispositivo)? Evita repetir la alarma. */
+/** ¿Este recordatorio ya avisó hoy (en este dispositivo)? Evita repetir el aviso. */
 export function alreadyNotifiedToday(reminder: Reminder): boolean {
   try {
     return localStorage.getItem(notifiedKey(reminder.id, reminder.due_date)) === '1'
@@ -303,7 +305,7 @@ function markNotified(reminder: Reminder): void {
   try {
     localStorage.setItem(notifiedKey(reminder.id, reminder.due_date), '1')
   } catch {
-    /* almacenamiento no disponible: la alarma sonará de nuevo al revisar */
+    /* almacenamiento no disponible: el aviso se mostrará de nuevo al revisar */
   }
 }
 
@@ -345,14 +347,14 @@ export function dueRemindersToNotify(reminders: Reminder[], timezone?: string | 
     if (r.is_done) return false
     if (r.due_date > today) return false
     if (alreadyNotifiedToday(r)) return false
-    const at = r.due_time ?? DEFAULT_ALARM_TIME
+    const at = r.due_time ?? DEFAULT_NOTIFICATION_TIME
     if (r.due_date === today) return nowHm >= at
     return true // vencido: avisar en cuanto se abra la app
   })
 }
 
-/** Revisa cada 30 s (y al volver a la app) si hay recordatorios que deben sonar. */
-export function useReminderAlarms(reminders: Reminder[], timezone?: string | null): void {
+/** Revisa cada 30 s (y al volver a la app) si hay recordatorios que avisar. Solo notificaciones, sin alarma sonora. */
+export function useReminderNotifications(reminders: Reminder[], timezone?: string | null): void {
   useEffect(() => {
     if (!notificationsSupported() || notificationPermission() !== 'granted') return
     let stopped = false

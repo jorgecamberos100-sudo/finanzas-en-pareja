@@ -1,8 +1,8 @@
--- Finanzas en Pareja — migración 002: recordatorios y alarmas de pagos
+-- Finanzas en Pareja — migración 002: recordatorios y notificaciones de pagos
 -- Nueva tabla `reminders` (distinta de `recurring`): `recurring` solo guarda
 -- gastos fijos mensuales (título, monto, due_day), sin fecha concreta, sin
 -- hora y sin estado de hecho/pendiente. Un recordatorio es un pago futuro
--- concreto (único o recurrente) con fecha, hora opcional y alarma.
+-- concreto (único o recurrente) con fecha, hora opcional y aviso.
 -- También `push_subscriptions`: suscripciones Web Push por usuario/dispositivo
 -- para avisar aunque la app esté cerrada (Edge Function reminders-push).
 -- Aplicar: `supabase db push` o pegar en el SQL Editor de Supabase.
@@ -20,7 +20,7 @@ create table public.reminders (
   recurring_id uuid references public.recurring (id) on delete set null,
   note text,
   -- Zona horaria del dispositivo que creó el recordatorio (ej. "America/Tijuana").
-  -- La alarma se dispara en esa zona, nunca en UTC ni en una hardcodeada.
+  -- El aviso se dispara en esa zona, nunca en UTC ni en una hardcodeada.
   timezone text not null default 'America/Tijuana',
   is_done boolean not null default false,
   done_at timestamptz,
