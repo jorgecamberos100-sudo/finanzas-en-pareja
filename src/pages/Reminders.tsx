@@ -17,6 +17,7 @@ import {
   subscribePush,
   unsubscribePush,
 } from '../lib/reminders'
+import Mascota from '../components/Mascota'
 
 interface Props {
   data: AppData
@@ -196,31 +197,31 @@ export default function Reminders({ data, onRefresh }: Props) {
       status === 'tomorrow' ? '📅 Vence mañana' :
       `📅 En ${d} días`
     return (
-      <div key={r.id} className="mb-2 rounded-2xl border border-stone-200 bg-white p-3 dark:border-stone-800 dark:bg-stone-900">
+      <div key={r.id} className="mb-2 rounded-2xl border border-borde bg-tarjeta p-3  ">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="font-bold">🔔 {r.title}</p>
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-humo">
               {formatDateEs(r.due_date)}{r.due_time ? ` · ${r.due_time} h` : ''} · {RECURRENCE_LABELS[r.recurrence]}
             </p>
             {r.amount !== null && <p className="text-sm font-semibold">{formatMoney(r.amount, currency)}</p>}
-            {r.note && <p className="text-sm text-stone-500">{r.note}</p>}
+            {r.note && <p className="text-sm text-humo">{r.note}</p>}
           </div>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${status === 'overdue' ? 'bg-red-100 text-red-700' : status === 'today' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-600 dark:bg-stone-800'}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${status === 'overdue' ? 'bg-[#FF8A8026] text-rojosuave' : status === 'today' ? 'bg-[#F5C54226] text-dorado' : 'bg-elevado text-humo '}`}>
             {badge}
           </span>
         </div>
         {!r.is_done && (
           <div className="mt-2 flex gap-2">
-            <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-teal-700 py-2 text-sm font-bold text-white">
+            <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-bold text-noche">
               {r.recurrence === 'once' ? 'Marcar pagado ✅' : 'Pagado · siguiente ➡️'}
             </button>
-            <button onClick={() => startEdit(r)} className="rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold dark:bg-stone-800">Editar</button>
-            <button onClick={() => void deleteReminder(r)} aria-label={`Eliminar ${r.title}`} className="rounded-xl bg-stone-100 px-3 py-2 text-sm dark:bg-stone-800">🗑️</button>
+            <button onClick={() => startEdit(r)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Editar</button>
+            <button onClick={() => void deleteReminder(r)} aria-label={`Eliminar ${r.title}`} className="rounded-xl bg-elevado px-3 py-2 text-sm ">🗑️</button>
           </div>
         )}
         {r.is_done && (
-          <button onClick={() => void reactivate(r)} className="mt-2 w-full rounded-xl bg-stone-100 py-2 text-sm font-semibold dark:bg-stone-800">Volver a activar</button>
+          <button onClick={() => void reactivate(r)} className="mt-2 w-full rounded-xl bg-elevado py-2 text-sm font-semibold ">Volver a activar</button>
         )}
       </div>
     )
@@ -230,14 +231,14 @@ export default function Reminders({ data, onRefresh }: Props) {
     <main className="space-y-4 p-4">
       <header>
         <h1 className="text-2xl font-bold">Recordatorios 🔔</h1>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-humo">
           Avisos de pagos futuros para los dos. También puedes escribir en el Chat “recuérdame pagar la renta el 1ro” y se crea aquí.
         </p>
       </header>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+      <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
         <h2 className="font-bold">📱 Notificaciones en este celular</h2>
-        <p className="mb-2 text-sm text-stone-500">
+        <p className="mb-2 text-sm text-humo">
           Con la app abierta o instalada te aviso a la hora del recordatorio. Para avisar aunque la app esté cerrada, activa también el push (gratis, con claves VAPID).
         </p>
         <p className="mb-2 text-sm">
@@ -245,23 +246,23 @@ export default function Reminders({ data, onRefresh }: Props) {
           {pushSupported() && <> · Push: <strong>{pushOn ? 'activado ✅' : 'apagado'}</strong></>}
         </p>
         {notificationsSupported() && perm !== 'granted' && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
             Activar notificaciones en este celular
           </button>
         )}
         {perm === 'granted' && pushSupported() && !pushOn && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
             {pushBusy ? 'Activando…' : 'Activar también cuando la app esté cerrada (push)'}
           </button>
         )}
         {perm === 'granted' && pushOn && (
-          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full rounded-xl bg-stone-100 py-2 font-bold dark:bg-stone-800">
+          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full rounded-xl bg-elevado py-2 font-bold ">
             Desactivar push en este celular
           </button>
         )}
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+      <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
         <h2 className="mb-2 font-bold">{editingId ? 'Editar recordatorio' : 'Nuevo recordatorio'}</h2>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (ej. Renta, Luz, Netflix)" className="mb-2 w-full rounded-xl border p-2" />
         <div className="mb-2 grid grid-cols-2 gap-2">
@@ -275,15 +276,15 @@ export default function Reminders({ data, onRefresh }: Props) {
         </div>
         <div className="mb-2 grid grid-cols-2 gap-2">
           <div>
-            <label className="mb-1 block text-xs text-stone-500">Fecha de vencimiento</label>
+            <label className="mb-1 block text-xs text-humo">Fecha de vencimiento</label>
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full rounded-xl border p-2" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-stone-500">Hora del aviso</label>
+            <label className="mb-1 block text-xs text-humo">Hora del aviso</label>
             <input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="w-full rounded-xl border p-2" />
           </div>
         </div>
-        <label className="mb-1 block text-xs text-stone-500">Se repite</label>
+        <label className="mb-1 block text-xs text-humo">Se repite</label>
         <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as ReminderRecurrence)} className="mb-2 w-full rounded-xl border p-2 text-sm">
           {(Object.keys(RECURRENCE_LABELS) as ReminderRecurrence[]).map((k) => (
             <option key={k} value={k}>{RECURRENCE_LABELS[k]}</option>
@@ -291,26 +292,26 @@ export default function Reminders({ data, onRefresh }: Props) {
         </select>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Nota (opcional)" className="mb-2 w-full rounded-xl border p-2" />
         <div className="flex gap-2">
-          <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-teal-700 py-2 font-bold text-white disabled:opacity-50">
+          <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
             {editingId ? 'Guardar cambios' : 'Crear recordatorio 🔔'}
           </button>
-          {editingId && <button onClick={resetForm} className="rounded-xl bg-stone-100 px-3 py-2 font-semibold dark:bg-stone-800">Cancelar</button>}
+          {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}
         </div>
-        {message && <p className="mt-2 text-sm text-emerald-700 dark:text-emerald-400">{message}</p>}
+        {message && <p className="mt-2 text-sm text-verde ">{message}</p>}
       </section>
 
       {data.recurring.length > 0 && (
         <section>
           <h2 className="mb-2 font-bold">Desde tus gastos fijos</h2>
-          <p className="mb-2 text-sm text-stone-500">Tus recurrentes (renta, luz, suscripciones) también pueden tener su aviso mensual:</p>
+          <p className="mb-2 text-sm text-humo">Tus recurrentes (renta, luz, suscripciones) también pueden tener su aviso mensual:</p>
           {data.recurring.map((rec) => {
             const has = reminders.some((r) => r.recurring_id === rec.id && !r.is_done)
             return (
-              <div key={rec.id} className="mb-2 flex items-center justify-between rounded-2xl border border-stone-200 bg-white p-3 text-sm dark:border-stone-800 dark:bg-stone-900">
+              <div key={rec.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
                 <span>📅 Día {rec.due_day} · {rec.title} · <strong>{formatMoney(rec.amount, currency)}</strong></span>
                 {has
-                  ? <span className="text-xs font-semibold text-emerald-700">🔔 Ya tiene aviso</span>
-                  : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-teal-700 px-3 py-1.5 text-xs font-bold text-white">+ Aviso mensual</button>}
+                  ? <span className="text-xs font-semibold text-verde">🔔 Ya tiene aviso</span>
+                  : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-rosafuerte px-3 py-1.5 text-xs font-bold text-noche">+ Aviso mensual</button>}
               </div>
             )
           })}
@@ -319,18 +320,21 @@ export default function Reminders({ data, onRefresh }: Props) {
 
       <section>
         <h2 className="mb-2 font-bold">Próximos y vencidos</h2>
-        {urgent.length === 0 && upcoming.length === 0 && <p className="text-sm text-stone-500">Sin recordatorios pendientes. Crea el primero arriba o desde el Chat.</p>}
+        {urgent.length === 0 && upcoming.length === 0 && <p className="text-sm text-humo">Sin recordatorios pendientes. Crea el primero arriba o desde el Chat.</p>}
         {urgent.map(card)}
         {upcoming.map(card)}
       </section>
 
       {done.length > 0 && (
         <section>
-          <h2 className="mb-2 font-bold">Ya pagados</h2>
+          <div className="mb-2 flex items-center gap-3">
+            <Mascota pose="celebrando" alt="El cerdito celebrando un pago hecho" className="h-12 w-12 shrink-0" />
+            <h2 className="font-bold">Ya pagados</h2>
+          </div>
           {done.map((r) => (
-            <div key={r.id} className="mb-2 flex items-center justify-between rounded-2xl border border-stone-200 bg-white p-3 text-sm opacity-70 dark:border-stone-800 dark:bg-stone-900">
+            <div key={r.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm opacity-70  ">
               <span>✅ {r.title} · {formatDateEs(r.due_date)}{r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}</span>
-              <button onClick={() => void reactivate(r)} className="rounded-xl bg-stone-100 px-3 py-1.5 text-xs font-semibold dark:bg-stone-800">Reactivar</button>
+              <button onClick={() => void reactivate(r)} className="rounded-xl bg-elevado px-3 py-1.5 text-xs font-semibold ">Reactivar</button>
             </div>
           ))}
         </section>

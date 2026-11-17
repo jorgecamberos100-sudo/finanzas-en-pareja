@@ -4,6 +4,7 @@ import { formatDateEs, formatMoney, monthKey, todayIso } from '../lib/format'
 import { computeMutualBalance, monthTotals } from '../lib/split'
 import { reminderStatus } from '../lib/reminders'
 import { supabase } from '../lib/supabase'
+import Mascota from '../components/Mascota'
 
 interface Props { data: AppData; onRefresh: () => void }
 
@@ -65,41 +66,51 @@ export default function Dashboard({ data, onRefresh }: Props) {
     <main className="space-y-4 p-4">
       <header>
         <h1 className="text-2xl font-bold">Hola, {data.me?.name ?? 'pareja'} 👋</h1>
-        <p className="text-sm text-stone-500">{data.household?.name} · {currency} · {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</p>
+        <p className="text-sm text-humo">{data.household?.name} · {currency} · {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</p>
       </header>
 
-      <section className="rounded-2xl bg-teal-700 p-5 text-white">
-        <p className="text-sm opacity-80">Patrimonio total</p>
-        <p className="text-3xl font-black">{formatMoney(patrimonio, currency)}</p>
+      {data.transactions.length === 0 && (
+        <section className="flex items-start gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+          <Mascota className="h-20 w-20 shrink-0" />
+          <div>
+            <p className="font-bold">Aún no hay movimientos 🐷</p>
+            <p className="text-sm text-humo">Toca el botón + o escríbeme en el Chat: un gasto, la foto de un ticket o una nota de voz.</p>
+          </div>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-rosafuerte/40 bg-tarjeta p-5">
+        <p className="text-sm text-rosaclaro">Patrimonio total</p>
+        <p className="text-3xl font-black text-crema">{formatMoney(patrimonio, currency)}</p>
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div><p className="opacity-80">Ingresos del mes</p><p className="font-bold text-emerald-200">+{formatMoney(ingresos, currency)}</p></div>
-          <div><p className="opacity-80">Gastos del mes</p><p className="font-bold text-red-200">−{formatMoney(gastos, currency)}</p></div>
+          <div><p className="text-humo">Ingresos del mes</p><p className="font-bold text-verde">+{formatMoney(ingresos, currency)}</p></div>
+          <div><p className="text-humo">Gastos del mes</p><p className="font-bold text-rojosuave">−{formatMoney(gastos, currency)}</p></div>
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-          <p className="text-sm text-stone-500">Disponible</p><p className="text-xl font-bold">{formatMoney(disponible, currency)}</p>
+        <div className="rounded-2xl border border-borde bg-tarjeta p-4  ">
+          <p className="text-sm text-humo">Disponible</p><p className="text-xl font-bold">{formatMoney(disponible, currency)}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-          <p className="text-sm text-stone-500">Por asignar</p><p className="text-xl font-bold">{formatMoney(porAsignar, currency)}</p>
+        <div className="rounded-2xl border border-borde bg-tarjeta p-4  ">
+          <p className="text-sm text-humo">Por asignar</p><p className="text-xl font-bold">{formatMoney(porAsignar, currency)}</p>
         </div>
       </section>
 
       {mutual ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+        <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
           <p className="font-bold">⚖️ Deuda mutua</p>
           <p className="text-sm">{debtorName} le debe <strong>{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
-          <button onClick={liquidar} className="mt-2 w-full rounded-xl bg-amber-600 py-2 font-bold text-white">Liquidar ahora</button>
+          <button onClick={liquidar} className="mt-2 w-full rounded-xl bg-dorado py-2 font-bold text-noche">Liquidar ahora</button>
         </section>
       ) : (
-        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950">
-          <p className="font-bold">✅ Están a mano</p><p className="text-sm text-stone-600 dark:text-stone-300">No hay deuda mutua pendiente.</p>
+        <section className="rounded-2xl border border-verde/30 bg-[#4ADE8014] p-4  ">
+          <p className="font-bold">✅ Están a mano</p><p className="text-sm text-humo ">No hay deuda mutua pendiente.</p>
         </section>
       )}
 
       {dueReminders.length > 0 && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+        <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
           <p className="font-bold">🔔 Recordatorios de pago</p>
           {dueReminders.map((r) => (
             <div key={r.id} className="mt-2 flex items-center justify-between gap-2 text-sm">
@@ -107,7 +118,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
                 {r.title} · {reminderStatus(r) === 'overdue' ? `vencido (${formatDateEs(r.due_date)})` : reminderStatus(r) === 'today' ? 'hoy' : 'mañana'}
                 {r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}
               </span>
-              <a href="/recordatorios" className="shrink-0 rounded-xl bg-amber-600 px-3 py-1.5 font-bold text-white">Ver</a>
+              <a href="/recordatorios" className="shrink-0 rounded-xl bg-dorado px-3 py-1.5 font-bold text-noche">Ver</a>
             </div>
           ))}
         </section>
@@ -115,13 +126,13 @@ export default function Dashboard({ data, onRefresh }: Props) {
 
       <section>
         <h2 className="mb-2 font-bold">Metas</h2>
-        {data.goals.length === 0 && <p className="text-sm text-stone-500">Aún no hay metas. Créalas en la pestaña Plan.</p>}
+        {data.goals.length === 0 && <p className="text-sm text-humo">Aún no hay metas. Créalas en la pestaña Plan.</p>}
         {data.goals.slice(0, 3).map((g) => {
           const pct = g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0
           return (
-            <div key={g.id} className="mb-2 rounded-2xl border border-stone-200 bg-white p-3 dark:border-stone-800 dark:bg-stone-900">
+            <div key={g.id} className="mb-2 rounded-2xl border border-borde bg-tarjeta p-3  ">
               <div className="flex justify-between text-sm"><span>🎯 {g.name}</span><span>{pct.toFixed(0)}%</span></div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800"><div className="h-full bg-teal-600" style={{ width: `${pct}%` }} /></div>
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-borde "><div className="h-full bg-rosafuerte" style={{ width: `${pct}%` }} /></div>
             </div>
           )
         })}
@@ -129,9 +140,9 @@ export default function Dashboard({ data, onRefresh }: Props) {
 
       <section>
         <h2 className="mb-2 font-bold">Próximos vencimientos</h2>
-        {upcoming.length === 0 && <p className="text-sm text-stone-500">Sin recurrentes próximos. Agrega suscripciones en Presupuesto.</p>}
+        {upcoming.length === 0 && <p className="text-sm text-humo">Sin recurrentes próximos. Agrega suscripciones en Presupuesto.</p>}
         {upcoming.map((r) => (
-          <div key={r.id} className="mb-2 flex justify-between rounded-2xl border border-stone-200 bg-white p-3 text-sm dark:border-stone-800 dark:bg-stone-900">
+          <div key={r.id} className="mb-2 flex justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
             <span>📅 Día {r.due_day} · {r.title}</span><strong>{formatMoney(r.amount, currency)}</strong>
           </div>
         ))}
@@ -145,8 +156,8 @@ export default function Dashboard({ data, onRefresh }: Props) {
           return (
             <div key={c.id} className="mb-2 text-sm">
               <div className="flex justify-between"><span>{c.icon} {c.name}</span><span>{formatMoney(spent, currency)} / {formatMoney(c.monthly_limit, currency)}</span></div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
-                <div className={`h-full ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-teal-600'}`} style={{ width: `${pct}%` }} />
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-borde ">
+                <div className={`h-full ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-rosafuerte'}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           )

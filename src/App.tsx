@@ -116,7 +116,7 @@ export default function App() {
     }
   }
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-stone-500">Cargando…</div>
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div>
   if (!householdId || !data.household) return <Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} />
 
   const tabs = [
@@ -131,7 +131,7 @@ export default function App() {
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-28">
       {syncError && (
-        <div role="alert" className="m-3 rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
+        <div role="alert" className="m-3 rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave  ">
           ⚠️ {syncError}
         </div>
       )}
@@ -148,15 +148,15 @@ export default function App() {
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-teal-700 text-2xl text-white shadow-lg transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-rosafuerte text-2xl text-noche shadow-lg transition active:scale-95"
       >
         +
       </button>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-stone-200 bg-white py-2 dark:border-stone-800 dark:bg-stone-900">
+      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2  ">
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `flex flex-col items-center px-3 text-xs ${isActive ? 'font-semibold text-teal-700 dark:text-teal-400' : 'text-stone-500'}`}>
+            className={({ isActive }) => `flex flex-col items-center px-3 text-xs ${isActive ? 'font-semibold text-rosaclaro ' : 'text-humo'}`}>
             <span className="text-xl">{t.icon}</span>{t.label}
           </NavLink>
         ))}

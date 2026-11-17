@@ -153,6 +153,21 @@ Sin el cron y las claves, todo lo demás (lista, chat, notificación local con l
 
 **Pruebas:** `npm run test:reminders` (33 casos: "recuérdame pagar $1,500 de renta el 1 de diciembre", "recuérdame la luz el viernes", mensual "el 1ro de cada mes", horas, y que un monto no se confunda con una hora ni con un día). El cifrado Web Push de `reminders-push` se verificó de punta a punta con Deno (JWT VAPID firmado + payload aes128gcm descifrado con la clave del cliente).
 
+## Estética: el cerdito 🐷
+
+La mascota es el cerdito rosa 3D de la hoja de personaje: los recortes (de frente, celebrando y sentado con moneda) van incrustados en `src/lib/mascota-images.ts` y se usan con el componente `src/components/Mascota.tsx` (`pose="frente" | "celebrando" | "ahorrando"`). El icono de la PWA es `public/icons/icon.svg` (🐷 sobre azul marino). El tema es oscuro en toda la app, sin modo claro:
+
+| Uso | Color |
+| --- | --- |
+| Fondo | azul marino `#0F1530` |
+| Tarjetas | azul marino claro `#1A2145` |
+| Texto | crema `#FDE8D8` · secundario `#B9C0E0` |
+| Botones principales | rosa fuerte `#F4728F` con texto azul marino (contraste 6.5:1) |
+| Monedas / metas | dorado `#F5C542` |
+| Éxito / crecimiento | verde `#4ADE80` y menta `#7DDBC3` |
+
+La mascota aparece en: bienvenida del Onboarding, pantalla de “¡Listo!”, estado vacío del Dashboard y de Movimientos, saludo del Chat, meta alcanzada (celebrando) y recordatorios ya pagados (celebrando).
+
 ## Stack
 
 React + Vite + TypeScript + Tailwind CSS · Supabase (Auth email/password, PostgreSQL con RLS, Realtime) · PWA (manifest + service worker) · Deploy gratuito en Vercel.

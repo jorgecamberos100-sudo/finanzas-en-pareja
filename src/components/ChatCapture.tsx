@@ -480,7 +480,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                m.role === 'user' ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-100'
+                m.role === 'user' ? 'bg-rosafuerte text-noche' : 'bg-elevado text-crema  '
               }`}
             >
               {m.imageUrl && <img src={m.imageUrl} alt="Foto enviada para capturar" className="mb-2 max-h-48 rounded-xl object-cover" />}
@@ -488,43 +488,43 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             </div>
           </div>
         ))}
-        {busy && <p className="text-sm text-stone-500">Analizando…</p>}
+        {busy && <p className="text-sm text-humo">Analizando…</p>}
       </div>
 
       {reminderDrafts.map((d) => (
-        <article key={d.id} className="rounded-2xl border border-amber-500/40 bg-white p-3 shadow-sm dark:bg-stone-900">
+        <article key={d.id} className="rounded-2xl border border-amber-500/40 bg-tarjeta p-3 shadow-sm ">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold">🔔 Recordatorio propuesto</h3>
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Sin guardar aún · no es un gasto</span>
+            <span className="rounded-full bg-[#F5C54226] px-2 py-0.5 text-xs font-semibold text-dorado">Sin guardar aún · no es un gasto</span>
           </div>
           {d.proposal.needs_review.length > 0 && (
-            <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">
+            <p className="mb-2 text-xs text-dorado ">
               Revisar: {d.proposal.needs_review.map((r) => (r === 'date' ? 'fecha' : r === 'amount' ? 'monto' : r === 'category' ? 'categoría' : r)).join(', ')}
             </p>
           )}
-          <label className="mb-1 block text-xs text-stone-500">Título</label>
+          <label className="mb-1 block text-xs text-humo">Título</label>
           <input
             value={d.title}
             onChange={(e) => updateReminderDraft(d.id, { title: e.target.value })}
-            className="mb-2 w-full rounded-xl border border-stone-300 p-2 text-sm font-bold dark:border-stone-700"
+            className="mb-2 w-full rounded-xl border border-borde p-2 text-sm font-bold "
           />
           <div className="mb-2 grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Monto ({currency}, opcional)</label>
+              <label className="mb-1 block text-xs text-humo">Monto ({currency}, opcional)</label>
               <input
                 inputMode="decimal"
                 value={d.amount}
                 onChange={(e) => updateReminderDraft(d.id, { amount: e.target.value })}
                 placeholder="Sin monto"
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Categoría</label>
+              <label className="mb-1 block text-xs text-humo">Categoría</label>
               <select
                 value={d.categoryId}
                 onChange={(e) => updateReminderDraft(d.id, { categoryId: e.target.value })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               >
                 <option value="">Sin categoría</option>
                 {categories.map((c) => (
@@ -535,29 +535,29 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           </div>
           <div className="mb-2 grid grid-cols-3 gap-2">
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Fecha</label>
+              <label className="mb-1 block text-xs text-humo">Fecha</label>
               <input
                 type="date"
                 value={d.dueDate}
                 onChange={(e) => updateReminderDraft(d.id, { dueDate: e.target.value })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Hora</label>
+              <label className="mb-1 block text-xs text-humo">Hora</label>
               <input
                 type="time"
                 value={d.dueTime}
                 onChange={(e) => updateReminderDraft(d.id, { dueTime: e.target.value })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Se repite</label>
+              <label className="mb-1 block text-xs text-humo">Se repite</label>
               <select
                 value={d.recurrence}
                 onChange={(e) => updateReminderDraft(d.id, { recurrence: e.target.value as ReminderRecurrence })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               >
                 {(Object.keys(RECURRENCE_LABELS) as ReminderRecurrence[]).map((k) => (
                   <option key={k} value={k}>{RECURRENCE_LABELS[k]}</option>
@@ -565,20 +565,20 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               </select>
             </div>
           </div>
-          {d.proposal.original_text && <p className="mb-2 text-xs italic text-stone-500">“{d.proposal.original_text}”</p>}
+          {d.proposal.original_text && <p className="mb-2 text-xs italic text-humo">“{d.proposal.original_text}”</p>}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => void confirmReminderDraft(d)}
               disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-amber-600 py-2 text-sm font-bold text-white disabled:opacity-50"
+              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-bold text-noche disabled:opacity-50"
             >
               {savingId === d.id ? 'Guardando…' : 'Crear recordatorio 🔔'}
             </button>
             <button
               type="button"
               onClick={() => setReminderDrafts((ds) => ds.filter((x) => x.id !== d.id))}
-              className="rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600 dark:bg-stone-800"
+              className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold text-humo "
             >
               Descartar
             </button>
@@ -587,13 +587,13 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       ))}
 
       {drafts.map((d) => (
-        <article key={d.id} className="rounded-2xl border border-teal-700/30 bg-white p-3 shadow-sm dark:bg-stone-900">
+        <article key={d.id} className="rounded-2xl border border-rosafuerte/30 bg-tarjeta p-3 shadow-sm ">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold">Propuesta para revisar</h3>
-            <span className="rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800">Sin guardar aún</span>
+            <span className="rounded-full bg-[#F4728F26] px-2 py-0.5 text-xs font-semibold text-rosaclaro">Sin guardar aún</span>
           </div>
           {d.entry.needs_review.length > 0 && (
-            <p className="mb-2 text-xs text-amber-700 dark:text-amber-300">
+            <p className="mb-2 text-xs text-dorado ">
               Revisar: {d.entry.needs_review.map((r) => REVIEW_LABELS[r] ?? r).join(', ')}
             </p>
           )}
@@ -603,26 +603,26 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
                 key={t}
                 type="button"
                 onClick={() => updateDraft(d.id, { type: t, splitPct: t === 'transferencia' ? 100 : d.splitPct })}
-                className={`rounded-xl py-1.5 text-xs font-semibold capitalize ${d.type === t ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-600 dark:bg-stone-800'}`}
+                className={`rounded-xl py-1.5 text-xs font-semibold capitalize ${d.type === t ? 'bg-rosafuerte text-noche' : 'bg-elevado text-humo '}`}
               >
                 {t}
               </button>
             ))}
           </div>
-          <label className="mb-1 block text-xs text-stone-500">Monto ({currency})</label>
+          <label className="mb-1 block text-xs text-humo">Monto ({currency})</label>
           <input
             inputMode="decimal"
             value={d.amount}
             onChange={(e) => updateDraft(d.id, { amount: e.target.value })}
-            className="mb-2 w-full rounded-xl border border-stone-300 p-2 text-lg font-bold dark:border-stone-700"
+            className="mb-2 w-full rounded-xl border border-borde p-2 text-lg font-bold "
           />
           <div className="mb-2 grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Categoría</label>
+              <label className="mb-1 block text-xs text-humo">Categoría</label>
               <select
                 value={d.categoryId}
                 onChange={(e) => updateDraft(d.id, { categoryId: e.target.value })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               >
                 <option value="">Elige…</option>
                 {categories
@@ -635,11 +635,11 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Cuenta</label>
+              <label className="mb-1 block text-xs text-humo">Cuenta</label>
               <select
                 value={d.accountId}
                 onChange={(e) => updateDraft(d.id, { accountId: e.target.value })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -651,11 +651,11 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           </div>
           <div className="mb-2 grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Quién pagó</label>
+              <label className="mb-1 block text-xs text-humo">Quién pagó</label>
               <select
                 value={d.paidBy}
                 onChange={(e) => updateDraft(d.id, { paidBy: e.target.value })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               >
                 {[data.me, data.partner].filter(Boolean).map((u) => (
                   <option key={u!.id} value={u!.id}>
@@ -665,12 +665,12 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-stone-500">Fecha</label>
+              <label className="mb-1 block text-xs text-humo">Fecha</label>
               <input
                 type="date"
                 value={d.date}
                 onChange={(e) => updateDraft(d.id, { date: e.target.value })}
-                className="w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+                className="w-full rounded-xl border border-borde p-2 text-sm "
               />
             </div>
           </div>
@@ -678,33 +678,33 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             value={d.merchant}
             onChange={(e) => updateDraft(d.id, { merchant: e.target.value })}
             placeholder="Comercio (ej. Walmart)"
-            className="mb-2 w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+            className="mb-2 w-full rounded-xl border border-borde p-2 text-sm "
           />
           <input
             value={d.note}
             onChange={(e) => updateDraft(d.id, { note: e.target.value })}
             placeholder="Nota (opcional)"
-            className="mb-2 w-full rounded-xl border border-stone-300 p-2 text-sm dark:border-stone-700"
+            className="mb-2 w-full rounded-xl border border-borde p-2 text-sm "
           />
           {d.type === 'gasto' && (
-            <p className="mb-2 text-xs text-stone-500">
+            <p className="mb-2 text-xs text-humo">
               Split: {d.splitPct}% lo asume quien pagó · la otra persona le debe {formatMoney((parseAmount(d.amount) * (100 - d.splitPct)) / 100, currency)}
             </p>
           )}
-          {d.entry.original_text && <p className="mb-2 text-xs italic text-stone-500">“{d.entry.original_text}”</p>}
+          {d.entry.original_text && <p className="mb-2 text-xs italic text-humo">“{d.entry.original_text}”</p>}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => void confirmDraft(d)}
               disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-teal-700 py-2 text-sm font-bold text-white disabled:opacity-50"
+              className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-bold text-noche disabled:opacity-50"
             >
               {savingId === d.id ? 'Guardando…' : 'Confirmar y guardar'}
             </button>
             <button
               type="button"
               onClick={() => setDrafts((ds) => ds.filter((x) => x.id !== d.id))}
-              className="rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600 dark:bg-stone-800"
+              className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold text-humo "
             >
               Descartar
             </button>
@@ -713,7 +713,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       ))}
 
       {error && (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
+        <p role="alert" className="rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave  ">
           {error}
         </p>
       )}
@@ -743,7 +743,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           aria-label="Subir foto de ticket o libreta"
           onClick={() => fileRef.current?.click()}
           disabled={busy}
-          className="rounded-full bg-stone-100 px-3 py-2 text-lg dark:bg-stone-800"
+          className="rounded-full bg-elevado px-3 py-2 text-lg "
         >
           📷
         </button>
@@ -756,7 +756,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             else startDictation()
           }}
           disabled={busy || !speechSupported}
-          className={`rounded-full px-3 py-2 text-lg ${recording || listening ? 'bg-red-100' : 'bg-stone-100 dark:bg-stone-800'}`}
+          className={`rounded-full px-3 py-2 text-lg ${recording || listening ? 'bg-[#FF8A8026]' : 'bg-elevado '}`}
         >
           🎙️
         </button>
@@ -765,13 +765,13 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ej. Gasté $350 en Walmart…"
           aria-label="Escribe un gasto, ingreso o transferencia"
-          className="min-w-0 flex-1 rounded-xl border border-stone-300 p-3 text-sm dark:border-stone-700"
+          className="min-w-0 flex-1 rounded-xl border border-borde p-3 text-sm "
         />
-        <button type="submit" disabled={busy || !input.trim()} className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-50">
+        <button type="submit" disabled={busy || !input.trim()} className="rounded-xl bg-rosafuerte px-4 py-3 text-sm font-bold text-noche disabled:opacity-50">
           Enviar
         </button>
       </form>
-      <p className="text-center text-xs text-stone-500">
+      <p className="text-center text-xs text-humo">
         La captura manual con el botón + sigue disponible. El chat nunca guarda sin tu confirmación.
       </p>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, setHouseholdId } from '../lib/supabase'
+import Mascota from '../components/Mascota'
 
 interface Props { onDone: () => void }
 
@@ -99,15 +100,19 @@ export default function Onboarding({ onDone }: Props) {
 
   return (
     <div className="mx-auto max-w-lg p-5">
-      <p className="text-sm text-stone-500">Paso {step} de 5</p>
-      <div className="mb-6 mt-1 h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
-        <div className="h-full bg-teal-600 transition-all" style={{ width: `${step * 20}%` }} />
+      <p className="text-sm text-humo">Paso {step} de 5</p>
+      <div className="mb-6 mt-1 h-2 overflow-hidden rounded-full bg-borde ">
+        <div className="h-full bg-rosafuerte transition-all" style={{ width: `${step * 20}%` }} />
       </div>
 
       {step === 1 && (
         <section>
+          <div className="mb-4 flex items-start gap-3">
+            <Mascota className="h-20 w-20 shrink-0" />
+            <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">¡Hola! Soy tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.</p>
+          </div>
           <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
-          <p className="mb-4 text-stone-500">Tu pareja tendrá su propio login. Todo se sincroniza en tiempo real.</p>
+          <p className="mb-4 text-humo">Tu pareja tendrá su propio login. Todo se sincroniza en tiempo real.</p>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
           <div className="relative mb-2">
@@ -122,43 +127,43 @@ export default function Onboarding({ onDone }: Props) {
               {showPassword ? '🙈' : '👁️'}
             </button>
           </div>
-          <button onClick={step1} disabled={busy} className="w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Continuar</button>
+          <button onClick={step1} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Continuar</button>
         </section>
       )}
 
       {step === 2 && (
         <section>
           <h1 className="text-2xl font-bold">Crea o únete a un hogar</h1>
-          <p className="mb-4 text-stone-500">Un hogar = exactamente 2 personas.</p>
+          <p className="mb-4 text-humo">Un hogar = exactamente 2 personas.</p>
 
           {/* Ruta principal: el primero crea el hogar. No necesita ningún código. */}
-          <div className="mb-4 rounded-2xl border-2 border-teal-600 p-4 dark:border-teal-500">
+          <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
             <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
-            <p className="mb-3 text-sm text-stone-500">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
+            <p className="mb-3 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
             <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-            <button onClick={createHousehold} disabled={busy} className="w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Crear hogar</button>
+            <button onClick={createHousehold} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear hogar</button>
           </div>
 
-          <div className="mb-4 flex items-center gap-3 text-sm text-stone-400">
-            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+          <div className="mb-4 flex items-center gap-3 text-sm text-humo">
+            <span className="h-px flex-1 bg-borde " />
             <span>o</span>
-            <span className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+            <span className="h-px flex-1 bg-borde " />
           </div>
 
           {/* Ruta secundaria: solo para quien ya recibió un código de su pareja. */}
-          <div className="rounded-2xl bg-stone-100 p-4 dark:bg-stone-800">
+          <div className="rounded-2xl bg-elevado p-4 ">
             <p className="text-lg font-bold">Mi pareja ya creó el hogar</p>
-            <p className="mb-3 text-sm text-stone-500">Solo si tu pareja ya creó el hogar y te pasó su código.</p>
+            <p className="mb-3 text-sm text-humo">Solo si tu pareja ya creó el hogar y te pasó su código.</p>
             {joinExpanded ? (
               <>
-                {joinCode && <p className="mb-2 rounded-lg bg-teal-50 p-2 text-sm text-teal-700 dark:bg-teal-950 dark:text-teal-300">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
+                {joinCode && <p className="mb-2 rounded-lg bg-[#F4728F1A] p-2 text-sm text-rosaclaro  ">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
                 <div className="flex gap-2">
                   <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" className="flex-1 rounded-xl border p-3 uppercase" />
-                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-stone-900 px-4 font-bold text-white dark:bg-stone-100 dark:text-stone-900">Unirme</button>
+                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-noche px-4 font-bold text-white  ">Unirme</button>
                 </div>
               </>
             ) : (
-              <button onClick={() => setJoinExpanded(true)} className="w-full rounded-xl border border-stone-300 bg-white py-3 font-bold dark:border-stone-600 dark:bg-stone-900">Tengo un código de invitación</button>
+              <button onClick={() => setJoinExpanded(true)} className="w-full rounded-xl border border-borde bg-tarjeta py-3 font-bold  ">Tengo un código de invitación</button>
             )}
           </div>
         </section>
@@ -167,36 +172,37 @@ export default function Onboarding({ onDone }: Props) {
       {step === 3 && (
         <section>
           <h1 className="text-2xl font-bold">Invita a tu pareja</h1>
-          <p className="mb-4 text-stone-500">Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.</p>
-          <div className="mb-4 rounded-2xl bg-teal-50 p-4 text-center dark:bg-teal-950">
-            <p className="text-3xl font-black tracking-widest text-teal-700 dark:text-teal-300">{inviteCode}</p>
-            <p className="mt-1 text-sm text-stone-500">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
+          <p className="mb-4 text-humo">Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.</p>
+          <div className="mb-4 rounded-2xl bg-[#F4728F1A] p-4 text-center ">
+            <p className="text-3xl font-black tracking-widest text-rosaclaro ">{inviteCode}</p>
+            <p className="mt-1 text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
           </div>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Continuar (puede unirse después)</button>
+          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Continuar (puede unirse después)</button>
         </section>
       )}
 
       {step === 4 && (
         <section>
           <h1 className="text-2xl font-bold">Cuentas y presupuesto inicial</h1>
-          <p className="mb-4 text-stone-500">Crearemos 3 cuentas (efectivo, banco y tarjeta) y 13 categorías LatAm con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
-          <ul className="mb-4 list-disc pl-5 text-sm text-stone-600 dark:text-stone-300">
+          <p className="mb-4 text-humo">Crearemos 3 cuentas (efectivo, banco y tarjeta) y 13 categorías LatAm con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
+          <ul className="mb-4 list-disc pl-5 text-sm text-humo ">
             <li>Despensa $6,000 · Renta $8,000 · Transporte $2,500</li>
             <li>Servicios $1,500 · Restaurantes $2,000 · Metas $2,000</li>
           </ul>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Crear cuentas y categorías</button>
+          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear cuentas y categorías</button>
         </section>
       )}
 
       {step === 5 && (
-        <section>
+        <section className="text-center">
+          <Mascota pose="celebrando" alt="El cerdito celebrando: tu hogar está listo" className="mx-auto mb-4 h-32 w-32" />
           <h1 className="text-2xl font-bold">¡Listo! 🎉</h1>
-          <p className="mb-4 text-stone-500">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
-          <button onClick={onDone} className="w-full rounded-xl bg-teal-700 py-3 font-bold text-white">Ir al inicio</button>
+          <p className="mb-4 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
+          <button onClick={onDone} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Ir al inicio</button>
         </section>
       )}
 
-      {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mt-4 text-sm text-rojosuave">{error}</p>}
     </div>
   )
 }

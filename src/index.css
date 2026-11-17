@@ -2,20 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tema oscuro del cerdito en toda la app: fondo azul marino, texto crema.
+   No hay modo claro: el tema es oscuro siempre, para que no quede mitad y mitad. */
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
-  @apply bg-stone-50 text-stone-900 antialiased;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    @apply bg-stone-950 text-stone-100;
-  }
+  @apply bg-noche text-crema antialiased;
 }
 
 input, select, textarea {
-  @apply bg-white text-stone-900 dark:bg-stone-900 dark:text-stone-100;
+  @apply border-borde bg-tarjeta text-crema;
+}
+
+input::placeholder, textarea::placeholder {
+  @apply text-humo;
+}
+
+select option {
+  @apply bg-tarjeta text-crema;
+}
+
+::selection {
+  @apply bg-rosafuerte text-noche;
 }
