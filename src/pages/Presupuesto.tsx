@@ -79,7 +79,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
           <input value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} inputMode="decimal" placeholder="Monto" className="mb-2 w-full rounded-xl border p-2" />
           {error && <p className="mb-2 text-sm text-rojosuave">{error}</p>}
           <div className="flex gap-2">
-            <button onClick={doTransfer} className="flex-1 rounded-xl bg-rosafuerte py-2 font-bold text-noche">Confirmar traspaso</button>
+            <button onClick={doTransfer} className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">Confirmar traspaso</button>
             <button onClick={() => setTransferFrom(null)} className="rounded-xl bg-borde px-4 ">Cancelar</button>
           </div>
         </div>

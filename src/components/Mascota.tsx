@@ -79,15 +79,21 @@ function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
 export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-28 w-28' }: Props) {
   const { accessory: saved } = usePibbi()
   const acc = accessory ?? saved
+  // Micro-interacción al tocarlo: el envoltorio escala (hover/active) y el
+  // interior sigue con su animación de flotar y pestañear. La animación CSS
+  // de .pibbi-vivo pisa el transform de su propio elemento, por eso la
+  // escala vive en el envoltorio y no en el mismo div.
   return (
-    <div className={`pibbi-vivo relative shrink-0 ${className}`}>
-      <img src={POSES[pose]} alt={alt} className="h-full w-full rounded-3xl object-cover ring-1 ring-borde" />
-      {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
-          Los ojos están a ~30% de altura y ~28% / ~72% de ancho en las poses
-          de frente; el párpado los cubre por completo al cerrarse. */}
-      <span aria-hidden="true" className="pibbi-parpado" style={{ left: '19%' }} />
-      <span aria-hidden="true" className="pibbi-parpado" style={{ left: '63%' }} />
-      <Accesorio accessory={acc} />
+    <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${className}`}>
+      <div className="pibbi-vivo relative h-full w-full">
+        <img src={POSES[pose]} alt={alt} className="h-full w-full rounded-3xl object-cover ring-1 ring-borde" />
+        {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
+            Los ojos están a ~30% de altura y ~28% / ~72% de ancho en las poses
+            de frente; el párpado los cubre por completo al cerrarse. */}
+        <span aria-hidden="true" className="pibbi-parpado" style={{ left: '19%' }} />
+        <span aria-hidden="true" className="pibbi-parpado" style={{ left: '63%' }} />
+        <Accesorio accessory={acc} />
+      </div>
     </div>
   )
 }

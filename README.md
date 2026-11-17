@@ -174,7 +174,11 @@ PIBBI aparece en: bienvenida del Onboarding, pantalla de “¡Listo!”, estado 
 - **Personalizable:** cada persona viste a su propio PIBBI con lentes, gorra, moño, corona o sin accesorios (`src/components/PibbiDresser.tsx`). La prenda se dibuja en SVG sobre la foto y se guarda por usuario en la tabla `pibbi_customization` (migración `003_pibbi.sql`, RLS por usuario) y en el dispositivo al instante. Se elige en el Onboarding (paso “Viste a PIBBI”, opcional) y se cambia después desde Inicio.
 - **Modo individual:** en el Onboarding se puede elegir “Solo yo por ahora”: el hogar se crea con un solo miembro y reparto 100% (sin 50/50 roto ni deuda mutua). Invitar a la pareja es una opción, no un requisito: en Inicio aparece la tarjeta “Invita a tu pareja (opcional)” con el código y el enlace `/onboarding?codigo=`, y la pareja se une después igual que siempre. El modo en pareja sigue igual.
 
-**Pruebas:** `npm run test:pibbi` (32 casos: accesorios válidos, poses de reacción y reparto 100% en solo vs 50/50 en pareja).
+**Pruebas:** `npm run test:pibbi` (38 casos: accesorios válidos, poses de reacción, reparto 100% en solo vs 50/50 en pareja, y deuda mutua con liquidaciones).
+
+### Correcciones de la auditoría Qwen (PR #9, 17-nov-2026)
+
+Se verificó cada hallazgo en el código antes de corregirlo (Qwen no daba líneas exactas y no revisó el backend). Confirmados y corregidos: la app ya no se atora en "Cargando…" si falla la red; "recuérdame a las 5:00 pm" avisa a las 17:00 (antes a las 05:00); "Liquidar ahora" sí deja la deuda en cero (antes reaparecía al recargar); una nota de voz que falla ya no bloquea el chat; "compré 2 cosas por 50 el 12/11/2026" propone $50 (antes $2); los vencimientos del mes siguiente ya se ven en Inicio (ej. renta día 5 si hoy es 25). Pulido: PIBBI reacciona al tocarlo, botón + más grande con sombra rosa, cambio de pestaña con fade-in y botones principales más legibles. Descartado: el código `?codigo=` del enlace de invitación sí llega al paso 2 aunque se elija "Inicia sesión" (el estado se conserva), así que no se tocó.
 
 ## Stack
 
@@ -332,6 +336,10 @@ npm run dev        # desarrollo
 npm run typecheck  # tsc --noEmit
 npm run build      # build de producción
 npm run preview    # previsualizar el build
+npm run test:reminders  # parser de recordatorios (hora am/pm, fechas)
+npm run test:capture    # parser de captura (fechas no son montos) y próximos vencimientos
+npm run test:pibbi      # PIBBI, reparto y deuda mutua con liquidaciones
+npm run test:login      # traducción de errores de login/registro
 ```
 
 ## Licencia

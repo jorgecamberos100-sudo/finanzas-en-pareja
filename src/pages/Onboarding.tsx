@@ -163,7 +163,7 @@ export default function Onboarding({ onDone }: Props) {
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
-              <button onClick={login} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Entrar</button>
+              <button onClick={login} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche">Entrar</button>
               <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full py-2 text-sm font-semibold text-rosaclaro">¿No tienes cuenta? Crea una</button>
             </>
           ) : (
@@ -184,7 +184,7 @@ export default function Onboarding({ onDone }: Props) {
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
-              <button onClick={step1} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Continuar</button>
+              <button onClick={step1} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche">Continuar</button>
               <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full py-2 text-sm font-semibold text-rosaclaro">¿Ya tienes cuenta? Inicia sesión</button>
             </>
           )}
@@ -200,7 +200,7 @@ export default function Onboarding({ onDone }: Props) {
           <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
             <p className="text-lg font-bold">🙋 Solo yo por ahora</p>
             <p className="mb-3 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
-            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Usar solo por ahora</button>
+            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche">Usar solo por ahora</button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
@@ -214,7 +214,7 @@ export default function Onboarding({ onDone }: Props) {
             <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
             <p className="mb-3 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
             <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear hogar</button>
+            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche">Crear hogar</button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
@@ -250,7 +250,7 @@ export default function Onboarding({ onDone }: Props) {
             <p className="text-3xl font-black tracking-widest text-rosaclaro ">{inviteCode}</p>
             <p className="mt-1 text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
           </div>
-          <button onClick={() => setStep(4)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">{soloMode ? 'Lo haré después' : 'Continuar (puede unirse después)'}</button>
+          <button onClick={() => setStep(4)} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche">{soloMode ? 'Lo haré después' : 'Continuar (puede unirse después)'}</button>
         </section>
       )}
 
@@ -262,7 +262,7 @@ export default function Onboarding({ onDone }: Props) {
             <PibbiDresser />
           </div>
           <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Crear mis cuentas y terminar</button>
+          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche">Crear mis cuentas y terminar</button>
         </section>
       )}
 
@@ -271,7 +271,7 @@ export default function Onboarding({ onDone }: Props) {
           <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-32 w-32" />
           <h1 className="text-2xl font-bold">¡Listo! 🎉</h1>
           <p className="mb-4 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
-          <button onClick={onDone} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Ir al inicio</button>
+          <button onClick={onDone} className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche">Ir al inicio</button>
         </section>
       )}
 

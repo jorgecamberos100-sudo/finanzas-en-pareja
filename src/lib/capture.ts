@@ -116,14 +116,42 @@ export function parseMoneyToken(raw: string): number {
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0
 }
 
-/** Todos los montos con $ o seguidos de "pesos"/"mxn" en el texto. */
+/** Sustantivos de cantidad: el número que les precede no es dinero ("2 cosas", "3 kilos"). */
+const COUNT_NOUNS = [
+  'cosas', 'piezas', 'articulos', 'unidades', 'kilos', 'kilogramos', 'litros',
+  'paquetes', 'bolsas', 'cajas', 'docenas', 'personas', 'huevos', 'panes',
+  'botellas', 'latas', 'boletos', 'entradas',
+]
+
+const MONTHS_ES_PATTERN = 'enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre'
+
+/** Todos los montos con $ o seguidos de "pesos"/"mxn" en el texto.
+ *  Las fechas NO son montos: antes "compré 2 cosas por 50 el 12/11/2026"
+ *  devolvía [2, 50, 12, 11, 2026] y la propuesta tomaba $2. Ahora se
+ *  quitan las fechas (12/11/2026, 2026-11-12, "12 de noviembre") y los
+ *  años sueltos (2026), y se ignoran las cantidades ("2 cosas"). */
 export function extractAmounts(text: string): number[] {
+  const cleaned = text
+    .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, ' ')
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, ' ')
+    .replace(new RegExp(`\\b(?:el\\s+)?\\d{1,2}\\s+de\\s+(?:${MONTHS_ES_PATTERN})\\b`, 'gi'), ' ')
+    // Año suelto (2026) salvo que sea monto con $ o "pesos" ("$2026", "2026 pesos").
+    .replace(/\b(?:19|20)\d{2}\b/g, (y, offset: number, s: string) => {
+      const before = s.slice(Math.max(0, offset - 3), offset)
+      const after = s.slice(offset + y.length, offset + y.length + 8)
+      if (/\$\s*$/.test(before) || /^\s*(pesos|mxn|varos)\b/i.test(after)) return y
+      return ' '
+    })
   // Montos agrupados con separador (1,250.50) o lisos de cualquier longitud (2350).
   // OJO: el primer alternativo exige al menos un grupo de miles, si no
   // "2350" se partía en "235" y el resto se perdía.
   const re = /\$?\s*(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d+(?:[.,]\d{2})?)\s*(?:pesos|mxn|varos)?/gi
   const out: number[] = []
-  for (const m of text.matchAll(re)) {
+  for (const m of cleaned.matchAll(re)) {
+    if (!m[0].includes('$')) {
+      const after = cleaned.slice((m.index ?? 0) + m[0].length)
+      if (new RegExp(`^\\s*(?:${COUNT_NOUNS.join('|')})\\b`, 'i').test(after)) continue
+    }
     const n = parseMoneyToken(m[1])
     if (n > 0) out.push(n)
   }

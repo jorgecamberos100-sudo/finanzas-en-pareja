@@ -154,7 +154,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
 
         {error && <p role="alert" className="mb-3 text-sm text-rojosuave">{error}</p>}
         <button onClick={handleSave} disabled={saving}
-          className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche disabled:opacity-50">
+          className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:opacity-50">
           {saving ? 'Guardando…' : 'Guardar movimiento'}
         </button>
         {type === 'transferencia' && <p className="mt-2 text-center text-xs text-humo">Las transferencias entre cuentas propias no cuentan como gasto en los reportes.</p>}

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import { formatDateEs, formatMoney, monthKey, todayIso } from '../lib/format'
 import { computeMutualBalance, monthTotals } from '../lib/split'
+import { upcomingRecurring } from '../lib/recurring'
 import { reminderStatus } from '../lib/reminders'
 import { supabase } from '../lib/supabase'
 import Mascota from '../components/Mascota'
@@ -11,6 +12,7 @@ interface Props { data: AppData; onRefresh: () => void }
 
 export default function Dashboard({ data, onRefresh }: Props) {
   const [copied, setCopied] = useState(false)
+  const [liquidarError, setLiquidarError] = useState<string | null>(null)
   const currency = data.household?.currency ?? 'MXN'
   const month = monthKey()
 
@@ -32,16 +34,14 @@ export default function Dashboard({ data, onRefresh }: Props) {
   const porAsignar = Math.max(0, disponible - totalBudget)
 
   const mutual = useMemo(
-    () => (data.me && data.partner ? computeMutualBalance(data.transactions, data.me.id, data.partner.id) : null),
-    [data.transactions, data.me, data.partner],
+    () => (data.me && data.partner ? computeMutualBalance(data.transactions, data.me.id, data.partner.id, data.settlements) : null),
+    [data.transactions, data.me, data.partner, data.settlements],
   )
   const debtorName = mutual?.debtor_id === data.me?.id ? 'Tú' : data.partner?.name ?? 'Tu pareja'
   const creditorName = mutual?.creditor_id === data.me?.id ? 'ti' : data.partner?.name ?? 'tu pareja'
 
-  const upcoming = useMemo(() => {
-    const today = new Date().getDate()
-    return [...data.recurring].filter((r) => r.due_day >= today).sort((a, b) => a.due_day - b.due_day).slice(0, 3)
-  }, [data.recurring])
+  // Próximos vencimientos: este mes o el siguiente, ordenados por cercanía.
+  const upcoming = useMemo(() => upcomingRecurring(data.recurring), [data.recurring])
 
   // Recordatorios que vencen hoy, mañana o ya vencieron (sin hacer).
   const dueReminders = useMemo(
@@ -57,10 +57,14 @@ export default function Dashboard({ data, onRefresh }: Props) {
     if (!confirm(`¿Confirmas que ${debtorName} le pagó ${formatMoney(mutual.amount, currency)} a ${creditorName}? Se registrará la liquidación.`)) return
     // La liquidación es una transferencia entre personas: se registra como
     // money_date (revisión) y como transferencia, que NO cuenta como gasto.
-    await supabase.from('money_dates').insert({
+    // El saldo mutuo resta estas liquidaciones (computeMutualBalance), así
+    // que tras liquidar la deuda queda en cero y no reaparece al recargar.
+    const { error } = await supabase.from('money_dates').insert({
       household_id: data.household.id, date: todayIso(),
       notes: `Liquidación de deuda mutua: ${formatMoney(mutual.amount, currency)}`, settled_amount: mutual.amount,
     })
+    if (error) { setLiquidarError(`No se pudo registrar la liquidación: ${error.message}`); return }
+    setLiquidarError(null)
     onRefresh()
   }
 
@@ -102,7 +106,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
             <p className="text-2xl font-black tracking-widest text-rosaclaro">{data.household.invite_code}</p>
             <p className="mt-1 break-all text-xs text-humo">{`${window.location.origin}/onboarding?codigo=${data.household.invite_code}`}</p>
           </div>
-          <button onClick={copyInvite} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche">
+          <button onClick={copyInvite} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">
             {copied ? '¡Copiado! ✅' : 'Copiar código y enlace'}
           </button>
         </section>
@@ -135,7 +139,8 @@ export default function Dashboard({ data, onRefresh }: Props) {
         <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
           <p className="font-bold">⚖️ Deuda mutua</p>
           <p className="text-sm">{debtorName} le debe <strong>{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
-          <button onClick={liquidar} className="mt-2 w-full rounded-xl bg-dorado py-2 font-bold text-noche">Liquidar ahora</button>
+          <button onClick={liquidar} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-noche">Liquidar ahora</button>
+          {liquidarError && <p role="alert" className="mt-2 text-sm text-rojosuave">{liquidarError}</p>}
         </section>
       ) : (
         <section className="rounded-2xl border border-verde/30 bg-[#4ADE8014] p-4  ">
@@ -175,9 +180,9 @@ export default function Dashboard({ data, onRefresh }: Props) {
       <section>
         <h2 className="mb-2 font-bold">Próximos vencimientos</h2>
         {upcoming.length === 0 && <p className="text-sm text-humo">Sin recurrentes próximos. Agrega suscripciones en Presupuesto.</p>}
-        {upcoming.map((r) => (
+        {upcoming.map(({ recurring: r, nextMonth }) => (
           <div key={r.id} className="mb-2 flex justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
-            <span>📅 Día {r.due_day} · {r.title}</span><strong>{formatMoney(r.amount, currency)}</strong>
+            <span>📅 Día {r.due_day}{nextMonth ? ' · próx. mes' : ''} · {r.title}</span><strong>{formatMoney(r.amount, currency)}</strong>
           </div>
         ))}
       </section>

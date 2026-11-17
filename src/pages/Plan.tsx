@@ -69,7 +69,7 @@ export default function Plan({ data, onRefresh }: Props) {
             <input value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} inputMode="decimal" placeholder="Monto objetivo" className="flex-1 rounded-xl border p-2" />
             <input value={goalDate} onChange={(e) => setGoalDate(e.target.value)} type="date" className="flex-1 rounded-xl border p-2" />
           </div>
-          <button onClick={createGoal} className="mt-2 w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche">Crear meta</button>
+          <button onClick={createGoal} className="mt-2 w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">Crear meta</button>
         </div>
       </section>
 
@@ -88,7 +88,7 @@ export default function Plan({ data, onRefresh }: Props) {
         <h2 className="font-bold">💬 {data.partner ? 'Money date' : 'Mi revisión'}</h2>
         <p className="mb-2 text-sm text-humo">{data.partner ? 'Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde Inicio).' : 'Tu revisión: resumen del período, notas y acuerdos.'}</p>
         <textarea value={moneyNotes} onChange={(e) => setMoneyNotes(e.target.value)} placeholder="Notas y acuerdos de hoy…" rows={3} className="mb-2 w-full rounded-xl border p-2" />
-        <button onClick={saveMoneyDate} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche">Guardar money date</button>
+        <button onClick={saveMoneyDate} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">Guardar money date</button>
         {message && <p className="mt-2 text-sm text-verde ">{message}</p>}
         {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
       </section>

@@ -131,7 +131,7 @@ export default function CsvImport({ data, onDone }: Props) {
               </tbody>
             </table>
           </div>
-          <button onClick={importRows} disabled={importing} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
+          <button onClick={importRows} disabled={importing} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
             {importing ? 'Importando…' : `Importar ${rows.filter((r) => !r.duplicate).length} movimientos nuevos`}
           </button>
         </>
