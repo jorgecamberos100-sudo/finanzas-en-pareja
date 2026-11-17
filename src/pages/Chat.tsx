@@ -18,7 +18,7 @@ export default function Chat({ data, onSave, onRefresh }: Props) {
         <div>
           <h1 className="text-2xl font-bold">Chat de captura 💬</h1>
           <p className="text-sm text-humo">
-            Escríbelo, mándale foto al ticket o a tu libreta, o graba una nota de voz. Revisa la propuesta y confirma: nada se guarda solo.
+            Soy PIBBI 🐷 Escríbelo, mándale foto al ticket o a tu libreta, o graba una nota de voz. Revisa la propuesta y confirma: nada se guarda solo.
             También puedes pedirme un recordatorio: “recuérdame pagar la renta el 1ro”.
           </p>
         </div>

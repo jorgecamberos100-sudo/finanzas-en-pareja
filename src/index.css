@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tema oscuro del cerdito en toda la app: fondo azul marino, texto crema.
+/* Tema oscuro de PIBBI en toda la app: fondo azul marino, texto crema.
    No hay modo claro: el tema es oscuro siempre, para que no quede mitad y mitad. */
 :root {
   color-scheme: dark;

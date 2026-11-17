@@ -74,7 +74,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
           <Mascota className="h-20 w-20 shrink-0" />
           <div>
             <p className="font-bold">Aún no hay movimientos 🐷</p>
-            <p className="text-sm text-humo">Toca el botón + o escríbeme en el Chat: un gasto, la foto de un ticket o una nota de voz.</p>
+            <p className="text-sm text-humo">Toca el botón + o escríbele a PIBBI en el Chat: un gasto, la foto de un ticket o una nota de voz.</p>
           </div>
         </section>
       )}
