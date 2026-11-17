@@ -78,7 +78,7 @@ check('ambiguo pagar renta 1ro: fecha', p6?.due_date, '2026-12-01')
 check('hora: $1,500 no es hora', parseTimeEs('recuérdame pagar $1,500 de renta'), null)
 check('hora: a las 9:30', parseTimeEs('avísame a las 9:30'), '09:30')
 check('hora: 9 de la noche', parseTimeEs('recuérdame a las 9 de la noche'), '21:00')
-check('hora: 21:00', parseTimeEs('alarma 21:00'), '21:00')
+check('hora: 21:00', parseTimeEs('avísame 21:00'), '21:00')
 
 check('fecha: mañana', parseReminderDateEs('recuérdame mañana', undefined).date, '2026-11-18')
 check('fecha: el lunes (hoy martes -> 23)', parseReminderDateEs('el lunes', undefined).date, '2026-11-23')

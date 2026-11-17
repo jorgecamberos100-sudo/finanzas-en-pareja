@@ -1,6 +1,6 @@
 // reminders-push — Supabase Edge Function (Deno, sin dependencias externas).
-// Envía las alarmas Web Push a los celulares suscritos, aunque la app esté cerrada.
-// Se llama cada 15 min desde pg_cron (ver README, sección "Recordatorios y alarmas").
+// Envía las notificaciones Web Push a los celulares suscritos, aunque la app esté cerrada.
+// Se llama cada 15 min desde pg_cron (ver README, sección "Recordatorios y notificaciones").
 //
 // Autenticación: NO usa verify_jwt; la llama pg_cron con la service_role key.
 // Se valida que el header Authorization sea exactamente la service_role key

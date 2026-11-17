@@ -12,7 +12,7 @@ import {
   type ProposedEntry,
 } from '../lib/capture'
 import {
-  DEFAULT_ALARM_TIME,
+  DEFAULT_NOTIFICATION_TIME,
   RECURRENCE_LABELS,
   detectReminderIntent,
   parseReminderText,
@@ -177,7 +177,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       title: p.title,
       amount: p.amount_minor !== null ? amountMinorToUnits(p.amount_minor).toFixed(2) : '',
       dueDate: p.due_date,
-      dueTime: p.due_time ?? DEFAULT_ALARM_TIME,
+      dueTime: p.due_time ?? DEFAULT_NOTIFICATION_TIME,
       recurrence: p.recurrence,
       categoryId,
       note: p.note ?? '',

@@ -3,7 +3,7 @@
  * Service worker de Finanzas en Pareja (vite-plugin-pwa, injectManifest).
  * - Precarga el shell de la app (Workbox).
  * - La API de Supabase siempre va en vivo (NetworkFirst, nunca cache).
- * - Push (Web Push + VAPID): muestra la alarma aunque la app esté cerrada.
+ * - Push (Web Push + VAPID): muestra la notificación aunque la app esté cerrada.
  *   El push lo envía la Edge Function reminders-push (ver README).
  * - Al tocar la notificación, abre la pestaña de recordatorios.
  */
