@@ -18,6 +18,7 @@ import {
   unsubscribePush,
 } from '../lib/reminders'
 import Mascota from '../components/Mascota'
+import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
 
 interface Props {
   data: AppData
@@ -47,6 +48,8 @@ export default function Reminders({ data, onRefresh }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // PIBBI reacciona al crear un aviso y al marcarlo como pagado.
+  const [reaction, setReaction] = useState<ReactionContext | null>(null)
   const [perm, setPerm] = useState<NotificationPermission | 'unsupported'>(notificationPermission())
   const [pushOn, setPushOn] = useState(false)
   const [pushBusy, setPushBusy] = useState(false)
@@ -113,6 +116,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     setBusy(false)
     if (error) { setMessage(error.message); return }
     setMessage(editingId ? 'Recordatorio actualizado 🔔' : 'Recordatorio creado 🔔 Te avisaré ese día.')
+    if (!editingId) setReaction('apuntando')
     resetForm()
     onRefresh()
   }
@@ -126,6 +130,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       .eq('id', r.id)
     if (error) { setMessage(error.message); return }
     setMessage(next ? `Pagado. El siguiente quedó para el ${formatDateEs(next)}.` : 'Marcado como pagado ✅')
+    setReaction('celebrando')
     onRefresh()
   }
 
@@ -298,6 +303,7 @@ export default function Reminders({ data, onRefresh }: Props) {
           {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}
         </div>
         {message && <p className="mt-2 text-sm text-verde ">{message}</p>}
+        {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
       </section>
 
       {data.recurring.length > 0 && (
