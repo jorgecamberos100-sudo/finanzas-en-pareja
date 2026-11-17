@@ -4,7 +4,7 @@ import { supabase, getHouseholdId, setHouseholdId, findMyHouseholdId } from './l
 import { useReminderNotifications } from './lib/reminders'
 import { PibbiProvider } from './lib/pibbi'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
-import type { Account, Category, Goal, Household, Recurring, Reminder, Transaction, UserProfile } from './types'
+import type { Account, Category, Goal, Household, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
@@ -24,11 +24,13 @@ export interface AppData {
   goals: Goal[]
   recurring: Recurring[]
   reminders: Reminder[]
+  /** Liquidaciones de deuda mutua (money_dates con settled_amount > 0). */
+  settlements: MoneyDate[]
 }
 
 const EMPTY: AppData = {
   household: null, me: null, partner: null,
-  accounts: [], categories: [], transactions: [], goals: [], recurring: [], reminders: [],
+  accounts: [], categories: [], transactions: [], goals: [], recurring: [], reminders: [], settlements: [],
 }
 
 export default function App() {
@@ -49,50 +51,66 @@ export default function App() {
 
   const householdId = getHouseholdId()
 
+  /**
+   * Carga todo el hogar. El try/finally garantiza que "Cargando…" siempre
+   * se apaga: antes, si una query de Promise.all fallaba (red caída),
+   * setLoading(false) nunca corría y la app quedaba atorada en "Cargando...".
+   */
   async function loadAll() {
-    // Si el localStorage está vacío (otro celular, datos borrados, app
-    // reinstalada) pero hay sesión, recuperar el hogar desde la BD en vez
-    // de mandar al usuario a registrarse de nuevo como si fuera nuevo.
-    let hid: string | null = householdId
-    if (!hid) {
-      const { data: s } = await supabase.auth.getSession()
-      const u = s.session?.user
-      if (!u) { setLoading(false); return }
-      hid = await findMyHouseholdId(u.id)
-      if (hid) setHouseholdId(hid)
+    try {
+      // Si el localStorage está vacío (otro celular, datos borrados, app
+      // reinstalada) pero hay sesión, recuperar el hogar desde la BD en vez
+      // de mandar al usuario a registrarse de nuevo como si fuera nuevo.
+      let hid: string | null = householdId
+      if (!hid) {
+        const { data: s } = await supabase.auth.getSession()
+        const u = s.session?.user
+        if (!u) return
+        hid = await findMyHouseholdId(u.id)
+        if (hid) setHouseholdId(hid)
+      }
+      if (!hid) return
+      const { data: session } = await supabase.auth.getSession()
+      const user = session.session?.user
+      if (!user) return
+
+      const [hh, members, accounts, categories, txs, goals, recurring, reminders, settlements] = await Promise.all([
+        supabase.from('households').select('*').eq('id', hid).single(),
+        supabase.from('household_members').select('*, user:users(*)').eq('household_id', hid),
+        supabase.from('accounts').select('*').eq('household_id', hid).order('name'),
+        supabase.from('categories').select('*').eq('household_id', hid).order('group').order('name'),
+        supabase.from('transactions').select('*').eq('household_id', hid).order('date', { ascending: false }).limit(500),
+        supabase.from('goals').select('*').eq('household_id', hid).order('due_date'),
+        supabase.from('recurring').select('*').eq('household_id', hid).eq('active', true),
+        supabase.from('reminders').select('*').eq('household_id', hid).order('due_date'),
+        // Liquidaciones de deuda mutua: sin esto "Liquidar ahora" no servía,
+        // la deuda reaparecía al recargar (ver computeMutualBalance).
+        supabase.from('money_dates').select('*').eq('household_id', hid).order('date', { ascending: false }),
+      ])
+      if (hh.error) { setSyncError(hh.error.message); return }
+
+      const memberRows = (members.data ?? []) as Array<{ user_id: string; user: UserProfile }>
+      const me = memberRows.find((m) => m.user_id === user.id)?.user ?? { id: user.id, name: user.email ?? 'Yo', email: user.email ?? '' }
+      const partner = memberRows.find((m) => m.user_id !== user.id)?.user ?? null
+
+      setData({
+        household: hh.data as Household,
+        me, partner,
+        accounts: (accounts.data ?? []) as Account[],
+        categories: (categories.data ?? []) as Category[],
+        transactions: (txs.data ?? []) as Transaction[],
+        goals: (goals.data ?? []) as Goal[],
+        recurring: (recurring.data ?? []) as Recurring[],
+        reminders: (reminders.data ?? []) as Reminder[],
+        settlements: (settlements.data ?? []) as MoneyDate[],
+      })
+      // Carga exitosa: limpiar cualquier error de sincronización anterior.
+      setSyncError(null)
+    } catch (e) {
+      setSyncError(e instanceof Error ? `No se pudo cargar tus datos: ${e.message}` : 'No se pudo cargar tus datos. Revisa tu conexión e inténtalo de nuevo.')
+    } finally {
+      setLoading(false)
     }
-    if (!hid) { setLoading(false); return }
-    const { data: session } = await supabase.auth.getSession()
-    const user = session.session?.user
-    if (!user) { setLoading(false); return }
-
-    const [hh, members, accounts, categories, txs, goals, recurring, reminders] = await Promise.all([
-      supabase.from('households').select('*').eq('id', hid).single(),
-      supabase.from('household_members').select('*, user:users(*)').eq('household_id', hid),
-      supabase.from('accounts').select('*').eq('household_id', hid).order('name'),
-      supabase.from('categories').select('*').eq('household_id', hid).order('group').order('name'),
-      supabase.from('transactions').select('*').eq('household_id', hid).order('date', { ascending: false }).limit(500),
-      supabase.from('goals').select('*').eq('household_id', hid).order('due_date'),
-      supabase.from('recurring').select('*').eq('household_id', hid).eq('active', true),
-      supabase.from('reminders').select('*').eq('household_id', hid).order('due_date'),
-    ])
-    if (hh.error) { setSyncError(hh.error.message); setLoading(false); return }
-
-    const memberRows = (members.data ?? []) as Array<{ user_id: string; user: UserProfile }>
-    const me = memberRows.find((m) => m.user_id === user.id)?.user ?? { id: user.id, name: user.email ?? 'Yo', email: user.email ?? '' }
-    const partner = memberRows.find((m) => m.user_id !== user.id)?.user ?? null
-
-    setData({
-      household: hh.data as Household,
-      me, partner,
-      accounts: (accounts.data ?? []) as Account[],
-      categories: (categories.data ?? []) as Category[],
-      transactions: (txs.data ?? []) as Transaction[],
-      goals: (goals.data ?? []) as Goal[],
-      recurring: (recurring.data ?? []) as Recurring[],
-      reminders: (reminders.data ?? []) as Reminder[],
-    })
-    setLoading(false)
   }
 
   // Notificaciones locales: con el permiso de notificaciones, la app revisa cada
@@ -177,7 +195,7 @@ export default function App() {
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-rosafuerte text-2xl text-noche shadow-lg transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-rosafuerte text-2xl text-noche shadow-[0_8px_24px_rgba(244,114,143,0.45)] transition active:scale-95"
       >
         +
       </button>

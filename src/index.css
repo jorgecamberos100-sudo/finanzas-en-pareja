@@ -65,4 +65,18 @@ select option {
   .pibbi-parpado {
     animation: none;
   }
+  main {
+    animation: none;
+  }
+}
+
+/* Transición suave al cambiar de pestaña: cada vista entra con un
+   fade-in corto al montarse (el <main> de cada página). */
+@keyframes vista-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+main {
+  animation: vista-fade-in 0.25s ease-out;
 }

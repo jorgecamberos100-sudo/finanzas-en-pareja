@@ -91,6 +91,14 @@ function detectRecurrence(text: string): ReminderRecurrence {
   return 'once'
 }
 
+/** Aplica am/pm (o "de la mañana/tarde/noche") a una hora 1-12. */
+function applyAmPm(h: number, suffix: string): number {
+  const s = suffix.replace(/\./g, '')
+  if (s === 'pm' || s === 'de la tarde' || s === 'de la noche') return h < 12 ? h + 12 : h
+  if (s === 'am' || s === 'de la manana') return h === 12 ? 0 : h
+  return h
+}
+
 /** "a las 9", "a las 9:30", "9 de la mañana", "21:00" -> "HH:MM" o null.
  *  OJO: un monto ($1,500) no es una hora: solo se acepta con "a las",
  *  con sufijo (am/pm, de la mañana/tarde/noche) o con formato HH:MM. */
@@ -98,9 +106,16 @@ export function parseTimeEs(text: string): string | null {
   const t = normalize(text)
   const hhmm = t.match(/\b(\d{1,2}):(\d{2})\b/)
   if (hhmm) {
-    const h = Number(hhmm[1])
+    let h = Number(hhmm[1])
     const min = Number(hhmm[2])
-    if (h <= 23 && min <= 59) return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+    if (h <= 23 && min <= 59) {
+      // "5:00 pm" / "5:00 de la tarde": el sufijo SÍ importa. Antes la rama
+      // HH:MM devolvía "05:00" sin mirar lo que seguía (bug de la auditoría).
+      const after = t.slice((hhmm.index ?? 0) + hhmm[0].length)
+      const suf = after.match(/^\s*(de la manana|de la tarde|de la noche|p\.?m\.?|a\.?m\.?)\b/)
+      if (suf) h = applyAmPm(h, suf[1])
+      return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+    }
   }
   const m =
     t.match(/\b(?:a las?|a la)\s+(\d{1,2})(?::(\d{2}))?\s*(de la manana|de la tarde|de la noche|am|pm)?\b/) ??
@@ -108,12 +123,7 @@ export function parseTimeEs(text: string): string | null {
   if (!m) return null
   let h = Number(m[1])
   const min = m[2] ? Number(m[2]) : 0
-  const suffix = m[3] ?? ''
-  if (suffix === 'pm' || suffix === 'de la tarde' || suffix === 'de la noche') {
-    if (h < 12) h += 12
-  } else if (suffix === 'am' || suffix === 'de la manana') {
-    if (h === 12) h = 0
-  }
+  h = applyAmPm(h, m[3] ?? '')
   if (h > 23 || min > 59) return null
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
 }

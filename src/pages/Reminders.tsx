@@ -218,7 +218,7 @@ export default function Reminders({ data, onRefresh }: Props) {
         </div>
         {!r.is_done && (
           <div className="mt-2 flex gap-2">
-            <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-bold text-noche">
+            <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-extrabold tracking-wide text-noche">
               {r.recurrence === 'once' ? 'Marcar pagado ✅' : 'Pagado · siguiente ➡️'}
             </button>
             <button onClick={() => startEdit(r)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Editar</button>
@@ -251,12 +251,12 @@ export default function Reminders({ data, onRefresh }: Props) {
           {pushSupported() && <> · Push: <strong>{pushOn ? 'activado ✅' : 'apagado'}</strong></>}
         </p>
         {notificationsSupported() && perm !== 'granted' && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
             Activar notificaciones en este celular
           </button>
         )}
         {perm === 'granted' && pushSupported() && !pushOn && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
             {pushBusy ? 'Activando…' : 'Activar también cuando la app esté cerrada (push)'}
           </button>
         )}
@@ -297,7 +297,7 @@ export default function Reminders({ data, onRefresh }: Props) {
         </select>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Nota (opcional)" className="mb-2 w-full rounded-xl border p-2" />
         <div className="flex gap-2">
-          <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-rosafuerte py-2 font-bold text-noche disabled:opacity-50">
+          <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
             {editingId ? 'Guardar cambios' : 'Crear recordatorio 🔔'}
           </button>
           {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}

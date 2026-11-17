@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AppData } from '../App'
 import type { ProposedReminder, ReminderRecurrence, Transaction, TxType } from '../types'
 import { dedupeHashSync, formatMoney, parseAmount } from '../lib/format'
@@ -138,6 +138,11 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     setReaction(ctx)
     reactionTimer.current = window.setTimeout(() => setReaction(null), 5000)
   }
+  // Al salir del chat (cambio de pestaña) se limpia el temporizador de la
+  // reacción de PIBBI: antes quedaba vivo tras desmontar el componente.
+  useEffect(() => () => {
+    if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
+  }, [])
   const [savingId, setSavingId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -313,21 +318,29 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     setBusy(true)
     setError(null)
     pushMessage('user', 'Nota de voz 🎙️')
-    const base64 = await blobToBase64(blob)
-    const remote = await invokeParse({
-      input_type: 'audio',
-      audio_base64: base64,
-      audio_mime: mime,
-      categories: categories.map((c) => c.name),
-      source_type: 'voice',
-    })
-    if (remote) {
-      showResult(remote)
-    } else {
-      setError('No pude transcribir la nota de voz: falta configurar capture-parse (Cloudflare Whisper o Groq). Prueba con el dictado por voz del teclado o escríbelo en texto.')
-      pushMessage('assistant', 'No pude transcribir ese audio todavía. ¿Me lo escribes en texto?')
+    // try/finally: si leer el audio falla, el chat se desbloquea igual.
+    // Antes blobToBase64() sin try/catch dejaba busy en true para siempre.
+    try {
+      const base64 = await blobToBase64(blob)
+      const remote = await invokeParse({
+        input_type: 'audio',
+        audio_base64: base64,
+        audio_mime: mime,
+        categories: categories.map((c) => c.name),
+        source_type: 'voice',
+      })
+      if (remote) {
+        showResult(remote)
+      } else {
+        setError('No pude transcribir la nota de voz: falta configurar capture-parse (Cloudflare Whisper o Groq). Prueba con el dictado por voz del teclado o escríbelo en texto.')
+        pushMessage('assistant', 'No pude transcribir ese audio todavía. ¿Me lo escribes en texto?')
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo leer la nota de voz. Inténtalo de nuevo.')
+      pushMessage('assistant', 'No pude leer esa nota de voz. ¿Me lo escribes en texto?')
+    } finally {
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   function startDictation() {
@@ -585,7 +598,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               type="button"
               onClick={() => void confirmReminderDraft(d)}
               disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-bold text-noche disabled:opacity-50"
+              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-noche disabled:opacity-50"
             >
               {savingId === d.id ? 'Guardando…' : 'Crear recordatorio 🔔'}
             </button>
@@ -711,7 +724,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               type="button"
               onClick={() => void confirmDraft(d)}
               disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-bold text-noche disabled:opacity-50"
+              className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-extrabold tracking-wide text-noche disabled:opacity-50"
             >
               {savingId === d.id ? 'Guardando…' : 'Confirmar y guardar'}
             </button>
@@ -781,7 +794,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           aria-label="Escribe un gasto, ingreso o transferencia"
           className="min-w-0 flex-1 rounded-xl border border-borde p-3 text-sm "
         />
-        <button type="submit" disabled={busy || !input.trim()} className="rounded-xl bg-rosafuerte px-4 py-3 text-sm font-bold text-noche disabled:opacity-50">
+        <button type="submit" disabled={busy || !input.trim()} className="rounded-xl bg-rosafuerte px-4 py-3 text-sm font-extrabold tracking-wide text-noche disabled:opacity-50">
           Enviar
         </button>
       </form>

@@ -2,7 +2,7 @@
 // Lógica pura (sin Supabase ni DOM): la personalización se guarda por usuario
 // y el hogar de 1 persona reparte 100% (quien paga lo absorbe todo).
 import { PIBBI_ACCESSORIES, isPibbiAccessory } from '../src/lib/pibbi-accessories.ts'
-import { splitPctFor } from '../src/lib/split.ts'
+import { computeMutualBalance, splitPctFor } from '../src/lib/split.ts'
 import {
   MASCOTA, MASCOTA_AHORRANDO, MASCOTA_CELEBRANDO,
 } from '../src/lib/mascota-images.ts'
@@ -48,6 +48,17 @@ check('pareja: 50/50 = 50', splitPctFor('50/50', 50), 50)
 check('pareja: personalizado 30 = 30', splitPctFor('personalizado', 30), 30)
 check('personalizado se limita a 100', splitPctFor('personalizado', 150), 100)
 check('personalizado se limita a 0', splitPctFor('personalizado', -10), 0)
+
+// 4. Deuda mutua y liquidaciones (auditoría Qwen, C): "Liquidar ahora"
+//    registra settled_amount en money_dates; el saldo debe restarlo, si no
+//    la deuda reaparece al recargar. A pagó $1,000 50/50 -> B le debe $500.
+const txs = [{ amount: 1000, paid_by: 'A', split_pct: 50, type: 'gasto' }] as never
+check('deuda sin liquidar: B debe 500 a A', computeMutualBalance(txs, 'A', 'B'), { debtor_id: 'B', creditor_id: 'A', amount: 500 })
+check('liquidación total: a mano', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 500 }]), null)
+check('liquidación parcial 200: quedan 300', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 200 }]), { debtor_id: 'B', creditor_id: 'A', amount: 300 })
+check('money date de revisión (0) no afecta', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 0 }]), { debtor_id: 'B', creditor_id: 'A', amount: 500 })
+check('liquidación de más no invierte la deuda', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 600 }]), null)
+check('dos liquidaciones se suman', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 200 }, { settled_amount: 300 }]), null)
 
 console.log(`\n${pass} pasaron, ${fail} fallaron`)
 if (fail > 0) process.exit(1)
