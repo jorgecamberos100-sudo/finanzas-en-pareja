@@ -90,10 +90,10 @@ export default function Movimientos({ data, onRefresh }: Props) {
         <h2 className="mb-2 font-bold">Historial</h2>
         {approved.length === 0 && pending.length === 0 && (
           <div className="flex items-start gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
-            <Mascota pose="ahorrando" alt="El cerdito sentado con una moneda" className="h-20 w-20 shrink-0" />
+            <Mascota pose="ahorrando" alt="PIBBI sentado con una moneda" className="h-20 w-20 shrink-0" />
             <div>
               <p className="font-bold">Aún no hay movimientos 🐷</p>
-              <p className="text-sm text-humo">Toca “+” para registrar el primero, o mándame la foto de un ticket en el Chat.</p>
+              <p className="text-sm text-humo">Toca “+” para registrar el primero, o mándale a PIBBI la foto de un ticket en el Chat.</p>
             </div>
           </div>
         )}

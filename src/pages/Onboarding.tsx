@@ -109,7 +109,7 @@ export default function Onboarding({ onDone }: Props) {
         <section>
           <div className="mb-4 flex items-start gap-3">
             <Mascota className="h-20 w-20 shrink-0" />
-            <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">¡Hola! Soy tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.</p>
+            <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">¡Hola! Soy PIBBI, tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.</p>
           </div>
           <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
           <p className="mb-4 text-humo">Tu pareja tendrá su propio login. Todo se sincroniza en tiempo real.</p>
@@ -195,7 +195,7 @@ export default function Onboarding({ onDone }: Props) {
 
       {step === 5 && (
         <section className="text-center">
-          <Mascota pose="celebrando" alt="El cerdito celebrando: tu hogar está listo" className="mx-auto mb-4 h-32 w-32" />
+          <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-32 w-32" />
           <h1 className="text-2xl font-bold">¡Listo! 🎉</h1>
           <p className="mb-4 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
           <button onClick={onDone} className="w-full rounded-xl bg-rosafuerte py-3 font-bold text-noche">Ir al inicio</button>

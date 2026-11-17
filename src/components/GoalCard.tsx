@@ -46,8 +46,8 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute }: Props
 
       {pct >= 100 && (
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-elevado p-3">
-          <Mascota pose="celebrando" alt="El cerdito celebrando la meta alcanzada" className="h-14 w-14 shrink-0" />
-          <p className="text-sm font-bold text-dorado">¡Meta alcanzada! 🎉 El cerdito celebra contigo.</p>
+          <Mascota pose="celebrando" alt="PIBBI celebrando la meta alcanzada" className="h-14 w-14 shrink-0" />
+          <p className="text-sm font-bold text-dorado">¡Meta alcanzada! 🎉 PIBBI celebra contigo.</p>
         </div>
       )}
 
