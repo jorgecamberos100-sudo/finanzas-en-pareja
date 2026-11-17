@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { AppData } from '../App'
-import { formatMoney, monthKey } from '../lib/format'
+import { formatMoney, monthKey, todayIso } from '../lib/format'
 import { computeMutualBalance, monthTotals } from '../lib/split'
 import { supabase } from '../lib/supabase'
 
@@ -45,7 +45,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
     // La liquidación es una transferencia entre personas: se registra como
     // money_date (revisión) y como transferencia, que NO cuenta como gasto.
     await supabase.from('money_dates').insert({
-      household_id: data.household.id, date: new Date().toISOString().slice(0, 10),
+      household_id: data.household.id, date: todayIso(),
       notes: `Liquidación de deuda mutua: ${formatMoney(mutual.amount, currency)}`, settled_amount: mutual.amount,
     })
     onRefresh()

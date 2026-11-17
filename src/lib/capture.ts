@@ -112,7 +112,10 @@ export function parseMoneyToken(raw: string): number {
 
 /** Todos los montos con $ o seguidos de "pesos"/"mxn" en el texto. */
 export function extractAmounts(text: string): number[] {
-  const re = /\$?\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?|\d+(?:[.,]\d{2})?)\s*(?:pesos|mxn|varos)?/gi
+  // Montos agrupados con separador (1,250.50) o lisos de cualquier longitud (2350).
+  // OJO: el primer alternativo exige al menos un grupo de miles, si no
+  // "2350" se partía en "235" y el resto se perdía.
+  const re = /\$?\s*(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{2})?|\d+(?:[.,]\d{2})?)\s*(?:pesos|mxn|varos)?/gi
   const out: number[] = []
   for (const m of text.matchAll(re)) {
     const n = parseMoneyToken(m[1])
@@ -272,6 +275,18 @@ export function parseCaptureText(text: string, opts: ParseOptions): CaptureResul
       if (e) entries.push(e)
     }
   } else {
+    // Una frase con varios montos ("$60 en el camión y $40 en un elote"):
+    // intentar partir por " y " y parsear cada cláusula con monto.
+    const amounts = extractAmounts(text)
+    if (amounts.length > 1) {
+      const clauses = text.split(/\s+y\s+/i).map((c) => c.trim()).filter(Boolean)
+      const split: ProposedEntry[] = []
+      for (const clause of clauses) {
+        const e = parseLineToEntry(clause, opts)
+        if (e) split.push(e)
+      }
+      if (split.length > 1) return { currency: 'MXN', source_type: sourceType, entries: split, requires_confirmation: true, provider: 'local', raw_text: text.slice(0, 1000) }
+    }
     const e = parseLineToEntry(text, opts)
     if (e) entries.push(e)
   }

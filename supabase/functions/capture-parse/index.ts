@@ -178,7 +178,7 @@ async function groqText(apiKey: string, text: string, categories: string[], sour
 
 async function groqWhisper(apiKey: string, audioBytes: Uint8Array, mime: string): Promise<string | null> {
   const form = new FormData()
-  form.append('file', new Blob([audioBytes], { type: mime || 'audio/webm' }), 'nota.webm')
+  form.append('file', new Blob([new Uint8Array(audioBytes)], { type: mime || 'audio/webm' }), 'nota.webm')
   form.append('model', 'whisper-large-v3-turbo')
   form.append('language', 'es')
   const r = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {

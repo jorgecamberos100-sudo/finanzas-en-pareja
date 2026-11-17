@@ -22,8 +22,28 @@ export function formatDateEs(iso: string): string {
   return new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }).format(d)
 }
 
-export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
+/** Zona horaria del dispositivo que captura (ej. "America/Tijuana"). */
+export function deviceTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return 'UTC'
+  }
+}
+
+/**
+ * Fecha YYYY-MM-DD de "hoy" en la zona horaria del dispositivo.
+ * Antes usaba UTC (new Date().toISOString()): a las 23:30 en Tijuana
+ * ya era mañana en UTC y la fecha quedaba un día corrida.
+ * Nunca se hardcodea una zona: en Tijuana es America/Tijuana.
+ */
+export function todayIso(timezone?: string | null): string {
+  const tz = timezone ?? deviceTimeZone()
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  } catch {
+    return new Date().toISOString().slice(0, 10)
+  }
 }
 
 export function monthKey(date = new Date()): string {
