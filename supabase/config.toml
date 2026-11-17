@@ -8,3 +8,9 @@ verify_jwt = true
 
 [functions.capture-confirm]
 verify_jwt = true
+
+# reminders-push NO usa verify_jwt: la llama pg_cron con la service_role key.
+# La función misma valida que el header Authorization sea esa clave
+# (SUPABASE_SERVICE_ROLE_KEY). Sin ella responde 401.
+[functions.reminders-push]
+verify_jwt = false
