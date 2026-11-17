@@ -28,23 +28,80 @@ select option {
   @apply bg-rosafuerte text-noche;
 }
 
-/* PIBBI siempre vivo: flota/respira y pestañea cada ~4 segundos.
-   La flotación mueve todo el cerdito (imagen + prendas); el parpadeo son
-   dos párpados del color de su pelaje que bajan brevemente sobre los ojos.
+/* PIBBI siempre vivo: flota, respira, pestañea y proyecta sombra, todo
+   con movimiento fluido. El truco para que no se mueva "a tirones":
+   - La flotación muestrea una onda senoidal en 8 puntos (cada 12.5%) y
+     usa timing lineal: entre punto y punto la velocidad es casi constante,
+     así no hay pausa ni acelerón en los extremos como con ease-in-out y
+     solo 2 keyframes. La amplitud es de -4px a 0px, así nunca baja de su
+     posición base ni se solapa con lo de abajo.
+   - La respiración es una escala muy leve (1 → 1.02 → 0.98) en 7.2 s,
+     un ciclo distinto al de la flotación (4.8 s) para que no se sincronicen
+     y el movimiento se sienta orgánico, no mecánico.
+   - El parpadeo cierra rápido (ease-in, ~126 ms) y abre más despacio
+     (ease-out, ~168 ms), como un parpadeo real, no un cierre instantáneo.
+   - La sombra del suelo va en contrafase: se achica y se aclara cuando
+     PIBBI está arriba, y crece cuando baja.
+   - Cada instancia lleva su propio retraso negativo (variables CSS que
+     pone Mascota.tsx), así dos PIBBIs en pantalla no se mueven al unísono.
    Sin librerías ni GIFs: solo CSS. Con prefers-reduced-motion, quieto. */
 @keyframes pibbi-flotar {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-4px) rotate(-1.2deg); }
+  0%    { transform: translateY(-2px) rotate(0deg); }
+  12.5% { transform: translateY(-3.4px) rotate(-0.7deg); }
+  25%   { transform: translateY(-4px) rotate(-1deg); }
+  37.5% { transform: translateY(-3.4px) rotate(-0.7deg); }
+  50%   { transform: translateY(-2px) rotate(0deg); }
+  62.5% { transform: translateY(-0.6px) rotate(0.6deg); }
+  75%   { transform: translateY(0px) rotate(0.9deg); }
+  87.5% { transform: translateY(-0.6px) rotate(0.6deg); }
+  100%  { transform: translateY(-2px) rotate(0deg); }
+}
+
+@keyframes pibbi-respirar {
+  0%    { transform: scale(1); }
+  12.5% { transform: scale(1.014); }
+  25%   { transform: scale(1.02); }
+  37.5% { transform: scale(1.014); }
+  50%   { transform: scale(1); }
+  62.5% { transform: scale(0.986); }
+  75%   { transform: scale(0.98); }
+  87.5% { transform: scale(0.986); }
+  100%  { transform: scale(1); }
 }
 
 @keyframes pibbi-parpadeo {
-  0%, 91%, 100% { transform: scaleY(0); }
-  94% { transform: scaleY(1); }
-  97% { transform: scaleY(0); }
+  0%, 89% { transform: scaleY(0); animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.36); }
+  92% { transform: scaleY(1); animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1); }
+  96% { transform: scaleY(0); }
+  100% { transform: scaleY(0); }
+}
+
+@keyframes pibbi-sombra {
+  0%    { transform: scaleX(0.88); opacity: 0.32; }
+  12.5% { transform: scaleX(0.82); opacity: 0.26; }
+  25%   { transform: scaleX(0.78); opacity: 0.22; }
+  37.5% { transform: scaleX(0.82); opacity: 0.26; }
+  50%   { transform: scaleX(0.88); opacity: 0.32; }
+  62.5% { transform: scaleX(0.95); opacity: 0.4; }
+  75%   { transform: scaleX(1); opacity: 0.45; }
+  87.5% { transform: scaleX(0.95); opacity: 0.4; }
+  100%  { transform: scaleX(0.88); opacity: 0.32; }
 }
 
 .pibbi-vivo {
-  animation: pibbi-flotar 3.6s ease-in-out infinite;
+  animation: pibbi-flotar 4.8s linear infinite;
+  animation-delay: var(--pibbi-float-delay, 0s);
+  will-change: transform;
+}
+
+.pibbi-respira {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  transform-origin: 50% 60%;
+  animation: pibbi-respirar 7.2s linear infinite;
+  animation-delay: var(--pibbi-breathe-delay, 0s);
+  will-change: transform;
 }
 
 .pibbi-parpado {
@@ -56,13 +113,32 @@ select option {
   background: linear-gradient(#f9a8b8, #f49db1);
   transform: scaleY(0);
   transform-origin: top center;
-  animation: pibbi-parpadeo 4.2s ease-in-out infinite;
+  animation: pibbi-parpadeo 4.2s linear infinite;
+  animation-delay: var(--pibbi-blink-delay, 0s);
+  pointer-events: none;
+}
+
+/* Sombra suave bajo el marco de PIBBI: vive fuera del div que flota, así
+   puede moverse en contrafase (achicarse cuando PIBBI sube). */
+.pibbi-sombra {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: -4px;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.45);
+  filter: blur(4px);
+  animation: pibbi-sombra 4.8s linear infinite;
+  animation-delay: var(--pibbi-float-delay, 0s);
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pibbi-vivo,
-  .pibbi-parpado {
+  .pibbi-respira,
+  .pibbi-parpado,
+  .pibbi-sombra {
     animation: none;
   }
   main {

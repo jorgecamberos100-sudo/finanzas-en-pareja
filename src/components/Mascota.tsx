@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { MASCOTA, MASCOTA_AHORRANDO, MASCOTA_CELEBRANDO } from '../lib/mascota-images'
 import { MASCOTA_SALUDANDO } from '../lib/mascota/saludando'
 import { MASCOTA_PENSATIVO } from '../lib/mascota/pensativo'
@@ -79,21 +80,39 @@ function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
 export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-28 w-28' }: Props) {
   const { accessory: saved } = usePibbi()
   const acc = accessory ?? saved
+  // Cada PIBBI lleva su propio retraso negativo (estable por instancia):
+  // así dos cerditos en la misma pantalla no flotan, respiran ni
+  // pestañean al unísono y el movimiento se siente orgánico. El retraso
+  // negativo hace que cada uno arranque a mitad de ciclo, sin salto inicial.
+  const uid = useId()
+  const seed = [...uid].reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
+  const delays = {
+    '--pibbi-float-delay': `${-((seed % 48) / 10)}s`, // ciclo 4.8 s
+    '--pibbi-breathe-delay': `${-((seed % 72) / 10)}s`, // ciclo 7.2 s
+    '--pibbi-blink-delay': `${-((seed % 42) / 10)}s`, // ciclo 4.2 s
+  } as React.CSSProperties
   // Micro-interacción al tocarlo: el envoltorio escala (hover/active) y el
   // interior sigue con su animación de flotar y pestañear. La animación CSS
   // de .pibbi-vivo pisa el transform de su propio elemento, por eso la
   // escala vive en el envoltorio y no en el mismo div.
   return (
-    <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${className}`}>
+    <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${className}`} style={delays}>
       <div className="pibbi-vivo relative h-full w-full">
-        <img src={POSES[pose]} alt={alt} className="h-full w-full rounded-3xl object-cover ring-1 ring-borde" />
-        {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
-            Los ojos están a ~30% de altura y ~28% / ~72% de ancho en las poses
-            de frente; el párpado los cubre por completo al cerrarse. */}
-        <span aria-hidden="true" className="pibbi-parpado" style={{ left: '19%' }} />
-        <span aria-hidden="true" className="pibbi-parpado" style={{ left: '63%' }} />
-        <Accesorio accessory={acc} />
+        {/* La respiración (escala leve) vive en su propio div, anidado:
+            así no pelea con la flotación (translate) del padre y la imagen,
+            los párpados y las prendas respiran todos juntos. */}
+        <div className="pibbi-respira">
+          <img src={POSES[pose]} alt={alt} className="h-full w-full rounded-3xl object-cover ring-1 ring-borde" />
+          {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
+              Los ojos están a ~30% de altura y ~28% / ~72% de ancho en las poses
+              de frente; el párpado los cubre por completo al cerrarse. */}
+          <span aria-hidden="true" className="pibbi-parpado" style={{ left: '19%' }} />
+          <span aria-hidden="true" className="pibbi-parpado" style={{ left: '63%' }} />
+          <Accesorio accessory={acc} />
+        </div>
       </div>
+      {/* Sombra del suelo: fuera del div que flota, respira en contrafase. */}
+      <span aria-hidden="true" className="pibbi-sombra" />
     </div>
   )
 }
