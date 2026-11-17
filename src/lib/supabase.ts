@@ -22,3 +22,18 @@ export function setHouseholdId(id: string) {
 export function clearHouseholdId() {
   localStorage.removeItem(HOUSEHOLD_KEY)
 }
+
+/**
+ * Hogar del usuario desde la BD (household_members), no del localStorage.
+ * Es lo que permite iniciar sesión en otro celular o tras borrar los datos
+ * sin quedar atrapado registrándose de nuevo: el hogar vive en la BD.
+ */
+export async function findMyHouseholdId(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', userId)
+    .limit(1)
+  const row = (data ?? [])[0] as { household_id: string } | undefined
+  return row?.household_id ?? null
+}

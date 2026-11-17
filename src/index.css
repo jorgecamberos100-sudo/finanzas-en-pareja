@@ -27,3 +27,42 @@ select option {
 ::selection {
   @apply bg-rosafuerte text-noche;
 }
+
+/* PIBBI siempre vivo: flota/respira y pestañea cada ~4 segundos.
+   La flotación mueve todo el cerdito (imagen + prendas); el parpadeo son
+   dos párpados del color de su pelaje que bajan brevemente sobre los ojos.
+   Sin librerías ni GIFs: solo CSS. Con prefers-reduced-motion, quieto. */
+@keyframes pibbi-flotar {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(-1.2deg); }
+}
+
+@keyframes pibbi-parpadeo {
+  0%, 91%, 100% { transform: scaleY(0); }
+  94% { transform: scaleY(1); }
+  97% { transform: scaleY(0); }
+}
+
+.pibbi-vivo {
+  animation: pibbi-flotar 3.6s ease-in-out infinite;
+}
+
+.pibbi-parpado {
+  position: absolute;
+  width: 18%;
+  height: 15%;
+  top: 22%;
+  border-radius: 50%;
+  background: linear-gradient(#f9a8b8, #f49db1);
+  transform: scaleY(0);
+  transform-origin: top center;
+  animation: pibbi-parpadeo 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pibbi-vivo,
+  .pibbi-parpado {
+    animation: none;
+  }
+}
