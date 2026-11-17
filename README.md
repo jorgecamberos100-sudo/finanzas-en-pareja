@@ -64,7 +64,7 @@ App.addTransaction() → Supabase (RLS) → Realtime a la pareja
 
 También existe `capture-confirm`, una Edge Function que valida entradas, resuelve `current_user`/`partner` al ID real del usuario autenticado, calcula `dedupe_hash` y escribe en `transactions` con RLS. La app actual confirma desde el frontend con `addTransaction()`; `capture-confirm` queda lista para uso directo desde otros clientes.
 
-**Reglas:** la IA nunca guarda directo; "pagué yo" se resuelve en el servidor con el usuario autenticado; pago ≠ reparto (las transferencias no se dividen ni cuentan como gasto); montos en centavos enteros (`amount_minor`) en el JSON de la IA y en unidades MXN en `Transaction.amount`; timezone `America/Mexico_City`.
+**Reglas:** la IA nunca guarda directo; "pagué yo" se resuelve en el servidor con el usuario autenticado; pago ≠ reparto (las transferencias no se dividen ni cuentan como gasto); montos en centavos enteros (`amount_minor`) en el JSON de la IA y en unidades MXN en `Transaction.amount` (al guardar se divide entre 100: $350.00, $89.50 exactos); zona horaria: la del dispositivo que captura (America/Tijuana para George), nunca hardcodeada — "hoy"/"ayer" se calculan en esa zona.
 
 ### Configurar el chat (paso a paso)
 

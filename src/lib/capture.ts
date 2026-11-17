@@ -1,5 +1,4 @@
 import type { Category, TxType } from '../types'
-import { todayIso } from './format'
 
 /**
  * Chat de captura — tipos y parser local (fallback $0, sin red).
@@ -55,6 +54,40 @@ export function unitsToAmountMinor(amount: number): number {
   return Math.round(amount * 100)
 }
 
+/** Zona horaria del dispositivo que captura (ej. "America/Tijuana"). */
+export function deviceTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return 'UTC'
+  }
+}
+
+/**
+ * Fecha YYYY-MM-DD de "hoy" en la zona horaria dada.
+ * Nunca se hardcodea una zona: a las 23:30 en Tijuana todavía es hoy
+ * en Tijuana, pero en UTC (y en CDMX) ya es mañana.
+ */
+export function todayIsoForTimezone(timezone?: string | null): string {
+  const tz = timezone ?? deviceTimeZone()
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  } catch {
+    return new Date().toISOString().slice(0, 10)
+  }
+}
+
+/** Suma días calendario a una fecha YYYY-MM-DD (a prueba de cambios de horario). */
+export function addDaysToIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+export function yesterdayIsoForTimezone(timezone?: string | null): string {
+  return addDaysToIso(todayIsoForTimezone(timezone), -1)
+}
+
 function normalize(text: string): string {
   return text
     .toLowerCase()
@@ -62,10 +95,8 @@ function normalize(text: string): string {
     .replace(/[̀-ͯ]/g, '')
 }
 
-function yesterdayIso(): string {
-  const d = new Date()
-  d.setDate(d.getDate() - 1)
-  return d.toISOString().slice(0, 10)
+function yesterdayIso(timezone?: string | null): string {
+  return yesterdayIsoForTimezone(timezone)
 }
 
 /** "1,250.50" / "1.250,50" / "1250" -> número en unidades, o 0. */
@@ -90,15 +121,13 @@ export function extractAmounts(text: string): number[] {
   return out
 }
 
-export function parseDateEs(text: string): { date: string; found: boolean } {
+export function parseDateEs(text: string, timezone?: string | null): { date: string; found: boolean } {
   const t = normalize(text)
   if (/\banteayer\b/.test(t)) {
-    const d = new Date()
-    d.setDate(d.getDate() - 2)
-    return { date: d.toISOString().slice(0, 10), found: true }
+    return { date: addDaysToIso(todayIsoForTimezone(timezone), -2), found: true }
   }
-  if (/\bayer\b/.test(t)) return { date: yesterdayIso(), found: true }
-  if (/\bhoy\b/.test(t)) return { date: todayIso(), found: true }
+  if (/\bayer\b/.test(t)) return { date: yesterdayIso(timezone), found: true }
+  if (/\bhoy\b/.test(t)) return { date: todayIsoForTimezone(timezone), found: true }
   const m = text.match(/(\d{4})-(\d{2})-(\d{2})/) ?? text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
   if (m) {
     const iso = m[0].includes('/')
@@ -106,7 +135,7 @@ export function parseDateEs(text: string): { date: string; found: boolean } {
       : m[0]
     if (!Number.isNaN(Date.parse(`${iso}T12:00:00`))) return { date: iso, found: true }
   }
-  return { date: todayIso(), found: false }
+  return { date: todayIsoForTimezone(timezone), found: false }
 }
 
 const MERCHANT_KEYWORDS = [
@@ -190,6 +219,8 @@ interface ParseOptions {
   categories: Category[]
   partnerName?: string | null
   sourceType?: CaptureSourceType
+  /** Zona horaria del dispositivo que captura (ej. "America/Tijuana"). */
+  timezone?: string | null
 }
 
 /** Una línea / un mensaje -> una propuesta (o null si no hay monto). */
@@ -200,7 +231,7 @@ export function parseLineToEntry(line: string, opts: ParseOptions): ProposedEntr
   const amount = opts.sourceType === 'ticket' ? Math.max(...amounts) : amounts[0]
   const type = detectType(line)
   const category = type === 'transferencia' ? null : findCategory(line, opts.categories)
-  const { date, found: dateFound } = parseDateEs(line)
+  const { date, found: dateFound } = parseDateEs(line, opts.timezone)
   const { payer, found: payerFound } = detectPayer(line, opts.partnerName ?? null)
   const needsReview: string[] = []
   if (!category && type !== 'transferencia') needsReview.push('category')
@@ -269,7 +300,7 @@ export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceTyp
     const amountMinor = Number(item.amount_minor)
     if (!Number.isFinite(amountMinor) || amountMinor <= 0 || amountMinor > 100_000_000) continue
     const type = item.type === 'ingreso' || item.type === 'transferencia' ? item.type : 'gasto'
-    const date = typeof item.occurred_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.occurred_at) ? item.occurred_at : todayIso()
+    const date = typeof item.occurred_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.occurred_at) ? item.occurred_at : todayIsoForTimezone()
     const payer: PayerRef = item.payer === 'partner' || item.payer === 'current_user' ? item.payer : 'unknown'
     const splitPct = type === 'transferencia' ? 100 : Math.min(100, Math.max(0, Number(item.split_pct ?? 50) || 50))
     entries.push({

@@ -7,7 +7,7 @@
 // el insert se hace con el JWT del usuario, nunca con service_role.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
-import { dedupeHash, jsonResponse, todayIsoMexico } from '../_shared/capture.ts'
+import { dedupeHash, isValidTimeZone, jsonResponse, todayIsoForTimezone } from '../_shared/capture.ts'
 
 interface ConfirmEntry {
   type: 'gasto' | 'ingreso' | 'transferencia'
@@ -35,12 +35,16 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return jsonResponse({ error: 'Sesión inválida' }, 401)
 
-  let body: { household_id?: unknown; entries?: unknown }
+  let body: { household_id?: unknown; entries?: unknown; timezone?: unknown }
   try {
-    body = (await req.json()) as { household_id?: unknown; entries?: unknown }
+    body = (await req.json()) as { household_id?: unknown; entries?: unknown; timezone?: unknown }
   } catch {
     return jsonResponse({ error: 'Cuerpo JSON inválido' }, 400)
   }
+  // Zona horaria del dispositivo que captura (ej. "America/Tijuana").
+  // Solo se usa como fecha por defecto cuando una entrada no trae fecha;
+  // nunca se hardcodea una zona.
+  const timezone = isValidTimeZone(body.timezone) ? (body.timezone as string) : undefined
   const householdId = typeof body.household_id === 'string' ? body.household_id : ''
   const entries = Array.isArray(body.entries) ? (body.entries as ConfirmEntry[]) : []
   if (!householdId || entries.length === 0 || entries.length > 20) {
@@ -78,7 +82,7 @@ Deno.serve(async (req) => {
       continue
     }
     const date =
-      typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : todayIsoMexico()
+      typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : todayIsoForTimezone(timezone)
     const paidBy = e.paid_by === 'partner' ? partnerId : e.paid_by === 'current_user' ? user.id : e.paid_by
     if (!memberIds.includes(paidBy)) {
       errors.push(`Entrada ${i + 1}: quién pagó no es del hogar`)

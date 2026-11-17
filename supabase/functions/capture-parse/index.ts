@@ -12,9 +12,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4'
 import {
   EXTRACTION_PROMPT,
+  isValidTimeZone,
   jsonResponse,
   sanitizeCaptureResult,
-  todayIsoMexico,
+  todayIsoForTimezone,
   type CaptureResult,
   type CaptureSourceType,
 } from '../_shared/capture.ts'
@@ -55,14 +56,22 @@ function categoriesPrompt(categories: string[]): string {
     : ''
 }
 
-async function cfText(accountId: string, token: string, text: string, categories: string[], sourceType: CaptureSourceType): Promise<CaptureResult | null> {
+/**
+ * Línea de fecha que se añade al prompt. La zona es la del dispositivo
+ * que captura (la envía el frontend); nunca se hardcodea una zona.
+ */
+function todayLine(today: string, timezoneLabel: string): string {
+  return `\nHoy es ${today} (${timezoneLabel}). La zona horaria es la del dispositivo que captura; "ayer" es el día anterior a esa fecha en esa zona.`
+}
+
+async function cfText(accountId: string, token: string, text: string, categories: string[], sourceType: CaptureSourceType, today: string, timezoneLabel: string, timezone?: string): Promise<CaptureResult | null> {
   const r = await fetch(cfUrl(accountId, CF_TEXT_MODEL), {
     method: 'POST',
     headers: cfHeaders(token),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
       messages: [
-        { role: 'system', content: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}\nHoy es ${todayIsoMexico()} (America/Mexico_City).` },
+        { role: 'system', content: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}${todayLine(today, timezoneLabel)}` },
         { role: 'user', content: text },
       ],
       max_tokens: 1200,
@@ -71,11 +80,11 @@ async function cfText(accountId: string, token: string, text: string, categories
   if (!r.ok) return null
   const data = (await r.json()) as { result?: { response?: string } }
   const parsed = extractJson(data.result?.response ?? '')
-  const clean = sanitizeCaptureResult(parsed, sourceType)
+  const clean = sanitizeCaptureResult(parsed, sourceType, timezone)
   return clean ? { ...clean, provider: 'cloudflare' } : null
 }
 
-async function cfVision(accountId: string, token: string, imageBase64: string, categories: string[], sourceType: CaptureSourceType): Promise<CaptureResult | null> {
+async function cfVision(accountId: string, token: string, imageBase64: string, categories: string[], sourceType: CaptureSourceType, today: string, timezoneLabel: string, timezone?: string): Promise<CaptureResult | null> {
   const schema = {
     type: 'object',
     properties: {
@@ -114,7 +123,7 @@ async function cfVision(accountId: string, token: string, imageBase64: string, c
         {
           role: 'user',
           content: [
-            { type: 'text', text: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}\nHoy es ${todayIsoMexico()} (America/Mexico_City). Lee esta foto (ticket o libreta escrita a mano) y extrae los movimientos.` },
+            { type: 'text', text: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}${todayLine(today, timezoneLabel)} Lee esta foto (ticket o libreta escrita a mano) y extrae los movimientos.` },
             { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
           ],
         },
@@ -126,7 +135,7 @@ async function cfVision(accountId: string, token: string, imageBase64: string, c
   if (!r.ok) return null
   const data = (await r.json()) as { result?: { response?: string } }
   const parsed = extractJson(data.result?.response ?? '')
-  const clean = sanitizeCaptureResult(parsed, sourceType)
+  const clean = sanitizeCaptureResult(parsed, sourceType, timezone)
   return clean ? { ...clean, provider: 'cloudflare' } : null
 }
 
@@ -145,7 +154,7 @@ async function cfWhisper(accountId: string, token: string, audioBytes: Uint8Arra
   return text ? text : null
 }
 
-async function groqText(apiKey: string, text: string, categories: string[], sourceType: CaptureSourceType): Promise<CaptureResult | null> {
+async function groqText(apiKey: string, text: string, categories: string[], sourceType: CaptureSourceType, today: string, timezoneLabel: string, timezone?: string): Promise<CaptureResult | null> {
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -153,7 +162,7 @@ async function groqText(apiKey: string, text: string, categories: string[], sour
     body: JSON.stringify({
       model: 'openai/gpt-oss-20b',
       messages: [
-        { role: 'system', content: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}\nHoy es ${todayIsoMexico()} (America/Mexico_City).` },
+        { role: 'system', content: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}${todayLine(today, timezoneLabel)}` },
         { role: 'user', content: text },
       ],
       response_format: { type: 'json_object' },
@@ -163,7 +172,7 @@ async function groqText(apiKey: string, text: string, categories: string[], sour
   })
   if (!r.ok) return null
   const data = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> }
-  const clean = sanitizeCaptureResult(extractJson(data.choices?.[0]?.message?.content ?? ''), sourceType)
+  const clean = sanitizeCaptureResult(extractJson(data.choices?.[0]?.message?.content ?? ''), sourceType, timezone)
   return clean ? { ...clean, provider: 'groq' } : null
 }
 
@@ -184,7 +193,7 @@ async function groqWhisper(apiKey: string, audioBytes: Uint8Array, mime: string)
   return text ? text : null
 }
 
-async function zaiVision(apiKey: string, imageBase64: string, categories: string[], sourceType: CaptureSourceType): Promise<CaptureResult | null> {
+async function zaiVision(apiKey: string, imageBase64: string, categories: string[], sourceType: CaptureSourceType, today: string, timezoneLabel: string, timezone?: string): Promise<CaptureResult | null> {
   const r = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -195,7 +204,7 @@ async function zaiVision(apiKey: string, imageBase64: string, categories: string
         {
           role: 'user',
           content: [
-            { type: 'text', text: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}\nHoy es ${todayIsoMexico()} (America/Mexico_City). Lee esta foto (ticket o libreta escrita a mano) y extrae los movimientos.` },
+            { type: 'text', text: `${EXTRACTION_PROMPT}${categoriesPrompt(categories)}${todayLine(today, timezoneLabel)} Lee esta foto (ticket o libreta escrita a mano) y extrae los movimientos.` },
             { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
           ],
         },
@@ -207,7 +216,7 @@ async function zaiVision(apiKey: string, imageBase64: string, categories: string
   })
   if (!r.ok) return null
   const data = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> }
-  const clean = sanitizeCaptureResult(extractJson(data.choices?.[0]?.message?.content ?? ''), sourceType)
+  const clean = sanitizeCaptureResult(extractJson(data.choices?.[0]?.message?.content ?? ''), sourceType, timezone)
   return clean ? { ...clean, provider: 'zai' } : null
 }
 
@@ -242,6 +251,11 @@ Deno.serve(async (req) => {
   }
   const inputType = body.input_type as string
   const categories = Array.isArray(body.categories) ? (body.categories as string[]).filter((c) => typeof c === 'string').slice(0, 50) : []
+  // Zona horaria del dispositivo que captura (ej. "America/Tijuana").
+  // Nunca se hardcodea: "hoy"/"ayer" se calculan en esa zona.
+  const timezone = isValidTimeZone(body.timezone) ? (body.timezone as string) : undefined
+  const today = todayIsoForTimezone(timezone)
+  const timezoneLabel = timezone ?? 'UTC'
   const cfAccount = Deno.env.get('CLOUDFLARE_ACCOUNT_ID') ?? ''
   const cfToken = Deno.env.get('CLOUDFLARE_API_TOKEN') ?? ''
   const groqKey = Deno.env.get('GROQ_API_KEY') ?? ''
@@ -252,11 +266,11 @@ Deno.serve(async (req) => {
       const text = typeof body.text === 'string' ? body.text.trim().slice(0, 4000) : ''
       if (!text) return jsonResponse({ error: 'Falta el texto' }, 400)
       if (cfAccount && cfToken) {
-        const r = await cfText(cfAccount, cfToken, text, categories, 'text')
+        const r = await cfText(cfAccount, cfToken, text, categories, 'text', today, timezoneLabel, timezone)
         if (r) return jsonResponse(r)
       }
       if (groqKey) {
-        const r = await groqText(groqKey, text, categories, 'text')
+        const r = await groqText(groqKey, text, categories, 'text', today, timezoneLabel, timezone)
         if (r) return jsonResponse(r)
       }
       return jsonResponse({ error: 'No se pudo analizar el texto: configura CLOUDFLARE_API_TOKEN o GROQ_API_KEY en los secretos de Supabase.' }, 502)
@@ -267,11 +281,11 @@ Deno.serve(async (req) => {
       if (!imageBase64 || imageBase64.length > 7_000_000) return jsonResponse({ error: 'Falta la foto o es demasiado grande' }, 400)
       const sourceType: CaptureSourceType = body.source_type === 'notebook' ? 'notebook' : 'ticket'
       if (cfAccount && cfToken) {
-        const r = await cfVision(cfAccount, cfToken, imageBase64, categories, sourceType)
+        const r = await cfVision(cfAccount, cfToken, imageBase64, categories, sourceType, today, timezoneLabel, timezone)
         if (r) return jsonResponse(r)
       }
       if (zaiKey) {
-        const r = await zaiVision(zaiKey, imageBase64, categories, sourceType)
+        const r = await zaiVision(zaiKey, imageBase64, categories, sourceType, today, timezoneLabel, timezone)
         if (r) return jsonResponse(r)
       }
       return jsonResponse({ error: 'No se pudo leer la foto: configura CLOUDFLARE_API_TOKEN o ZAI_API_KEY en los secretos de Supabase.' }, 502)
@@ -288,11 +302,11 @@ Deno.serve(async (req) => {
       if (!transcript) return jsonResponse({ error: 'No se pudo transcribir el audio: configura CLOUDFLARE_API_TOKEN o GROQ_API_KEY.' }, 502)
       // La transcripción se vuelve a analizar como texto.
       if (cfAccount && cfToken) {
-        const r = await cfText(cfAccount, cfToken, transcript, categories, 'voice')
+        const r = await cfText(cfAccount, cfToken, transcript, categories, 'voice', today, timezoneLabel, timezone)
         if (r) return jsonResponse({ ...r, raw_text: transcript })
       }
       if (groqKey) {
-        const r = await groqText(groqKey, transcript, categories, 'voice')
+        const r = await groqText(groqKey, transcript, categories, 'voice', today, timezoneLabel, timezone)
         if (r) return jsonResponse({ ...r, raw_text: transcript })
       }
       return jsonResponse({ error: 'Audio transcrito, pero no se pudo analizar el texto.' }, 502)

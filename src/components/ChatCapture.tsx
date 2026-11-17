@@ -5,6 +5,7 @@ import { dedupeHashSync, formatMoney, parseAmount } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import {
   amountMinorToUnits,
+  deviceTimeZone,
   parseCaptureText,
   sanitizeCaptureResult,
   type CaptureResult,
@@ -112,6 +113,10 @@ export default function ChatCapture({ data, onSave }: Props) {
   const audioChunksRef = useRef<Blob[]>([])
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
 
+  // Zona horaria del dispositivo que captura (ej. "America/Tijuana").
+  // Se envía en cada llamada a capture-parse para que "hoy"/"ayer" se
+  // calculen en esta zona y no en una hardcodeada.
+  const deviceTimezone = deviceTimeZone()
   const currency = data.household?.currency ?? 'MXN'
   const categories = data.categories
   const accounts = data.accounts
@@ -157,7 +162,7 @@ export default function ChatCapture({ data, onSave }: Props) {
 
   async function invokeParse(body: Record<string, unknown>): Promise<CaptureResult | null> {
     try {
-      const { data: res, error: err } = await supabase.functions.invoke('capture-parse', { body })
+      const { data: res, error: err } = await supabase.functions.invoke('capture-parse', { body: { ...body, timezone: deviceTimezone } })
       if (err || !res) return null
       const clean = sanitizeCaptureResult(res, (body.source_type as CaptureResult['source_type']) ?? 'text')
       if (!clean) return null
@@ -184,7 +189,7 @@ export default function ChatCapture({ data, onSave }: Props) {
     if (remote) {
       showResult(remote)
     } else {
-      showResult(parseCaptureText(trimmed, { categories, partnerName: data.partner?.name ?? null, sourceType: 'text' }))
+      showResult(parseCaptureText(trimmed, { categories, partnerName: data.partner?.name ?? null, sourceType: 'text', timezone: deviceTimezone }))
     }
     setBusy(false)
   }

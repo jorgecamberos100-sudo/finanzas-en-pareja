@@ -12,7 +12,7 @@ export interface ProposedEntry {
   merchant: string | null
   category: string | null
   category_id?: string | null
-  occurred_at: string // YYYY-MM-DD, timezone America/Mexico_City
+  occurred_at: string // YYYY-MM-DD, en la zona horaria del dispositivo que captura
   payer: PayerRef
   split_pct: number
   note: string | null
@@ -29,13 +29,42 @@ export interface CaptureResult {
   provider?: string
 }
 
-export function todayIsoMexico(): string {
-  // America/Mexico_City (sin horario de verano desde 2022: UTC-6 fijo).
-  const now = new Date(Date.now() - 6 * 60 * 60 * 1000)
-  return now.toISOString().slice(0, 10)
+export function isValidTimeZone(tz: unknown): tz is string {
+  if (typeof tz !== 'string' || !tz.trim()) return false
+  try {
+    Intl.DateTimeFormat('en-CA', { timeZone: tz })
+    return true
+  } catch {
+    return false
+  }
 }
 
-export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceType): CaptureResult | null {
+/**
+ * Fecha YYYY-MM-DD de "hoy" en la zona horaria dada.
+ * La zona la envía el frontend (la del dispositivo que captura, ej.
+ * "America/Tijuana" para George). Si no se envía o no es válida, se usa
+ * la zona del entorno (UTC en el servidor). NUNCA se hardcodea una zona
+ * concreta: un gasto a las 23:30 en Tijuana es 01:30 del día siguiente
+ * en CDMX, y con CDMX hardcodeada la fecha quedaba un día corrida.
+ */
+export function todayIsoForTimezone(timezone?: string | null): string {
+  const tz = isValidTimeZone(timezone) ? timezone : undefined
+  // 'en-CA' formatea como YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
+/** Suma días calendario a una fecha YYYY-MM-DD (a prueba de cambios de horario). */
+export function addDaysToIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+export function yesterdayIsoForTimezone(timezone?: string | null): string {
+  return addDaysToIso(todayIsoForTimezone(timezone), -1)
+}
+
+export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceType, timezone?: string | null): CaptureResult | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as { entries?: unknown }
   if (!Array.isArray(r.entries)) return null
@@ -48,7 +77,7 @@ export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceTyp
     const date =
       typeof item.occurred_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.occurred_at) && !Number.isNaN(Date.parse(`${item.occurred_at}T12:00:00`))
         ? item.occurred_at
-        : todayIsoMexico()
+        : todayIsoForTimezone(timezone)
     const payer: PayerRef = item.payer === 'partner' || item.payer === 'current_user' ? item.payer : 'unknown'
     entries.push({
       type,
@@ -91,7 +120,7 @@ Reglas:
 - type: "gasto", "ingreso" o "transferencia". Una transferencia entre cuentas propias NO es gasto y NO se divide (split_pct 100).
 - payer: "current_user" si pagó quien escribe, "partner" si pagó su pareja, "unknown" si no se sabe. Nunca inventes quién pagó.
 - category: usa EXACTAMENTE uno de los nombres de categorías que se te den, o null si no estás seguro.
-- occurred_at: fecha YYYY-MM-DD. "hoy" es la fecha de hoy en America/Mexico_City; "ayer" es ayer. Si no hay fecha, usa hoy y pon "date" en needs_review.
+- occurred_at: fecha YYYY-MM-DD en la zona horaria del dispositivo que captura. "hoy" es la fecha de hoy en esa zona (se te indica en el mensaje del sistema como "Hoy es ..."); "ayer" es el día anterior a esa fecha en esa misma zona. Nunca asumas America/Mexico_City ni ninguna otra zona. Si no hay fecha, usa hoy y pon "date" en needs_review.
 - Ticket: 1 movimiento principal (el total) + line_items con los ítems. Libreta con varias líneas: 1 entrada por línea con monto.
 - Si un campo es dudoso, ponlo en needs_review (ej. ["category","payer"]). No inventes comercios, montos ni fechas.
 - Si no hay ningún monto, devuelve entries vacías.`
