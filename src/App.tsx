@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { supabase, getHouseholdId, setHouseholdId, findMyHouseholdId } from './lib/supabase'
 import { useReminderNotifications } from './lib/reminders'
+import { onUpdateAvailable, applyUpdate } from './lib/sw-update'
 import { PibbiProvider } from './lib/pibbi'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
 import type { Account, Category, Goal, Household, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
@@ -31,6 +32,36 @@ export interface AppData {
 const EMPTY: AppData = {
   household: null, me: null, partner: null,
   accounts: [], categories: [], transactions: [], goals: [], recurring: [], reminders: [], settlements: [],
+}
+
+/**
+ * Aviso de versión nueva (ver src/lib/sw-update.ts): cuando el SW nuevo
+ * toma el control de la pestaña, aparece arriba con un botón para recargar
+ * y traer la versión nueva. Se puede cerrar con la ✕; la recarga trae la
+ * versión nueva de todos modos en la próxima navegación (NetworkFirst).
+ */
+function UpdateBanner() {
+  const [show, setShow] = useState(false)
+  useEffect(() => onUpdateAvailable(() => setShow(true)), [])
+  if (!show) return null
+  return (
+    <div className="fixed inset-x-0 top-0 z-50">
+      <div className="mx-auto max-w-lg px-3 pt-3">
+        <div role="alert" className="flex items-center gap-2 rounded-xl border border-dorado bg-tarjeta p-3 shadow-lg">
+          <span className="flex-1 text-sm text-crema">✨ Nueva versión disponible</span>
+          <button
+            onClick={applyUpdate}
+            className="rounded-lg bg-rosafuerte px-3 py-1.5 text-sm font-extrabold tracking-wide text-noche"
+          >
+            Actualizar ahora
+          </button>
+          <button aria-label="Cerrar aviso" onClick={() => setShow(false)} className="px-2 text-lg text-humo">
+            ✕
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function App() {
@@ -157,20 +188,25 @@ export default function App() {
     }
   }
 
-  if (loading) return <PibbiProvider><div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div></PibbiProvider>
-  if (!householdId || !data.household) return <PibbiProvider><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
+  if (loading) return <PibbiProvider><UpdateBanner /><div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div></PibbiProvider>
+  if (!householdId || !data.household) return <PibbiProvider><UpdateBanner /><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
 
+  // Etiqueta corta para pantallas angostas (360 px): con 6 pestañas y
+  // px-3, la última ("Avisos") se salía 46 px de la pantalla y no se podía
+  // tocar. En móvil se reparte el ancho en partes iguales (flex-1) y se
+  // usan las etiquetas cortas; en ≥640 px, las completas.
   const tabs = [
-    { to: '/', label: 'Inicio', icon: '🏠' },
-    { to: '/movimientos', label: 'Movimientos', icon: '🧾' },
-    { to: '/presupuesto', label: 'Presupuesto', icon: '💰' },
-    { to: '/plan', label: 'Plan', icon: '🎯' },
-    { to: '/chat', label: 'Chat', icon: '💬' },
-    { to: '/recordatorios', label: 'Avisos', icon: '🔔' },
+    { to: '/', label: 'Inicio', short: 'Inicio', icon: '🏠' },
+    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icon: '🧾' },
+    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icon: '💰' },
+    { to: '/plan', label: 'Plan', short: 'Plan', icon: '🎯' },
+    { to: '/chat', label: 'Chat', short: 'Chat', icon: '💬' },
+    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icon: '🔔' },
   ]
 
   return (
     <PibbiProvider>
+    <UpdateBanner />
     <div className="mx-auto min-h-screen max-w-lg pb-28">
       {syncError && (
         <div role="alert" className="m-3 rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave  ">
@@ -203,8 +239,10 @@ export default function App() {
       <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2  ">
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `flex flex-col items-center px-3 text-xs ${isActive ? 'font-semibold text-rosaclaro ' : 'text-humo'}`}>
-            <span className="text-xl">{t.icon}</span>{t.label}
+            className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center px-1 text-center text-[11px] leading-tight sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-rosaclaro ' : 'text-humo'}`}>
+            <span className="text-xl">{t.icon}</span>
+            <span className="sm:hidden">{t.short}</span>
+            <span className="hidden sm:inline">{t.label}</span>
           </NavLink>
         ))}
       </nav>

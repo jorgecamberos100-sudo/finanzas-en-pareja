@@ -65,9 +65,9 @@ export default function Plan({ data, onRefresh }: Props) {
         <div className="rounded-2xl border border-borde bg-tarjeta p-4  ">
           <h3 className="mb-2 font-bold">Nueva meta</h3>
           <input value={goalName} onChange={(e) => setGoalName(e.target.value)} placeholder="Nombre (ej. Vacaciones en la playa)" className="mb-2 w-full rounded-xl border p-2" />
-          <div className="flex gap-2">
-            <input value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} inputMode="decimal" placeholder="Monto objetivo" className="flex-1 rounded-xl border p-2" />
-            <input value={goalDate} onChange={(e) => setGoalDate(e.target.value)} type="date" className="flex-1 rounded-xl border p-2" />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} inputMode="decimal" placeholder="Monto objetivo" className="min-w-0 flex-1 rounded-xl border p-2" />
+            <input value={goalDate} onChange={(e) => setGoalDate(e.target.value)} type="date" className="min-w-0 flex-1 rounded-xl border p-2" />
           </div>
           <button onClick={createGoal} className="mt-2 w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">Crear meta</button>
         </div>
