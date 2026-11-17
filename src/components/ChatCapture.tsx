@@ -17,6 +17,7 @@ import {
   detectReminderIntent,
   parseReminderText,
 } from '../lib/reminders'
+import PibbiReaction, { type ReactionContext } from './PibbiReaction'
 
 interface Props {
   data: AppData
@@ -128,6 +129,15 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   const [recording, setRecording] = useState(false)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // PIBBI reacciona al registrar un dato (sin bloquear nada).
+  const [reaction, setReaction] = useState<ReactionContext | null>(null)
+  const reactionTimer = useRef<number | null>(null)
+
+  function showReaction(ctx: ReactionContext) {
+    if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
+    setReaction(ctx)
+    reactionTimer.current = window.setTimeout(() => setReaction(null), 5000)
+  }
   const [savingId, setSavingId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -162,7 +172,8 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       date: entry.occurred_at,
       note: entry.note ?? '',
       type: entry.type,
-      splitPct: entry.split_pct,
+      // Hogar de 1 persona: no hay con quién dividir, quien paga lo absorbe todo.
+      splitPct: data.partner ? entry.split_pct : 100,
     }
   }
 
@@ -415,7 +426,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         dedupe_hash: dedupeHashSync({ date: draft.date, amount, merchant: draft.merchant.trim() || '', account_id: draft.accountId }),
       })
       setDrafts((ds) => ds.filter((d) => d.id !== draft.id))
-      pushMessage('assistant', `Guardado: ${formatMoney(amount, currency)}${draft.merchant ? ` en ${draft.merchant}` : ''} (${draft.date}). Ya se ve en ambos teléfonos.`)
+      pushMessage('assistant', `Guardado: ${formatMoney(amount, currency)}${draft.merchant ? ` en ${draft.merchant}` : ''} (${draft.date}). ${data.partner ? 'Ya se ve en ambos teléfonos.' : 'Ya se ve en tu app.'}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar el movimiento.')
     } finally {
@@ -459,6 +470,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       })
       if (error) throw new Error(error.message)
       setReminderDrafts((ds) => ds.filter((d) => d.id !== draft.id))
+      showReaction('apuntando')
       pushMessage(
         'assistant',
         `Recordatorio creado 🔔 ${draft.title.trim()} para el ${draft.dueDate}${amount ? ` por ${formatMoney(amount, currency)}` : ''}. Te avisaré ese día; también lo ves en la pestaña Avisos.`,
@@ -488,8 +500,10 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             </div>
           </div>
         ))}
-        {busy && <p className="text-sm text-humo">Analizando…</p>}
+        {busy && <PibbiReaction contexto="pensando" mensaje="PIBBI está revisando tu mensaje…" />}
       </div>
+
+      {reaction && <PibbiReaction contexto={reaction} />}
 
       {reminderDrafts.map((d) => (
         <article key={d.id} className="rounded-2xl border border-amber-500/40 bg-tarjeta p-3 shadow-sm ">
@@ -686,7 +700,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             placeholder="Nota (opcional)"
             className="mb-2 w-full rounded-xl border border-borde p-2 text-sm "
           />
-          {d.type === 'gasto' && (
+          {d.type === 'gasto' && data.partner && (
             <p className="mb-2 text-xs text-humo">
               Split: {d.splitPct}% lo asume quien pagó · la otra persona le debe {formatMoney((parseAmount(d.amount) * (100 - d.splitPct)) / 100, currency)}
             </p>

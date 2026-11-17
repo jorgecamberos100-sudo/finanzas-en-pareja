@@ -1,19 +1,88 @@
 import { MASCOTA, MASCOTA_AHORRANDO, MASCOTA_CELEBRANDO } from '../lib/mascota-images'
+import { MASCOTA_SALUDANDO } from '../lib/mascota/saludando'
+import { MASCOTA_PENSATIVO } from '../lib/mascota/pensativo'
+import { MASCOTA_CONTAR } from '../lib/mascota/contar'
+import { MASCOTA_PROGRESO } from '../lib/mascota/progreso'
+import { usePibbi, type PibbiAccessory } from '../lib/pibbi'
 
 /**
  * La mascota de la app: PIBBI, el cerdito rosa de la hoja de personaje.
  * Los recortes ya traen fondo azul marino, así que van en un marco
- * redondeado que se funde con el tema oscuro.
+ * redondeado que se funde con el tema oscuro. Las prendas se dibujan
+ * como SVG sobre la imagen, así cada persona ve su propio PIBBI vestido.
  */
+export type MascotaPose =
+  | 'frente' | 'celebrando' | 'ahorrando'
+  | 'saludando' | 'pensativo' | 'contar' | 'progreso'
+
 interface Props {
-  /** 'frente' (de frente), 'celebrando' o 'ahorrando' (sentado con moneda) */
-  pose?: 'frente' | 'celebrando' | 'ahorrando'
+  pose?: MascotaPose
+  /** Si no se pasa, usa el accesorio guardado de quien está usando la app. */
+  accessory?: PibbiAccessory
   alt?: string
   className?: string
 }
 
-const POSES = { frente: MASCOTA, celebrando: MASCOTA_CELEBRANDO, ahorrando: MASCOTA_AHORRANDO }
+const POSES: Record<MascotaPose, string> = {
+  frente: MASCOTA,
+  celebrando: MASCOTA_CELEBRANDO,
+  ahorrando: MASCOTA_AHORRANDO,
+  saludando: MASCOTA_SALUDANDO,
+  pensativo: MASCOTA_PENSATIVO,
+  contar: MASCOTA_CONTAR,
+  progreso: MASCOTA_PROGRESO,
+}
 
-export default function Mascota({ pose = 'frente', alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-28 w-28' }: Props) {
-  return <img src={POSES[pose]} alt={alt} className={`${className} rounded-3xl object-cover ring-1 ring-borde`} />
+/** Prendas dibujadas en SVG sobre la foto de PIBBI (posiciones relativas). */
+function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
+  if (accessory === 'lentes') {
+    return (
+      <svg viewBox="0 0 100 40" aria-hidden="true" className="pointer-events-none absolute left-[11%] top-[30%] w-[78%]">
+        <circle cx="28" cy="20" r="14" fill="rgba(255,255,255,0.10)" stroke="#0F1530" strokeWidth="5" />
+        <circle cx="72" cy="20" r="14" fill="rgba(255,255,255,0.10)" stroke="#0F1530" strokeWidth="5" />
+        <path d="M42 18 Q50 13 58 18" fill="none" stroke="#0F1530" strokeWidth="5" strokeLinecap="round" />
+        <path d="M14 18 L4 14 M86 18 L96 14" fill="none" stroke="#0F1530" strokeWidth="5" strokeLinecap="round" />
+      </svg>
+    )
+  }
+  if (accessory === 'gorra') {
+    return (
+      <svg viewBox="0 0 100 46" aria-hidden="true" className="pointer-events-none absolute left-[9%] top-[-4%] w-[82%]">
+        <path d="M8 40 Q8 8 50 8 Q92 8 92 40 Q70 30 50 30 Q30 30 8 40 Z" fill="#F4728F" />
+        <path d="M4 38 Q50 26 96 38 Q96 44 88 44 Q50 34 12 44 Q4 44 4 38 Z" fill="#D14D6D" />
+        <circle cx="50" cy="10" r="4" fill="#F5C542" />
+      </svg>
+    )
+  }
+  if (accessory === 'mono') {
+    return (
+      <svg viewBox="0 0 100 44" aria-hidden="true" className="pointer-events-none absolute bottom-[4%] left-[28%] w-[44%]">
+        <path d="M50 22 L12 6 Q6 22 12 38 Z" fill="#F5C542" />
+        <path d="M50 22 L88 6 Q94 22 88 38 Z" fill="#F5C542" />
+        <circle cx="50" cy="22" r="9" fill="#D9A41F" />
+      </svg>
+    )
+  }
+  if (accessory === 'corona') {
+    return (
+      <svg viewBox="0 0 100 52" aria-hidden="true" className="pointer-events-none absolute left-[24%] top-[-7%] w-[52%]">
+        <path d="M8 44 L12 14 L32 30 L50 6 L68 30 L88 14 L92 44 Z" fill="#F5C542" stroke="#D9A41F" strokeWidth="2" strokeLinejoin="round" />
+        <circle cx="50" cy="34" r="4" fill="#F4728F" />
+        <circle cx="26" cy="34" r="3" fill="#7DDBC3" />
+        <circle cx="74" cy="34" r="3" fill="#7DDBC3" />
+      </svg>
+    )
+  }
+  return null
+}
+
+export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-28 w-28' }: Props) {
+  const { accessory: saved } = usePibbi()
+  const acc = accessory ?? saved
+  return (
+    <div className={`relative shrink-0 ${className}`}>
+      <img src={POSES[pose]} alt={alt} className="h-full w-full rounded-3xl object-cover ring-1 ring-borde" />
+      <Accesorio accessory={acc} />
+    </div>
+  )
 }
