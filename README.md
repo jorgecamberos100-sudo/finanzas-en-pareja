@@ -198,9 +198,15 @@ finanzas-en-pareja/
 │   └── icons/           # icon-192.png y icon-512.png (generar, ver paso 5)
 ├── src/
 │   ├── main.tsx  App.tsx  index.css  types.ts
-│   ├── sw.ts        # service worker (injectManifest): precache + push
+│   ├── sw.ts        # service worker (injectManifest): precache + push.
+│   │                # skipWaiting + clientsClaim, navegación NetworkFirst
+│   │                # (el index.html nunca se sirve solo desde precache) y
+│   │                # aviso "Nueva versión disponible" (src/lib/sw-update.ts).
+│   │                # Sin esto, un despliegue nuevo quedaba "esperando" y la
+│   │                # app instalada seguía sirviendo la versión vieja.
 │   ├── lib/
 │   │   ├── supabase.ts  # cliente + hogar activo
+│   │   ├── sw-update.ts # registro manual del SW + aviso de actualización
 │   │   ├── format.ts    # es-MX, MXN, hash de deduplicación CSV
 │   │   ├── capture.ts   # tipos ProposedEntry/CaptureResult + parser local es-MX
 │   │   ├── reminders.ts # parser de recordatorios, recurrencia, notificaciones locales y push

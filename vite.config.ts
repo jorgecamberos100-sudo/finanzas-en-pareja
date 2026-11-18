@@ -6,7 +6,13 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Registro manual en src/main.tsx (vía src/lib/sw-update.ts): el
+      // registro automático del plugin recargaba solo al activarse el SW
+      // nuevo, pero como src/sw.ts no tenía skipWaiting, el SW quedaba
+      // "esperando" para siempre y la app vieja nunca se actualizaba.
+      // Ahora el registro es explícito y la app avisa con un banner.
+      registerType: 'prompt',
+      injectRegister: false,
       // injectManifest: el service worker propio (src/sw.ts) con precache de
       // Workbox + manejo de push (notificaciones aunque la app esté cerrada).
       strategies: 'injectManifest',
@@ -17,8 +23,8 @@ export default defineConfig({
         name: 'Finanzas en Pareja',
         short_name: 'Finanzas',
         description: 'Control de finanzas en pareja: gastos, presupuesto por sobres, metas y deuda mutua.',
-        theme_color: '#0f766e',
-        background_color: '#ffffff',
+        theme_color: '#0F1530',
+        background_color: '#0F1530',
         display: 'standalone',
         start_url: '/',
         lang: 'es-MX',
