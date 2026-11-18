@@ -65,10 +65,13 @@ begin
   -- fire-and-forget): sin ella el insert de miembro fallaría por FK.
   -- OJO: las columnas van calificadas (u.id, u.email) porque `id` también
   -- es un parámetro OUT de la función y plpgsql sustituiría el nombre
-  -- sin calificar por la variable.
+  -- sin calificar por la variable. Por el mismo motivo el conflicto se
+  -- resuelve por el nombre de la restricción y NO por `on conflict (id)`:
+  -- ese `id` sin calificar es ambiguo para plpgsql (error 42702) y la RPC
+  -- fallaba en vivo antes de insertar nada.
   insert into public.users (id, name, email)
   select u.id, split_part(u.email, '@', 1), u.email from auth.users u where u.id = v_uid
-  on conflict (id) do nothing;
+  on conflict on constraint users_pkey do nothing;
 
   insert into public.household_members (household_id, user_id, role)
   values (v_id, v_uid, 'admin');

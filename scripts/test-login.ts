@@ -163,7 +163,7 @@ check('migración 006: search_path fijado a public', mig006.includes('set search
 check('migración 006: exige usuario autenticado', mig006.includes('auth.uid()'), true)
 check('migración 006: reintenta ante colisión de código único', mig006.includes('unique_violation') && mig006.includes('v_tries >= 5'), true)
 check('migración 006: inserta hogar y miembro admin', mig006.includes("insert into public.households") && mig006.includes("insert into public.household_members") && mig006.includes("'admin'"), true)
-check('migración 006: asegura la fila en users si falta (FK del miembro)', mig006.includes('insert into public.users') && mig006.includes('on conflict (id) do nothing'), true)
+check('migración 006: asegura la fila en users si falta (FK del miembro)', mig006.includes('insert into public.users') && mig006.includes('on conflict on constraint users_pkey do nothing'), true)
 check('migración 006: devuelve id y código', mig006.includes('returns table (id uuid, invite_code text)'), true)
 check('migración 006: solo authenticated ejecuta', mig006.includes('grant execute on function public.create_household(text, text, int) to authenticated'), true)
 check('migración 006: no toca las políticas existentes', !mig006.includes('create policy') && !mig006.includes('drop policy'), true)
