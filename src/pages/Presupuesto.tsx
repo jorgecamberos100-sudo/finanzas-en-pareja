@@ -14,6 +14,9 @@ export default function Presupuesto({ data, onRefresh }: Props) {
   const [transferFrom, setTransferFrom] = useState<Category | null>(null)
   const [transferTo, setTransferTo] = useState('')
   const [transferAmount, setTransferAmount] = useState('')
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [newLimit, setNewLimit] = useState('')
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { ingresos } = useMemo(() => monthTotals(data.transactions, month), [data.transactions, month])
@@ -28,6 +31,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
   }, [data.transactions, month])
 
   const budgeted = data.categories.filter((c) => c.monthly_limit > 0)
+  const unbudgeted = data.categories.filter((c) => c.monthly_limit === 0 && c.group !== 'Ingresos')
   const totalBudget = budgeted.reduce((s, c) => s + c.monthly_limit, 0)
   const totalSpent = budgeted.reduce((s, c) => s + (spentByCategory.get(c.id) ?? 0), 0)
   // Por asignar = ingresos del mes − lo ya presupuestado. Rollover: lo no gastado
@@ -38,18 +42,52 @@ export default function Presupuesto({ data, onRefresh }: Props) {
   const disponibleReal = Math.max(0, porAsignar - recurringTotal)
 
   async function doTransfer() {
-    if (!transferFrom || !transferTo || !transferAmount) return
+    if (!transferFrom || !transferTo || !transferAmount || busy) return
     const amount = parseAmount(transferAmount)
     if (!amount || amount <= 0) { setError('Escribe un monto válido mayor a $0.'); return }
     if (amount > transferFrom.monthly_limit) { setError(`El sobre solo tiene ${formatMoney(transferFrom.monthly_limit, currency)} para traspasar.`); return }
     const to = data.categories.find((c) => c.id === transferTo)
     if (!to) return
+    setBusy(true)
+    setError(null)
     // Traspaso entre sobres = mover límite, no un gasto.
     const { error: e1 } = await supabase.from('categories').update({ monthly_limit: transferFrom.monthly_limit - amount }).eq('id', transferFrom.id)
+    if (e1) {
+      setBusy(false)
+      setError(`No se pudo descontar del sobre de origen: ${e1.message}`)
+      return
+    }
     const { error: e2 } = await supabase.from('categories').update({ monthly_limit: to.monthly_limit + amount }).eq('id', to.id)
-    if (e1 || e2) { setError('No se pudo hacer el traspaso.'); return }
+    if (e2) {
+      // Revertir descuento de origen si falló la acreditación
+      await supabase.from('categories').update({ monthly_limit: transferFrom.monthly_limit }).eq('id', transferFrom.id)
+      setBusy(false)
+      setError(`No se pudo acreditar al sobre de destino: ${e2.message}`)
+      return
+    }
+    setBusy(false)
     setTransferFrom(null); setTransferAmount(''); setTransferTo(''); setError(null)
     onRefresh()
+  }
+
+  async function saveCategoryLimit() {
+    if (!editingCategory || busy) return
+    const limit = parseAmount(newLimit)
+    if (limit < 0) { setError('El límite debe ser mayor o igual a $0.'); return }
+    setBusy(true)
+    setError(null)
+    const { error: err } = await supabase.from('categories').update({ monthly_limit: limit }).eq('id', editingCategory.id)
+    setBusy(false)
+    if (err) { setError(`No se pudo actualizar el límite: ${err.message}`); return }
+    setEditingCategory(null)
+    setNewLimit('')
+    onRefresh()
+  }
+
+  function startEditLimit(c: Category) {
+    setEditingCategory(c)
+    setNewLimit(String(c.monthly_limit || ''))
+    setError(null)
   }
 
   return (
@@ -65,10 +103,71 @@ export default function Presupuesto({ data, onRefresh }: Props) {
         Recurrentes proyectados este mes: <strong>{formatMoney(recurringTotal, currency)}</strong> · Disponible real tras recurrentes: <strong>{formatMoney(disponibleReal, currency)}</strong>
       </p>
 
+      {error && (
+        <div role="alert" className="rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {editingCategory && (
+        <div className="rounded-2xl border border-rosafuerte bg-[#F4728F1A] p-4">
+          <h3 className="font-bold">Ajustar límite mensual: {editingCategory.icon} {editingCategory.name}</h3>
+          <p className="mt-1 text-xs text-humo">Escribe el nuevo monto presupuestado para este sobre.</p>
+          <input
+            value={newLimit}
+            onChange={(e) => setNewLimit(e.target.value)}
+            inputMode="decimal"
+            placeholder="Nuevo límite mensual (ej. 3500)"
+            className="my-2 w-full rounded-xl border p-2"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={saveCategoryLimit}
+              disabled={busy}
+              className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50"
+            >
+              {busy ? 'Guardando…' : 'Guardar nuevo límite'}
+            </button>
+            <button
+              onClick={() => { setEditingCategory(null); setError(null) }}
+              className="rounded-xl bg-borde px-4 text-sm font-semibold"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {budgeted.map((c) => (
-        <EnvelopeCard key={c.id} category={c} spent={spentByCategory.get(c.id) ?? 0} currency={currency} onTransfer={setTransferFrom} />
+        <EnvelopeCard
+          key={c.id}
+          category={c}
+          spent={spentByCategory.get(c.id) ?? 0}
+          currency={currency}
+          onTransfer={setTransferFrom}
+          onEditLimit={startEditLimit}
+        />
       ))}
       {budgeted.length === 0 && <p className="text-sm text-humo">Sin sobres todavía. Termina el onboarding para crear las categorías.</p>}
+
+      {unbudgeted.length > 0 && (
+        <section className="rounded-2xl border border-borde bg-tarjeta p-4">
+          <h2 className="mb-2 text-sm font-bold text-humo">Otras categorías (sin presupuesto asignado)</h2>
+          <div className="space-y-2">
+            {unbudgeted.map((c) => (
+              <div key={c.id} className="flex items-center justify-between rounded-xl bg-elevado p-2.5 text-sm">
+                <span>{c.icon} {c.name}</span>
+                <button
+                  onClick={() => startEditLimit(c)}
+                  className="rounded-lg bg-tarjeta border border-borde px-2.5 py-1 text-xs font-semibold text-rosaclaro hover:border-rosafuerte"
+                >
+                  + Asignar presupuesto
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {transferFrom && (
         <div className="rounded-2xl border border-rosafuerte bg-[#F4728F1A] p-4  ">
@@ -78,10 +177,11 @@ export default function Presupuesto({ data, onRefresh }: Props) {
             {budgeted.filter((c) => c.id !== transferFrom.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <input value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} inputMode="decimal" placeholder="Monto" className="mb-2 w-full rounded-xl border p-2" />
-          {error && <p className="mb-2 text-sm text-rojosuave">{error}</p>}
           <div className="flex gap-2">
-            <button onClick={doTransfer} className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">Confirmar traspaso</button>
-            <button onClick={() => setTransferFrom(null)} className="rounded-xl bg-borde px-4 ">Cancelar</button>
+            <button onClick={doTransfer} disabled={busy} className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+              {busy ? 'Traspasando…' : 'Confirmar traspaso'}
+            </button>
+            <button onClick={() => { setTransferFrom(null); setError(null) }} className="rounded-xl bg-borde px-4 ">Cancelar</button>
           </div>
         </div>
       )}
