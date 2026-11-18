@@ -83,7 +83,7 @@ export const REACTION_POSES: Record<ReactionContext, MascotaPose> = {
 /** Ventanas de la app con encabezado común: cada una lleva a PIBBI en su encabezado. */
 export type PibbiPage =
   | 'movimientos' | 'presupuesto' | 'plan'
-  | 'recordatorios' | 'onboarding'
+  | 'recordatorios' | 'onboarding' | 'chat' | 'dashboard'
 
 /**
  * Pose de PIBBI en el encabezado de cada ventana (componente PibbiHeader):
@@ -91,7 +91,7 @@ export type PibbiPage =
  * Presupuesto (cuenta las monedas del sobre), progreso en Plan (tus metas
  * avanzan), perfil con lápiz en Avisos (anota tus pagos) y saludando en
  * el Onboarding (te recibe al crear tu cuenta). La home (chat con PIBBI)
- * tiene su propio encabezado con PIBBI en círculo, no usa PibbiHeader.
+ * usa el avatar circular y el Dashboard el saludo.
  */
 export const PAGE_PIBBI_POSES: Record<PibbiPage, MascotaPose> = {
   movimientos: 'calculadora',
@@ -99,4 +99,6 @@ export const PAGE_PIBBI_POSES: Record<PibbiPage, MascotaPose> = {
   plan: 'progreso',
   recordatorios: 'perfilLapiz',
   onboarding: 'saludando',
+  chat: 'avatarCircular',
+  dashboard: 'saludando',
 }

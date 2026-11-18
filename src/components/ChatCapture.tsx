@@ -173,9 +173,18 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   const audioChunksRef = useRef<Blob[]>([])
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  // El saludo inicial debe verse completo al entrar: el autoscroll solo
+  // sigue los mensajes nuevos; en el primer render no se mueve la página
+  // (antes bajaba sola y las primeras líneas del saludo quedaban fuera
+  // de la vista en pantallas de 360 px).
+  const firstRenderRef = useRef(true)
 
   // Desplazamiento automático al llegar nuevos mensajes o propuestas
   useEffect(() => {
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false
+      return
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, drafts.length, reminderDrafts.length, busy])
 

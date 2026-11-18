@@ -193,10 +193,15 @@ check('Presupuesto: el mensaje no juzga', pres.includes('sin drama'))
 // object-contain (no recorta orejas ni patitas) y los tamaños bajaron.
 const mascota = readFileSync(join(root, 'src/components/Mascota.tsx'), 'utf8')
 check('Mascota usa object-contain (cuerpo entero)', mascota.includes('object-contain'))
-check('Mascota tiene marco circular', mascota.includes('pibbi-circulo'))
+// La PR #26 cambió el API: el marco 'circulo' (clase .pibbi-circulo) es
+// ahora la prop `circular`, que dibuja el marco redondo con rounded-full.
+// La decisión (PIBBI en marco circular) sigue; solo cambió el mecanismo.
+check('Mascota tiene marco circular', mascota.includes('circular') && mascota.includes('rounded-full'))
 check('Mascota: el avatar circular sigue con object-cover', mascota.includes('object-cover'))
 check('Mascota: tamaño por defecto más pequeño', mascota.includes("className = 'h-24 w-24'"))
-check('Chat: PIBBI en círculo en el encabezado', chat.includes('<Mascota pose="frente" marco="circulo"'))
+// El héroe viejo del Chat (<Mascota pose="frente" marco="circulo">) es
+// ahora PibbiHeader con la pose del chat (avatarCircular, circular).
+check('Chat: PIBBI en círculo en el encabezado', chat.includes('PibbiHeader') && chat.includes('PAGE_PIBBI_POSES.chat'))
 
 console.log(`\ntest-tema: ${pass} pasaron, ${fail} fallaron`)
 if (fail > 0) process.exit(1)

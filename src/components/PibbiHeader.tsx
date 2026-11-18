@@ -41,7 +41,14 @@ export default function PibbiHeader({ pose = 'frente', title, subtitle, children
         </button>
         <span className="mt-1 max-w-[64px] truncate text-center text-[11px] font-bold leading-tight text-crema">{name}</span>
       </div>
-      <div className="min-w-0 flex-1">
+      {/*
+        Título sin min-w-0 a propósito: con min-w-0 el título se encogía
+        hasta ~0 px y los botones (shrink-0) lo aplastaban ("Movimientos"
+        se veía "Movin" a 360 px). Con el mínimo automático, el título
+        conserva el ancho de su palabra más larga y las acciones bajan a
+        una segunda línea cuando no caben (flex-wrap del header).
+      */}
+      <div className="flex-1">
         <h1 className="text-2xl font-bold">{title}</h1>
         {/* Div (no <p>): el subtítulo puede traer sus propios párrafos, como el Chat. */}
         {subtitle && <div className="text-sm text-humo">{subtitle}</div>}

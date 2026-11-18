@@ -153,7 +153,9 @@ export default function Movimientos({ data, onRefresh }: Props) {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        {/* Filtros apilados en móvil: en 3 columnas a 360 px cada uno
+            quedaba en ~109 px y el texto se cortaba ("Persona: tod"). */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label="Filtrar por persona" className="rounded-xl border p-2 text-sm">
             <option value="">Persona: todas</option>
             {[data.me, data.partner].filter(Boolean).map((u) => <option key={u!.id} value={u!.id}>{u!.name}</option>)}

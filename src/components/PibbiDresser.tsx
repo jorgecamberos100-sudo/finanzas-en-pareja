@@ -35,7 +35,7 @@ export default function PibbiDresser({ title }: Props) {
             }`}
           >
             <Mascota pose="frente" accessory={a.id} alt={a.id === 'ninguno' ? `${name} sin prenda` : `${name} con ${a.name}`} className="h-10 w-10" />
-            <span className="text-center text-[11px] leading-tight text-humo">{a.emoji} {a.name}</span>
+            <span className="text-center text-[11px] leading-tight text-humo">{a.name}</span>
           </button>
         ))}
       </div>

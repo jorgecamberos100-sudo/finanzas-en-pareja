@@ -16,7 +16,6 @@ import Plan from './pages/Plan'
 import Chat from './pages/Chat'
 import Reminders from './pages/Reminders'
 import QuickAddModal from './components/QuickAddModal'
-import ThemeToggle from './components/ThemeToggle'
 
 export interface AppData {
   household: Household | null
@@ -272,7 +271,7 @@ export default function App() {
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-dorado text-2xl text-tinta shadow-[0_8px_24px_rgba(245,197,66,0.45)] transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-dorado text-2xl text-tinta shadow-fab transition active:scale-95"
       >
         +
       </button>
@@ -286,7 +285,6 @@ export default function App() {
             <span className="hidden sm:inline">{t.label}</span>
           </NavLink>
         ))}
-        <ThemeToggle className="flex min-w-0 flex-col items-center justify-center px-2 text-humo" />
       </nav>
 
       {quickAddOpen && (
