@@ -27,6 +27,7 @@ check('valor raro -> noche', temaDesdeStorage('rosa'), 'noche')
 check('vacío -> noche', temaDesdeStorage(''), 'noche')
 check('meta noche', META_THEME_COLOR['noche'], '#0A0F1E')
 check('meta día', META_THEME_COLOR['dia'], '#F7F1E3')
+check('aplicarTema actualiza el meta theme-color', readFileSync(join(root, 'src/lib/tema.ts'), 'utf8').includes('meta[name="theme-color"]'))
 check('clave de guardado', TEMA_KEY, 'finanzas-tema')
 
 // 2. Tokens en tailwind.config.js: sin rosa, con los tokens nuevos.
