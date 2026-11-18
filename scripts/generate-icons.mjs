@@ -5,8 +5,8 @@
 // npm install, también en Vercel).
 //
 // Además de decodificar, este script:
-//   1. Recolorea el fondo azul marino #0F1530 de los PNG al esmeralda
-//      oscuro de la marca (#07130C), con un flood-fill desde las orillas
+//   1. Recolorea el fondo azul marino #0F1530 de los PNG al casi negro
+//      de la marca (#0A0A0C, tema noche), con un flood-fill desde las orillas
 //      (solo toca el fondo conectado al borde; a PIBBI no lo toca).
 //   2. Genera favicon.ico (contenedor ICO con el PNG de 192 adentro).
 //   3. Genera apple-touch-icon.png (copia del de 192 para iOS).

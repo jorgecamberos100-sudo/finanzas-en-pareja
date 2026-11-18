@@ -35,6 +35,11 @@ interface Props {
    * La imagen fuente es pequeña (frente 224×258, las demás 138–194 px):
    * a más de ~112 px de ancho en pantalla 2x ya se nota suave al
    * acercar. El círculo se usa a h-28 (112 px) como máximo.
+   *
+   * EXCEPCIÓN: la pose principal 'frente' ya no usa esa fuente vieja:
+   * desde nov 2026 usa la imagen HD de George (1231×1278, fondo negro)
+   * y se presenta como círculo negro (avatarNegro), nítida a cualquier
+   * tamaño razonable. Las demás poses siguen con sus fuentes pequeñas.
    */
   marco?: 'libre' | 'circulo'
 }
@@ -153,12 +158,18 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
   // Insignia: pose con fondo circular negro intencional (avatar, perfil,
   // calculadora). Se ve igual en día y noche, como un chip redondo.
   const esInsignia = poseCfg.circular === true || poseCfg.accessories === false
+  // Pose principal en HD con fondo negro (frente): se presenta como
+  // círculo negro, igual en día y noche, sin recorte de fondo (el fondo
+  // negro es intencional) y sin sombra de suelo. A diferencia de la
+  // insignia, sí admite prendas.
+  const esAvatarNegro = poseCfg.avatarNegro === true
+  const esRedondo = esInsignia || esAvatarNegro
 
   const [src, setSrc] = useState<string>(() => cacheRecortes.get(poseCfg.image) ?? poseCfg.image)
-  const [listo, setListo] = useState<boolean>(() => esInsignia || cacheRecortes.has(poseCfg.image))
+  const [listo, setListo] = useState<boolean>(() => esRedondo || cacheRecortes.has(poseCfg.image))
 
   useEffect(() => {
-    if (esInsignia) {
+    if (esRedondo) {
       setSrc(poseCfg.image)
       setListo(true)
       return
@@ -206,7 +217,7 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
             src={src}
             alt={alt}
             className={`h-full w-full transition-opacity duration-300 ${listo ? 'opacity-100' : 'opacity-0'} ${
-              esInsignia ? 'rounded-full bg-black object-cover' : 'pibbi-recorte object-contain'
+              esRedondo ? 'rounded-full bg-black object-cover' : 'pibbi-recorte object-contain'
             }`}
           />
           {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
@@ -221,7 +232,7 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
       {/* Sombra del suelo: fuera del div que flota, respira en contrafase.
           Las insignias redondas no llevan sombra: no están "de pie".
           Tampoco el marco circular: el círculo ya es el marco. */}
-      {!esInsignia && marco !== 'circulo' && <span aria-hidden="true" className="pibbi-sombra" />}
+      {!esRedondo && marco !== 'circulo' && <span aria-hidden="true" className="pibbi-sombra" />}
     </div>
   )
 }

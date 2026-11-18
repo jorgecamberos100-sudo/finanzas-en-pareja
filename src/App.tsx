@@ -73,7 +73,7 @@ function UpdateBanner() {
 function PantallaCarga() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 p-6" role="status" aria-label="Cargando tus datos">
-      <Mascota pose="saludando" marco="circulo" className="h-28 w-28" />
+      <Mascota pose="frente" marco="circulo" className="h-28 w-28" />
       <Logo tamano="md" conPibbi={false} />
       <Spinner className="h-6 w-6 text-doradotexto" />
       <div className="w-full space-y-3">

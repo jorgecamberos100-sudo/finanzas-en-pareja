@@ -347,11 +347,11 @@ export default function Onboarding({ onDone }: Props) {
         {esAuth && (
           <>
             {/* PIBBI en círculo grande y centrado, estilo avatar: imagen
-                completa con aire, sin recortar orejas ni brazos. La fuente
-                es pequeña (saludando 164×178): a h-28 (112 px) se ve nítida
-                a tamaño normal; más grande se notaría suave al acercar. */}
+                completa con aire, sin recortar orejas ni brazos. La pose
+                principal 'frente' usa la imagen HD de George (1231×1278,
+                fondo negro): nítida a h-28 (112 px) y al acercar. */}
             <div className="mb-6 flex flex-col items-center text-center">
-              <Mascota pose="saludando" marco="circulo" className="h-28 w-28" />
+              <Mascota pose="frente" marco="circulo" className="h-28 w-28" />
               <h1 className="mt-4 font-display text-2xl font-extrabold tracking-tight">
                 Finanzas <span className="text-doradotexto">en Pareja</span>
               </h1>

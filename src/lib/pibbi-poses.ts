@@ -3,7 +3,8 @@
 // prendas. Lógica pura, sin React ni DOM, para poder probarla.
 // Las prendas SVG están dibujadas para las poses de frente; en las poses
 // de perfil (lápiz, calculadora) se esconden porque quedarían mal puestas.
-import { MASCOTA, MASCOTA_AHORRANDO, MASCOTA_CELEBRANDO } from './mascota-images'
+import { MASCOTA_AHORRANDO, MASCOTA_CELEBRANDO } from './mascota-images'
+import { MASCOTA_HD } from './mascota/pibbi-hd'
 import { MASCOTA_SALUDANDO } from './mascota/saludando'
 import { MASCOTA_PENSATIVO } from './mascota/pensativo'
 import { MASCOTA_CONTAR } from './mascota/contar'
@@ -30,13 +31,19 @@ export interface PibbiPoseConfig {
   eyelids: PibbiEyelid[]
   /** Fondo circular negro tipo avatar: imagen redonda, sin sombra de suelo. */
   circular?: boolean
+  /** Fondo negro intencional tipo avatar (imagen HD con fondo negro):
+      se muestra como círculo negro, igual en día y noche. Distinto de
+      `circular` (que el test reserva al avatarCircular). */
+  avatarNegro?: boolean
   /** Si es falso, no se dibuja la prenda elegida sobre esta pose. */
   accessories?: boolean
 }
 
 export const PIBBI_POSES: Record<MascotaPose, PibbiPoseConfig> = {
-  // Poses de frente (hoja de personaje): ojos a ~30% de altura y ~28% / ~72% de ancho.
-  frente: { image: MASCOTA, eyelids: [{ left: 19, top: 22 }, { left: 63, top: 22 }] },
+  // Pose principal en HD (imagen nueva de George, 1231×1278): ojos a ~37%
+  // de altura y ~37% / ~62% de ancho (medidos en la imagen). Las demás
+  // poses de frente (hoja de personaje) tienen los ojos a ~30% / ~28-72%.
+  frente: { image: MASCOTA_HD, eyelids: [{ left: 28, top: 30 }, { left: 53, top: 30 }], avatarNegro: true },
   celebrando: { image: MASCOTA_CELEBRANDO, eyelids: [{ left: 19, top: 22 }, { left: 63, top: 22 }] },
   ahorrando: { image: MASCOTA_AHORRANDO, eyelids: [{ left: 19, top: 22 }, { left: 63, top: 22 }] },
   saludando: { image: MASCOTA_SALUDANDO, eyelids: [{ left: 19, top: 22 }, { left: 63, top: 22 }] },
