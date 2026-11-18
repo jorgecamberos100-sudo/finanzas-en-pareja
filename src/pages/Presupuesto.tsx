@@ -6,6 +6,8 @@ import { defPlan, puedeCrearSobre } from '../lib/planes'
 import { supabase } from '../lib/supabase'
 import EnvelopeCard from '../components/EnvelopeCard'
 import Mascota from '../components/Mascota'
+import PibbiHeader from '../components/PibbiHeader'
+import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import Paywall from '../components/Paywall'
 import type { Category } from '../types'
 
@@ -115,10 +117,11 @@ export default function Presupuesto({ data, onRefresh }: Props) {
 
   return (
     <main className="space-y-4 p-4">
-      <h1 className="text-2xl font-bold">Presupuesto</h1>
-      <p className="text-xs text-humo">
-        Plan {defPlan(data.plan).nombre} · {budgeted.length} de {Number.isFinite(defPlan(data.plan).sobresMax) ? defPlan(data.plan).sobresMax : '∞'} sobres
-      </p>
+      <PibbiHeader
+        pose={PAGE_PIBBI_POSES.presupuesto}
+        title="Presupuesto"
+        subtitle={<>Plan {defPlan(data.plan).nombre} · {budgeted.length} de {Number.isFinite(defPlan(data.plan).sobresMax) ? defPlan(data.plan).sobresMax : '∞'} sobres</>}
+      />
 
       <section className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Ingresos</p><p className="font-bold text-verde">{formatMoney(ingresos, currency)}</p></div>

@@ -19,6 +19,8 @@ import {
   unsubscribePush,
 } from '../lib/reminders'
 import Mascota from '../components/Mascota'
+import PibbiHeader from '../components/PibbiHeader'
+import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
 
 interface Props {
@@ -258,12 +260,11 @@ export default function Reminders({ data, onRefresh }: Props) {
 
   return (
     <main className="space-y-4 p-4">
-      <header>
-        <h1 className="text-2xl font-bold">Recordatorios 🔔</h1>
-        <p className="text-sm text-humo">
-          Avisos de pagos futuros para los dos. También puedes escribir en el Chat “recuérdame pagar la renta el 1ro” y se crea aquí.
-        </p>
-      </header>
+      <PibbiHeader
+        pose={PAGE_PIBBI_POSES.recordatorios}
+        title="Recordatorios 🔔"
+        subtitle="Avisos de pagos futuros para los dos. También puedes escribir en el Chat “recuérdame pagar la renta el 1ro” y se crea aquí."
+      />
 
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
         <h2 className="font-bold">📱 Notificaciones en este celular</h2>

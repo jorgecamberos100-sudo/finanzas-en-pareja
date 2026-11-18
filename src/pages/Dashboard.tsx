@@ -7,6 +7,8 @@ import { upcomingRecurring } from '../lib/recurring'
 import { reminderStatus } from '../lib/reminders'
 import { supabase } from '../lib/supabase'
 import Mascota from '../components/Mascota'
+import PibbiHeader from '../components/PibbiHeader'
+import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiDresser from '../components/PibbiDresser'
 
 interface Props { data: AppData; onRefresh: () => void; onSignOut?: () => void }
@@ -90,11 +92,11 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
 
   return (
     <main className="space-y-4 p-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Hola, {data.me?.name ?? 'pareja'} 👋</h1>
-          <p className="text-sm text-humo">{data.household?.name} · {currency} · {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</p>
-        </div>
+      <PibbiHeader
+        pose={PAGE_PIBBI_POSES.dashboard}
+        title={<>Hola, {data.me?.name ?? 'pareja'} 👋</>}
+        subtitle={<>{data.household?.name} · {currency} · {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</>}
+      >
         {onSignOut && (
           <button
             onClick={() => {
@@ -109,7 +111,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
             Salir 🚪
           </button>
         )}
-      </header>
+      </PibbiHeader>
 
       {data.transactions.length === 0 && (
         <section className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
