@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import { formatMoney, monthKey, parseAmount } from '../lib/format'
 import { monthTotals } from '../lib/split'
+import { defPlan, puedeCrearSobre } from '../lib/planes'
 import { supabase } from '../lib/supabase'
 import EnvelopeCard from '../components/EnvelopeCard'
+import Paywall from '../components/Paywall'
 import type { Category } from '../types'
 
 interface Props { data: AppData; onRefresh: () => void }
@@ -18,6 +20,8 @@ export default function Presupuesto({ data, onRefresh }: Props) {
   const [newLimit, setNewLimit] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Motivo del paywall (null = cerrado).
+  const [paywall, setPaywall] = useState<string | null>(null)
 
   const { ingresos } = useMemo(() => monthTotals(data.transactions, month), [data.transactions, month])
   const spentByCategory = useMemo(() => {
@@ -90,9 +94,26 @@ export default function Presupuesto({ data, onRefresh }: Props) {
     setError(null)
   }
 
+  /**
+   * Crear un sobre = asignar presupuesto a una categoría sin presupuesto.
+   * En Free el límite es 3 sobres: el 4.º abre el paywall de Plus en vez
+   * del editor. Editar el límite de un sobre que ya existe no está limitado.
+   */
+  function intentarAsignarSobre(c: Category) {
+    const def = defPlan(data.plan)
+    if (!puedeCrearSobre(data.plan, budgeted.length)) {
+      setPaywall(`El plan ${def.nombre} permite ${def.sobresMax} sobres y ya tienes ${budgeted.length}. Con Plus los sobres son ilimitados.`)
+      return
+    }
+    startEditLimit(c)
+  }
+
   return (
     <main className="space-y-4 p-4">
       <h1 className="text-2xl font-bold">Presupuesto</h1>
+      <p className="text-xs text-humo">
+        Plan {defPlan(data.plan).nombre} · {budgeted.length} de {Number.isFinite(defPlan(data.plan).sobresMax) ? defPlan(data.plan).sobresMax : '∞'} sobres
+      </p>
 
       <section className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Ingresos</p><p className="font-bold text-verde">{formatMoney(ingresos, currency)}</p></div>
@@ -158,7 +179,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
               <div key={c.id} className="flex items-center justify-between rounded-xl bg-elevado p-2.5 text-sm">
                 <span>{c.icon} {c.name}</span>
                 <button
-                  onClick={() => startEditLimit(c)}
+                  onClick={() => intentarAsignarSobre(c)}
                   className="rounded-lg bg-tarjeta border border-borde px-2.5 py-1 text-xs font-semibold text-doradotexto hover:border-foco"
                 >
                   + Asignar presupuesto
@@ -196,6 +217,8 @@ export default function Presupuesto({ data, onRefresh }: Props) {
         ))}
         <p className="text-xs text-humo">Total gastado en sobres este mes: {formatMoney(totalSpent, currency)} de {formatMoney(totalBudget, currency)} presupuestados.</p>
       </section>
+
+      {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
     </main>
   )
 }

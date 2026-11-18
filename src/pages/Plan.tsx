@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import { formatMoney, parseAmount, todayIso } from '../lib/format'
+import { defPlan, puedeCrearMeta } from '../lib/planes'
 import { supabase } from '../lib/supabase'
 import GoalCard from '../components/GoalCard'
+import Paywall from '../components/Paywall'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
 import type { Account, Goal } from '../types'
 
@@ -19,6 +21,8 @@ export default function Plan({ data, onRefresh }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  // Motivo del paywall (null = cerrado).
+  const [paywall, setPaywall] = useState<string | null>(null)
   // PIBBI reacciona al crear una meta, aportar y guardar la revisión.
   const [reaction, setReaction] = useState<ReactionContext | null>(null)
 
@@ -28,6 +32,13 @@ export default function Plan({ data, onRefresh }: Props) {
     if (!data.household || !goalName.trim() || !goalTarget.trim() || busy) return
     const target = parseAmount(goalTarget)
     if (!target || target <= 0) { setError('El monto objetivo debe ser mayor a $0.'); return }
+    // En Free el límite es 1 meta: la 2.ª abre el paywall de Plus en vez
+    // de crearla. Aportar a una meta que ya existe no está limitado.
+    if (!puedeCrearMeta(data.plan, data.goals.length)) {
+      const def = defPlan(data.plan)
+      setPaywall(`El plan ${def.nombre} permite ${def.metasMax} meta y ya tienes ${data.goals.length}. Con Plus las metas son ilimitadas.`)
+      return
+    }
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -118,6 +129,9 @@ export default function Plan({ data, onRefresh }: Props) {
 
       <section>
         <h2 className="mb-2 font-bold">{data.partner ? 'Metas compartidas' : 'Mis metas'}</h2>
+        <p className="mb-2 text-xs text-humo">
+          Plan {defPlan(data.plan).nombre} · {data.goals.length} de {Number.isFinite(defPlan(data.plan).metasMax) ? defPlan(data.plan).metasMax : '∞'} metas
+        </p>
         {data.goals.map((g) => (
           <div key={g.id} className="mb-3">
             <GoalCard goal={g} currency={currency} onContribute={contribute} onDelete={deleteGoal} />
@@ -199,6 +213,8 @@ export default function Plan({ data, onRefresh }: Props) {
         </button>
         {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
       </section>
+
+      {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
     </main>
   )
 }

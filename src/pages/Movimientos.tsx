@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import { formatDateEs, formatMoney, todayIso } from '../lib/format'
+import { defPlan, esMovimientoAntiguo, puedeExportarCsv } from '../lib/planes'
 import { supabase } from '../lib/supabase'
 import CsvImport from '../components/CsvImport'
+import Paywall from '../components/Paywall'
 import Mascota from '../components/Mascota'
 
 interface Props { data: AppData; onRefresh: () => void }
@@ -16,6 +18,8 @@ export default function Movimientos({ data, onRefresh }: Props) {
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
+  // Motivo del paywall (null = cerrado).
+  const [paywall, setPaywall] = useState<string | null>(null)
 
   const currency = data.household?.currency ?? 'MXN'
   const categoryById = useMemo(() => new Map(data.categories.map((c) => [c.id, c])), [data.categories])
@@ -45,6 +49,19 @@ export default function Movimientos({ data, onRefresh }: Props) {
 
   const pending = useMemo(() => filtered.filter((tx) => tx.review_status === 'pendiente'), [filtered])
   const approved = useMemo(() => filtered.filter((tx) => tx.review_status !== 'pendiente'), [filtered])
+
+  // Historial: en Free solo se ven los últimos 90 días; lo más viejo queda
+  // bloqueado con la oferta de Plus (no se borra nada, solo no se muestra).
+  // En Plus/Fundadores el historial es completo.
+  const hoy = todayIso()
+  const recientes = useMemo(
+    () => approved.filter((tx) => !esMovimientoAntiguo(data.plan, tx.date, hoy)),
+    [approved, data.plan, hoy],
+  )
+  const antiguos = useMemo(
+    () => approved.filter((tx) => esMovimientoAntiguo(data.plan, tx.date, hoy)),
+    [approved, data.plan, hoy],
+  )
 
   const hasActiveFilters = Boolean(filterPerson || filterCategory || filterAccount || search.trim())
   function clearFilters() {
@@ -82,6 +99,11 @@ export default function Movimientos({ data, onRefresh }: Props) {
   }
 
   function exportCsv() {
+    // Exportar CSV es función Plus: en Free abre el paywall en vez de descargar.
+    if (!puedeExportarCsv(data.plan)) {
+      setPaywall(`Exportar el CSV es una función Plus. El plan ${defPlan(data.plan).nombre} no lo incluye.`)
+      return
+    }
     const header = 'fecha,comercio,monto,tipo,categoria,cuenta,quien_pago,nota\n'
     const body = data.transactions.map((tx) =>
       [tx.date, `"${tx.merchant ?? ''}"`, tx.amount, tx.type, categoryById.get(tx.category_id ?? '')?.name ?? '', accountById.get(tx.account_id)?.name ?? '', userById.get(tx.paid_by) ?? '', `"${tx.note ?? ''}"`].join(','),
@@ -185,12 +207,28 @@ export default function Movimientos({ data, onRefresh }: Props) {
             </div>
           )
         )}
-        {approved.map((tx) => (
+        {recientes.map((tx) => (
           <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
             isDeleting={deletingId === tx.id}
             onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)} />
         ))}
+        {antiguos.length > 0 && (
+          <div className="rounded-2xl border border-foco/60 bg-doradotenue p-4">
+            <p className="font-bold">📦 {antiguos.length} movimientos de hace más de 90 días</p>
+            <p className="mt-1 text-sm text-humo">
+              El plan {defPlan(data.plan).nombre} muestra los últimos 90 días. Con Plus ves todo tu historial.
+            </p>
+            <button
+              onClick={() => setPaywall(`Tienes ${antiguos.length} movimientos de hace más de 90 días. Con Plus ves todo tu historial, sin límite.`)}
+              className="mt-2 w-full rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
+            >
+              Ver historial completo con Plus
+            </button>
+          </div>
+        )}
       </section>
+
+      {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
     </main>
   )
 }

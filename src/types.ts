@@ -165,6 +165,23 @@ export interface MoneyDate {
   settled_amount: number
 }
 
+/** Plan del hogar (migración 005): monetización Free / Plus / Fundadores. */
+export type PlanId = 'free' | 'plus' | 'fundadores'
+
+export interface HouseholdPlan {
+  household_id: string
+  plan: PlanId
+  started_at: string
+  /** Capturas con IA confirmadas en el mes de ai_captures_month_key. */
+  ai_captures_month: number
+  /** Mes del contador, 'YYYY-MM' (hora del servidor). */
+  ai_captures_month_key: string
+  /** Número de Fundador (1-100) o null si no es Fundador. */
+  founders_number: number | null
+  created_at: string
+  updated_at: string
+}
+
 /** Deuda mutua calculada: positive => userA le debe a userB */
 export interface MutualBalance {
   debtor_id: string

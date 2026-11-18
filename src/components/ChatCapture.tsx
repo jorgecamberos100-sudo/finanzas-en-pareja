@@ -17,6 +17,9 @@ import {
   detectReminderIntent,
   parseReminderText,
 } from '../lib/reminders'
+import { defPlan, puedeUsarIA } from '../lib/planes'
+import { registrarCapturaIA } from '../lib/planes-db'
+import Paywall from './Paywall'
 import PibbiReaction, { type ReactionContext } from './PibbiReaction'
 
 interface Props {
@@ -158,6 +161,8 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     }
   }, [])
   const [savingId, setSavingId] = useState<string | null>(null)
+  // Motivo del paywall (null = cerrado).
+  const [paywall, setPaywall] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -176,6 +181,12 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   const currency = data.household?.currency ?? 'MXN'
   const categories = data.categories
   const accounts = data.accounts
+
+  /** Mensaje del límite de capturas con IA del plan (Free: 10/mes). */
+  function mensajeLimiteIA(): string {
+    const def = defPlan(data.plan)
+    return `Ya usaste tus ${def.capturasIaMes} capturas con IA de este mes (plan ${def.nombre}). Con Plus las capturas con IA son ilimitadas (uso justo: 300 al mes). La captura manual con el botón + sigue disponible.`
+  }
 
   function pushMessage(role: 'user' | 'assistant', text: string, imageUrl?: string) {
     setMessages((m) => [...m, { id: `m-${Date.now()}-${Math.random().toString(36).slice(2)}`, role, text, imageUrl }])
@@ -273,6 +284,8 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     // - weak (habla de pagar a futuro sin el verbo): ambiguo -> propón ambas
     //   cosas y que el usuario elija; nunca se guarda nada sin confirmar.
     const intent = detectReminderIntent(trimmed)
+    // El límite de IA no bloquea los recordatorios (son locales, no usan IA).
+    const iaBloqueada = !puedeUsarIA(data.plan)
     if (intent === 'strong') {
       const proposal = parseReminderText(trimmed, { categories, timezone: deviceTimezone })
       if (proposal) {
@@ -287,8 +300,23 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       const proposal = parseReminderText(trimmed, { categories, timezone: deviceTimezone })
       if (proposal) {
         showReminderProposals([proposal])
-        pushMessage('assistant', 'No me quedó claro si ya lo pagaste o si quieres que te avise. Arriba te dejé el recordatorio; si ya fue un gasto, revisa también la propuesta de movimiento de abajo y confirma solo la que aplique.')
+        pushMessage(
+          'assistant',
+          iaBloqueada
+            ? 'No me quedó claro si ya lo pagaste o si quieres que te avise. Arriba te dejé el recordatorio; el movimiento no lo puedo proponer porque llegaste al límite de capturas con IA de este mes.'
+            : 'No me quedó claro si ya lo pagaste o si quieres que te avise. Arriba te dejé el recordatorio; si ya fue un gasto, revisa también la propuesta de movimiento de abajo y confirma solo la que aplique.',
+        )
       }
+    }
+    // Límite de capturas con IA (plan Free: 10/mes): sin IA no hay propuesta
+    // de movimiento, ni remota ni local — el parser local es el respaldo de
+    // la IA, no una vía para saltarse el límite. Los recordatorios ya se
+    // propusieron arriba (son locales) y la captura manual (+) sigue libre.
+    if (iaBloqueada) {
+      pushMessage('assistant', mensajeLimiteIA())
+      setPaywall(mensajeLimiteIA())
+      setBusy(false)
+      return
     }
     // 1. Edge Function con Cloudflare (texto -> GLM-4.7-Flash). 2. Parser local.
     const remote = await invokeParse({
@@ -307,6 +335,13 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
 
   async function handleImage(file: File) {
     if (busy) return
+    // La foto de ticket/libreta se lee con IA (visión): también consume
+    // del límite mensual del plan.
+    if (!puedeUsarIA(data.plan)) {
+      pushMessage('assistant', mensajeLimiteIA())
+      setPaywall(mensajeLimiteIA())
+      return
+    }
     setBusy(true)
     setError(null)
     let compressed: { dataUrl: string; base64: string }
@@ -335,6 +370,14 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   }
 
   async function handleAudioBlob(blob: Blob, mime: string) {
+    // La nota de voz se transcribe con IA (Whisper): también consume del
+    // límite mensual del plan.
+    if (!puedeUsarIA(data.plan)) {
+      pushMessage('user', 'Nota de voz 🎙️')
+      pushMessage('assistant', mensajeLimiteIA())
+      setPaywall(mensajeLimiteIA())
+      return
+    }
     setBusy(true)
     setError(null)
     pushMessage('user', 'Nota de voz 🎙️')
@@ -464,6 +507,20 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       })
       setDrafts((ds) => ds.filter((d) => d.id !== draft.id))
       pushMessage('assistant', `Guardado: ${formatMoney(amount, currency)}${draft.merchant ? ` en ${draft.merchant}` : ''} (${draft.date}). ${data.partner ? 'Ya se ve en ambos teléfonos.' : 'Ya se ve en tu app.'}`)
+      // Contador de capturas con IA (migración 005): cada captura confirmada
+      // suma 1 al mes del hogar. Nunca rompe el guardado: si el contador
+      // falla (migración sin aplicar, sin red), el movimiento ya quedó.
+      // Se recarga el plan para que el contador se vea al instante.
+      try {
+        const inc = await registrarCapturaIA(data.household.id)
+        if (inc && !inc.allowed) {
+          pushMessage('assistant', `Llegaste al límite de capturas con IA de este mes (${inc.used}/${inc.limit}). Con Plus son ilimitadas (uso justo: 300 al mes).`)
+          setPaywall(mensajeLimiteIA())
+        }
+      } catch {
+        // El contador es secundario: el movimiento ya está guardado.
+      }
+      onRefresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar el movimiento.')
     } finally {
@@ -825,6 +882,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       <p className="text-center text-xs text-humo">
         La captura manual con el botón + sigue disponible. El chat nunca guarda sin tu confirmación.
       </p>
+      {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
       <div ref={messagesEndRef} />
     </div>
   )
