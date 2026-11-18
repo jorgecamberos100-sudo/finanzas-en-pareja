@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, setHouseholdId, getHouseholdId, findMyHouseholdId } from '../lib/supabase'
 import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
+import { crearHogar } from '../lib/household'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
 import ThemeToggle from '../components/ThemeToggle'
@@ -96,22 +97,28 @@ export default function Onboarding({ onDone }: Props) {
   /**
    * Crea el hogar. Solo (1 persona): el reparto es 100% para quien lo crea
    * y la invitación queda como opción para después. En pareja: 50/50.
+   *
+   * Se crea vía la RPC SECURITY DEFINER `create_household` (migración 006):
+   * el INSERT directo con `.select()` NO funciona — la política INSERT de
+   * `households` es `with check (true)` pero el RETURNING se evalúa contra
+   * la política SELECT (`is_member(id)`) y el usuario aún no es miembro
+   * (la fila en `household_members` se insertaba después). La RPC crea el
+   * hogar y agrega al creador como admin en una sola transacción, y
+   * devuelve el id y el código de invitación (que genera el servidor).
    */
   async function createHousehold(solo: boolean) {
     setBusy(true); setError(null)
     const { data: session } = await supabase.auth.getSession()
     const user = session.session?.user
     if (!user) { setError('Primero crea tu cuenta.'); setBusy(false); return }
-    const code = Math.random().toString(36).slice(2, 8).toUpperCase()
-    const { data: hh, error } = await supabase.from('households').insert({
-      name: solo ? 'Mi hogar' : householdName, currency: 'MXN', default_split: solo ? 100 : 50, invite_code: code,
-    }).select().single()
-    if (error || !hh) { setError(error?.message ?? 'No se pudo crear el hogar.'); setBusy(false); return }
-    const { error: mError } = await supabase.from('household_members').insert({ household_id: hh.id, user_id: user.id, role: 'admin' })
-    if (mError) { setError(mError.message); setBusy(false); return }
+    const res = await crearHogar(supabase, {
+      name: solo ? 'Mi hogar' : householdName,
+      defaultSplit: solo ? 100 : 50,
+    })
+    if (!res.ok) { setError(res.error); setBusy(false); return }
     setSoloMode(solo)
-    setInviteCode(code)
-    setHouseholdId(hh.id)
+    setInviteCode(res.hogar.invite_code)
+    setHouseholdId(res.hogar.id)
     setBusy(false); setStep(3)
   }
 
@@ -124,6 +131,10 @@ export default function Onboarding({ onDone }: Props) {
     // find_household_by_code (migración 004), que solo devuelve el id.
     const { data: householdId, error: hError } = await supabase.rpc('find_household_by_code', { p_code: joinCode.trim().toUpperCase() })
     if (hError || !householdId || !user) { setError('Código inválido. Pídele a tu pareja el código de invitación.'); setBusy(false); return }
+    // OJO: sin `.select()` a propósito — si se pidiera RETURNING, la
+    // política SELECT de household_members (`is_member`) se evaluaría con
+    // el snapshot previo al insert y Postgres rechazaría con 42501
+    // (el mismo bug que tenía crear el hogar).
     const { error: joinError } = await supabase.from('household_members').insert({ household_id: householdId, user_id: user.id, role: 'miembro' })
     if (joinError) {
       // Si ya era miembro de este hogar, proceder directamente al Dashboard
