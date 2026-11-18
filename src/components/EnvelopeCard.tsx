@@ -18,7 +18,7 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
   const limit = category.monthly_limit + (category.rollover ? rolloverBalance : 0)
   const available = Math.round((limit - spent) * 100) / 100
   const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0
-  const bar = pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-rosafuerte'
+  const bar = pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-verde'
 
   return (
     <article className="rounded-2xl border border-borde bg-tarjeta p-4  ">
@@ -46,8 +46,8 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
         <span>De {formatMoney(limit, currency)}</span>
       </div>
       <p className="mt-1 text-sm">
-        Disponible: <strong className={available < 0 ? 'text-rojosuave' : 'text-rosaclaro '}>{formatMoney(available, currency)}</strong>
-        {pct >= 80 && pct < 100 && <span className="ml-2 text-dorado">⚠️ Vas al {pct.toFixed(0)}% del sobre</span>}
+        Disponible: <strong className={available < 0 ? 'text-rojosuave' : 'text-doradotexto '}>{formatMoney(available, currency)}</strong>
+        {pct >= 80 && pct < 100 && <span className="ml-2 text-doradotexto">⚠️ Vas al {pct.toFixed(0)}% del sobre</span>}
         {pct >= 100 && <span className="ml-2 text-rojosuave">⚠️ Sobre al 100% o excedido</span>}
       </p>
       <div className="mt-3 flex gap-2">
@@ -55,7 +55,7 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
           Traspasar
         </button>
         {onEditLimit && (
-          <button onClick={() => onEditLimit(category)} className="rounded-xl border border-borde bg-tarjeta px-3 py-2 text-sm font-semibold text-humo transition hover:border-rosafuerte/40 hover:text-crema">
+          <button onClick={() => onEditLimit(category)} className="rounded-xl border border-borde bg-tarjeta px-3 py-2 text-sm font-semibold text-humo transition hover:border-foco/60 hover:text-crema">
             Ajustar límite ✏️
           </button>
         )}

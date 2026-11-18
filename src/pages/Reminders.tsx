@@ -236,13 +236,13 @@ export default function Reminders({ data, onRefresh }: Props) {
             {r.amount !== null && <p className="text-sm font-semibold">{formatMoney(r.amount, currency)}</p>}
             {r.note && <p className="text-sm text-humo">{r.note}</p>}
           </div>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${status === 'overdue' ? 'bg-[#FF8A8026] text-rojosuave' : status === 'today' ? 'bg-[#F5C54226] text-dorado' : 'bg-elevado text-humo '}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${status === 'overdue' ? 'bg-[#FF8A8026] text-rojosuave' : status === 'today' ? 'bg-[#F5C54226] text-doradotexto' : 'bg-elevado text-humo '}`}>
             {badge}
           </span>
         </div>
         {!r.is_done && (
           <div className="mt-2 flex gap-2">
-            <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-extrabold tracking-wide text-noche">
+            <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta">
               {r.recurrence === 'once' ? 'Marcar pagado ✅' : 'Pagado · siguiente ➡️'}
             </button>
             <button onClick={() => startEdit(r)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Editar</button>
@@ -275,12 +275,12 @@ export default function Reminders({ data, onRefresh }: Props) {
           {pushSupported() && <> · Push: <strong>{pushOn ? 'activado ✅' : 'apagado'}</strong></>}
         </p>
         {notificationsSupported() && perm !== 'granted' && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
             Activar notificaciones en este celular
           </button>
         )}
         {perm === 'granted' && pushSupported() && !pushOn && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
             {pushBusy ? 'Activando…' : 'Activar también cuando la app esté cerrada (push)'}
           </button>
         )}
@@ -321,7 +321,7 @@ export default function Reminders({ data, onRefresh }: Props) {
         </select>
         <input value={note} onChange={(e) => { setNote(e.target.value); setError(null) }} placeholder="Nota (opcional)" aria-label="Nota adicional" className="mb-2 w-full rounded-xl border p-2" />
         <div className="flex gap-2">
-          <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+          <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
             {busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear recordatorio 🔔'}
           </button>
           {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}
@@ -342,7 +342,7 @@ export default function Reminders({ data, onRefresh }: Props) {
                 <span>📅 Día {rec.due_day} · {rec.title} · <strong>{formatMoney(rec.amount, currency)}</strong></span>
                 {has
                   ? <span className="text-xs font-semibold text-verde">🔔 Ya tiene aviso</span>
-                  : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-rosafuerte px-3 py-1.5 text-xs font-bold text-noche">+ Aviso mensual</button>}
+                  : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-dorado px-3 py-1.5 text-xs font-bold text-tinta">+ Aviso mensual</button>}
               </div>
             )
           })}

@@ -104,7 +104,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
             }}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
-            className="shrink-0 rounded-xl border border-borde bg-tarjeta px-3 py-1.5 text-xs font-semibold text-humo transition hover:border-rosafuerte hover:text-crema"
+            className="shrink-0 rounded-xl border border-borde bg-tarjeta px-3 py-1.5 text-xs font-semibold text-humo transition hover:border-foco hover:text-crema"
           >
             Salir 🚪
           </button>
@@ -112,7 +112,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
       </header>
 
       {data.transactions.length === 0 && (
-        <section className="flex items-start gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+        <section className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
           <Mascota className="h-20 w-20 shrink-0" />
           <div>
             <p className="font-bold">Aún no hay movimientos 🐷</p>
@@ -123,14 +123,14 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
 
       {/* Hogar de 1 persona: invitar a la pareja es una opción, no un requisito. */}
       {!data.partner && data.household && (
-        <section className="rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+        <section className="rounded-2xl border border-foco/60 bg-tarjeta p-4">
           <p className="font-bold">💌 Invita a tu pareja (opcional)</p>
           <p className="mb-3 text-sm text-humo">Usas la app solo por ahora. Cuando quieras, tu pareja crea su cuenta y se une con este código.</p>
-          <div className="mb-3 rounded-2xl bg-[#F4728F1A] p-3 text-center">
-            <p className="text-2xl font-black tracking-widest text-rosaclaro">{data.household.invite_code}</p>
+          <div className="mb-3 rounded-2xl bg-doradotenue p-3 text-center">
+            <p className="text-2xl font-black tracking-widest text-doradotexto">{data.household.invite_code}</p>
             <p className="mt-1 break-all text-xs text-humo">{`${window.location.origin}/onboarding?codigo=${data.household.invite_code}`}</p>
           </div>
-          <button onClick={copyInvite} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">
+          <button onClick={copyInvite} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta">
             {copied ? '¡Copiado! ✅' : 'Copiar código y enlace'}
           </button>
           {copyFailed && <p role="alert" className="mt-2 text-center text-xs text-dorado">No se pudo copiar automáticamente: copia el código y el enlace de la tarjeta.</p>}
@@ -141,8 +141,8 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
         <PibbiDresser />
       </section>
 
-      <section className="rounded-2xl border border-rosafuerte/40 bg-tarjeta p-5">
-        <p className="text-sm text-rosaclaro">Patrimonio total</p>
+      <section className="rounded-2xl border border-foco/60 bg-tarjeta p-5">
+        <p className="text-sm text-doradotexto">Patrimonio total</p>
         <p className="text-3xl font-black text-crema">{formatMoney(patrimonio, currency)}</p>
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div><p className="text-humo">Ingresos del mes</p><p className="font-bold text-verde">+{formatMoney(ingresos, currency)}</p></div>
@@ -161,22 +161,22 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
 
       {/* La deuda mutua solo existe cuando hay pareja en el hogar. */}
       {data.partner && (mutual ? (
-        <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
+        <section className="rounded-2xl border border-foco/60 bg-[#F5C54214] p-4  ">
           <p className="font-bold">⚖️ Deuda mutua</p>
           <p className="text-sm">{debtorName} le debe <strong>{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
-          <button onClick={liquidar} disabled={liquidando} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+          <button onClick={liquidar} disabled={liquidando} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
             {liquidando ? 'Registrando liquidación…' : 'Liquidar ahora'}
           </button>
           {liquidarError && <p role="alert" className="mt-2 text-sm text-rojosuave">{liquidarError}</p>}
         </section>
       ) : (
-        <section className="rounded-2xl border border-verde/30 bg-[#4ADE8014] p-4  ">
+        <section className="rounded-2xl border border-verde bg-[#4ADE8014] p-4  ">
           <p className="font-bold">✅ Están a mano</p><p className="text-sm text-humo ">No hay deuda mutua pendiente.</p>
         </section>
       ))}
 
       {dueReminders.length > 0 && (
-        <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
+        <section className="rounded-2xl border border-foco/60 bg-[#F5C54214] p-4  ">
           <p className="font-bold">🔔 Recordatorios de pago</p>
           {dueReminders.map((r) => (
             <div key={r.id} className="mt-2 flex items-center justify-between gap-2 text-sm">
@@ -184,7 +184,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
                 {r.title} · {reminderStatus(r) === 'overdue' ? `vencido (${formatDateEs(r.due_date)})` : reminderStatus(r) === 'today' ? 'hoy' : 'mañana'}
                 {r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}
               </span>
-              <Link to="/recordatorios" className="shrink-0 rounded-xl bg-dorado px-3 py-1.5 font-bold text-noche">Ver</Link>
+              <Link to="/recordatorios" className="shrink-0 rounded-xl bg-dorado px-3 py-1.5 font-bold text-tinta">Ver</Link>
             </div>
           ))}
         </section>
@@ -194,14 +194,14 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-bold">Metas</h2>
           {data.goals.length > 0 && (
-            <Link to="/plan" className="text-xs font-semibold text-rosaclaro hover:underline">Ver todas</Link>
+            <Link to="/plan" className="text-xs font-semibold text-doradotexto hover:underline">Ver todas</Link>
           )}
         </div>
         {data.goals.length === 0 && <p className="text-sm text-humo">Aún no hay metas. Créalas en la pestaña Plan.</p>}
         {data.goals.slice(0, 3).map((g) => {
           const pct = g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0
           return (
-            <Link key={g.id} to="/plan" className="mb-2 block rounded-2xl border border-borde bg-tarjeta p-3 transition hover:border-rosafuerte/40">
+            <Link key={g.id} to="/plan" className="mb-2 block rounded-2xl border border-borde bg-tarjeta p-3 transition hover:border-foco/60">
               <div className="flex justify-between text-sm">
                 <span className="font-semibold">🎯 {g.name}</span>
                 <span className="text-xs text-humo">{formatMoney(g.current, currency)} / {formatMoney(g.target, currency)} ({pct.toFixed(0)}%)</span>
@@ -214,7 +214,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
                 aria-label={`Progreso de meta ${g.name}`}
                 className="mt-2 h-2 overflow-hidden rounded-full bg-borde "
               >
-                <div className="h-full bg-rosafuerte transition-all" style={{ width: `${pct}%` }} />
+                <div className="h-full bg-dorado transition-all" style={{ width: `${pct}%` }} />
               </div>
             </Link>
           )
@@ -235,7 +235,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-bold">Presupuesto del mes</h2>
           {data.categories.some((c) => c.monthly_limit > 0) && (
-            <Link to="/presupuesto" className="text-xs font-semibold text-rosaclaro hover:underline">Ver sobres</Link>
+            <Link to="/presupuesto" className="text-xs font-semibold text-doradotexto hover:underline">Ver sobres</Link>
           )}
         </div>
         {data.categories.filter((c) => c.monthly_limit > 0).slice(0, 5).map((c) => {
@@ -255,7 +255,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
                 aria-label={`Gasto en ${c.name}`}
                 className="mt-1 h-2 overflow-hidden rounded-full bg-borde "
               >
-                <div className={`h-full transition-all ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-rosafuerte'}`} style={{ width: `${pct}%` }} />
+                <div className={`h-full transition-all ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-verde'}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           )
