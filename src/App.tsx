@@ -249,7 +249,7 @@ export default function App() {
     <UpdateBanner />
     <div className="mx-auto min-h-screen max-w-lg pb-28">
       {syncError && (
-        <div role="alert" className="m-3 rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave  ">
+        <div role="alert" className="m-3 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave  ">
           ⚠️ {syncError}
         </div>
       )}

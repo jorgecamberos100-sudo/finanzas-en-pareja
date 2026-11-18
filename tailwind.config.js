@@ -6,14 +6,15 @@ export default {
       colors: {
         // Dos temas (ver src/lib/tema.ts y src/index.css): los valores viven
         // como tripletes RGB en variables CSS (--X-rgb) en :root (noche,
-        // paleta A · Marino afinado) y en :root[data-theme='dia'] (día,
-        // paleta C · Papel crema). Cambiar de tema es solo cambiar
-        // data-theme en <html>; los componentes usan los mismos nombres
-        // de token en ambos temas.
+        // esmeralda oscura, fondo verde casi negro) y en
+        // :root[data-theme='dia'] (día, esmeralda clara, fondo blanco
+        // verdoso). Cambiar de tema es solo cambiar data-theme en <html>;
+        // los componentes usan los mismos nombres de token en ambos temas.
         // Sin rosa en la interfaz (decisión de George): el rosa es solo
-        // de PIBBI. El acento principal es el dorado (dinero); el foco
-        // es dorado en noche y tinta en día. A PIBBI no le afecta: sus
-        // colores viven en sus propias variables e imágenes.
+        // de PIBBI. La señal de dinero es la menta brillante (relleno
+        // de botones); el foco es menta en noche y esmeralda en día.
+        // A PIBBI no le afecta: sus colores viven en sus propias
+        // variables e imágenes.
         noche: 'rgb(var(--noche-rgb) / <alpha-value>)',
         tarjeta: 'rgb(var(--tarjeta-rgb) / <alpha-value>)',
         elevado: 'rgb(var(--elevado-rgb) / <alpha-value>)',
@@ -23,19 +24,19 @@ export default {
         menta: 'rgb(var(--menta-rgb) / <alpha-value>)',
         verde: 'rgb(var(--verde-rgb) / <alpha-value>)',
         dorado: 'rgb(var(--dorado-rgb) / <alpha-value>)',
-        // Texto dorado (montos, metas, enlaces, código): en noche es el
-        // dorado brillante; en día es un dorado oscuro (#7A5F08) para no
-        // romper contraste sobre fondo claro. El relleno dorado de
-        // botones sigue en `dorado`.
+        // Texto de acento (montos, metas, enlaces, código): en noche es
+        // una menta clara (#6EE7B7); en día es un verde oscuro (#0B5C3D)
+        // para no romper contraste sobre fondo claro. El relleno de
+        // botones sigue en `dorado` (menta brillante #20B981).
         doradotexto: 'rgb(var(--doradotexto-rgb) / <alpha-value>)',
         // Dorado al 10%: avisos y selección.
         doradotenue: 'rgb(var(--dorado-rgb) / 0.1)',
         rojosuave: 'rgb(var(--rojosuave-rgb) / <alpha-value>)',
-        // Tinta oscura: texto sobre botones dorados y botón oscuro
-        // ("Unirme"). En noche es el fondo #0A0F1E; en día, #1B2340.
+        // Tinta oscura: texto sobre botones menta y botón oscuro
+        // ("Unirme"). En ambos temas es el verde casi negro #0C2B1C.
         tinta: 'rgb(var(--tinta-rgb) / <alpha-value>)',
         // Atención (anillo de foco, barra de progreso, bordes de
-        // aviso/selección): dorado en noche, tinta en día.
+        // aviso/selección): menta en noche, esmeralda en día.
         foco: 'rgb(var(--foco-rgb) / <alpha-value>)',
       },
     },

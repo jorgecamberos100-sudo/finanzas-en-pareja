@@ -2,35 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tres temas en toda la app (ver src/lib/tema.ts): noche (paleta A ·
-   Marino afinado, por defecto), día (paleta C · Papel crema) y
-   esmeralda (propuesta "Emerald Finance": verde esmeralda #137A55 y
-   menta #20B981). El interruptor cambia solo data-theme en <html>;
-   los componentes usan los mismos tokens en los tres temas. */
-/* Tres temas (ver src/lib/tema.ts): noche (paleta A · Marino afinado, por
-   defecto), día (paleta C · Papel crema) y esmeralda (verde esmeralda
-   #137A55 + menta #20B981, fondo blanco verdoso). Los tokens de Tailwind son
-   `rgb(var(--X-rgb) / <alpha-value>)`, así cambiar de tema es solo
-   cambiar data-theme en <html>. Sin rosa en la interfaz: el rosa es
-   solo de PIBBI; el acento principal es el dorado (dinero) en noche/día
-   y la menta brillante en esmeralda, y el foco es dorado en noche,
-   tinta en día y esmeralda en el tema esmeralda. */
+/* Dos temas, SOLO la paleta "Emerald Finance" (ver src/lib/tema.ts):
+   noche = esmeralda oscura (fondo verde casi negro), día = esmeralda
+   clara (fondo blanco verdoso). El interruptor cambia solo data-theme
+   en <html>; los componentes usan los mismos tokens en los dos temas. */
+/* Dos temas (ver src/lib/tema.ts): noche (esmeralda oscura, fondo verde
+   casi negro) y día (esmeralda clara, fondo blanco verdoso). Los tokens
+   de Tailwind son `rgb(var(--X-rgb) / <alpha-value>)`, así cambiar de
+   tema es solo cambiar data-theme en <html>. Sin rosa en la interfaz:
+   el rosa es solo de PIBBI; la señal de dinero es la menta brillante
+   (relleno de botones) y la esmeralda es marca/foco/positivo, y el foco
+   es menta en noche y esmeralda en día. */
 :root, :root[data-theme='noche'] {
   color-scheme: dark;
-  /* Paleta A · Marino afinado. */
-  --noche-rgb: 10 15 30;
-  --tarjeta-rgb: 35 46 82;
-  --elevado-rgb: 44 60 104;
-  --borde-rgb: 66 84 138;
-  --crema-rgb: 253 232 216;
-  --humo-rgb: 198 205 235;
+  /* Esmeralda oscura · propuesta "Emerald Finance" (ChatGPT, nov 2026):
+     fondo verde casi negro #07130C. La esmeralda #137A55 es demasiado
+     oscura para texto sobre fondo oscuro (3.6:1), así que los acentos
+     de texto usan sus variantes claras: menta #7DDBC3, verde #4ADE80,
+     acento-texto #6EE7B7, alerta coral claro #FF8A80; la menta
+     brillante #20B981 queda como relleno de los botones principales
+     (con tinta #0C2B1C, 6.0:1) y como foco.
+     Contrastes medidos (AA, texto normal >= 4.5:1): texto/fondo 16.5,
+     secundario/fondo 10.8, verde/tarjeta 8.7, botón menta/tinta 6.0,
+     acento-texto/tarjeta 9.9, coral/tarjeta 6.6, menta/tarjeta 9.2,
+     foco/fondo 7.5. */
+  --noche-rgb: 7 19 12;
+  --tarjeta-rgb: 18 43 30;
+  --elevado-rgb: 23 56 36;
+  --borde-rgb: 42 74 56;
+  --crema-rgb: 231 242 235;
+  --humo-rgb: 169 203 182;
   --menta-rgb: 125 219 195;
   --verde-rgb: 74 222 128;
-  --dorado-rgb: 245 197 66;
-  --doradotexto-rgb: 245 197 66;
+  --dorado-rgb: 32 185 129;
+  --doradotexto-rgb: 110 231 183;
   --rojosuave-rgb: 255 138 128;
-  --tinta-rgb: 10 15 30;
-  --foco-rgb: 245 197 66;
+  --tinta-rgb: 12 43 28;
+  --foco-rgb: 32 185 129;
   /* PIBBI (sin tocar): párpados y sombra. */
   --rosaclaro: #F9A8B8;
   --rosaparado: #F49DB1;
@@ -39,28 +47,10 @@
 
 :root[data-theme='dia'] {
   color-scheme: light;
-  /* Paleta C · Papel crema. */
-  --noche-rgb: 247 241 227;
-  --tarjeta-rgb: 255 255 255;
-  --elevado-rgb: 253 250 241;
-  --borde-rgb: 211 197 162;
-  --crema-rgb: 27 35 64;
-  --humo-rgb: 91 99 127;
-  --menta-rgb: 15 118 110;
-  --verde-rgb: 21 115 71;
-  --dorado-rgb: 245 197 66;
-  --doradotexto-rgb: 122 95 8;
-  --rojosuave-rgb: 180 35 24;
-  --tinta-rgb: 27 35 64;
-  --foco-rgb: 27 35 64;
-}
-
-:root[data-theme='esmeralda'] {
-  color-scheme: light;
-  /* Esmeralda · propuesta "Emerald Finance" (ChatGPT, nov 2026):
+  /* Esmeralda clara · propuesta "Emerald Finance" (ChatGPT, nov 2026):
      marca verde esmeralda #137A55, menta #20B981, fondo claro blanco
-     verdoso, fondo oscuro verde casi negro. El verde domina la
-     interfaz; el rosa sigue siendo solo de PIBBI.
+     verdoso. El verde domina la interfaz; el rosa sigue siendo solo
+     de PIBBI.
      Contrastes medidos (AA, texto normal >= 4.5:1): texto/fondo 13.7,
      secundario/fondo 5.3, esmeralda/fondo 4.8, botón menta/tinta 6.0,
      acento-texto/tarjeta 8.0, coral/tarjeta 5.2. La menta brillante
@@ -113,7 +103,7 @@ select option {
 }
 
 /* Foco visible para navegación por teclado (Hallmark 26a): anillo del
-   token `foco` (dorado en noche, tinta en día), con contraste ≥3:1
+   token `foco` (menta en noche, esmeralda en día), con contraste ≥3:1
    sobre el fondo en ambos temas. */
 :focus-visible {
   @apply outline-none ring-2 ring-foco ring-offset-2 ring-offset-noche;

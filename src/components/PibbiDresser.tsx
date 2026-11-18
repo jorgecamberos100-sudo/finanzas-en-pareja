@@ -33,7 +33,7 @@ export default function PibbiDresser({ title = 'Viste a PIBBI' }: Props) {
               accessory === a.id ? 'border-foco bg-doradotenue' : 'border-borde bg-elevado'
             }`}
           >
-            <Mascota pose="frente" accessory={a.id} alt={a.id === 'ninguno' ? 'PIBBI sin prenda' : `PIBBI con ${a.name}`} className="h-12 w-12" />
+            <Mascota pose="frente" accessory={a.id} alt={a.id === 'ninguno' ? 'PIBBI sin prenda' : `PIBBI con ${a.name}`} className="h-10 w-10" />
             <span className="text-center text-[11px] leading-tight text-humo">{a.emoji} {a.name}</span>
           </button>
         ))}

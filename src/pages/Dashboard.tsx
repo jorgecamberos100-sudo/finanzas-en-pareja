@@ -113,7 +113,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
 
       {data.transactions.length === 0 && (
         <section className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
-          <Mascota className="h-20 w-20 shrink-0" />
+          <Mascota className="h-16 w-16 shrink-0" />
           <div>
             <p className="font-bold">Aún no hay movimientos 🐷</p>
             <p className="text-sm text-humo">Toca el botón + o escríbele a PIBBI en el Chat: un gasto, la foto de un ticket o una nota de voz.</p>
@@ -161,7 +161,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
 
       {/* La deuda mutua solo existe cuando hay pareja en el hogar. */}
       {data.partner && (mutual ? (
-        <section className="rounded-2xl border border-foco/60 bg-[#F5C54214] p-4  ">
+        <section className="rounded-2xl border border-foco/60 bg-doradotenue p-4  ">
           <p className="font-bold">⚖️ Deuda mutua</p>
           <p className="text-sm">{debtorName} le debe <strong>{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
           <button onClick={liquidar} disabled={liquidando} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
@@ -170,13 +170,13 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
           {liquidarError && <p role="alert" className="mt-2 text-sm text-rojosuave">{liquidarError}</p>}
         </section>
       ) : (
-        <section className="rounded-2xl border border-verde bg-[#4ADE8014] p-4  ">
+        <section className="rounded-2xl border border-verde bg-verde/10 p-4  ">
           <p className="font-bold">✅ Están a mano</p><p className="text-sm text-humo ">No hay deuda mutua pendiente.</p>
         </section>
       ))}
 
       {dueReminders.length > 0 && (
-        <section className="rounded-2xl border border-foco/60 bg-[#F5C54214] p-4  ">
+        <section className="rounded-2xl border border-foco/60 bg-doradotenue p-4  ">
           <p className="font-bold">🔔 Recordatorios de pago</p>
           {dueReminders.map((r) => (
             <div key={r.id} className="mt-2 flex items-center justify-between gap-2 text-sm">
@@ -255,7 +255,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
                 aria-label={`Gasto en ${c.name}`}
                 className="mt-1 h-2 overflow-hidden rounded-full bg-borde "
               >
-                <div className={`h-full transition-all ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-verde'}`} style={{ width: `${pct}%` }} />
+                <div className={`h-full transition-all ${pct >= 100 ? 'bg-rojosuave' : pct >= 80 ? 'bg-dorado' : 'bg-verde'}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           )

@@ -117,12 +117,12 @@ export default function Plan({ data, onRefresh }: Props) {
       <h1 className="text-2xl font-bold">Plan</h1>
 
       {error && (
-        <div role="alert" className="rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave">
+        <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
           ⚠️ {error}
         </div>
       )}
       {message && (
-        <div role="status" className="rounded-xl bg-[#4ADE8014] p-3 text-sm text-verde">
+        <div role="status" className="rounded-xl bg-verde/10 p-3 text-sm text-verde">
           ✅ {message}
         </div>
       )}

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { aplicarTema, leerTema, siguienteTema, type Tema } from '../lib/tema'
 
-/** Interruptor de tema: recorre noche -> día -> esmeralda -> noche.
- *  El icono muestra el tema al que se cambia (sol = día, hoja =
- *  esmeralda, luna = noche). La elección se guarda en localStorage y
- *  se aplica antes del primer render (ver main.tsx), así al recargar
- *  sigue el tema elegido. Por defecto: noche. */
+/** Interruptor de tema: alterna noche <-> día (los dos temas esmeralda).
+ *  El icono muestra el tema al que se cambia (sol = día, luna = noche).
+ *  La elección se guarda en localStorage y se aplica antes del primer
+ *  render (ver main.tsx), así al recargar sigue el tema elegido. Por
+ *  defecto: noche. */
 const ICONOS: Record<Tema, { label: string; titulo: string; svg: React.ReactNode }> = {
   dia: {
     label: 'Cambiar a tema día',
@@ -15,17 +15,6 @@ const ICONOS: Record<Tema, { label: string; titulo: string; svg: React.ReactNode
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5" aria-hidden="true">
         <circle cx="12" cy="12" r="4" />
         <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-      </svg>
-    ),
-  },
-  esmeralda: {
-    label: 'Cambiar a tema esmeralda',
-    titulo: 'Tema esmeralda',
-    svg: (
-      // Hoja: pasar a esmeralda.
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
-        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
       </svg>
     ),
   },

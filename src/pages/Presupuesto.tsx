@@ -131,7 +131,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
 
       {pasados.length > 0 && (
         <div className="flex items-center gap-3 rounded-2xl border border-borde bg-tarjeta p-3">
-          <Mascota pose="pensativo" className="h-16 w-16 shrink-0" />
+          <Mascota pose="pensativo" className="h-14 w-14 shrink-0" />
           <p className="text-sm">
             Te pasaste un poco en {pasados.map((c) => c.name).join(', ')}, sin drama — lo ajustamos el próximo mes.
           </p>
@@ -139,7 +139,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       )}
 
       {error && (
-        <div role="alert" className="rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave">
+        <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
           ⚠️ {error}
         </div>
       )}

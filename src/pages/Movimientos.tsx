@@ -130,7 +130,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
       </div>
 
       {txError && (
-        <div role="alert" className="rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave">
+        <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
           ⚠️ {txError}
         </div>
       )}
@@ -199,7 +199,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
             </div>
           ) : (
             <div className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
-              <Mascota pose="ahorrando" alt="PIBBI sentado con una moneda" className="h-20 w-20 shrink-0" />
+              <Mascota pose="ahorrando" alt="PIBBI sentado con una moneda" className="h-16 w-16 shrink-0" />
               <div>
                 <p className="font-bold">Aún no hay movimientos 🐷</p>
                 <p className="text-sm text-humo">Toca “+” para registrar el primero, o mándale a PIBBI la foto de un ticket en el Chat.</p>
