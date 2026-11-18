@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase'
 import CsvImport from '../components/CsvImport'
 import Paywall from '../components/Paywall'
 import Mascota from '../components/Mascota'
+import PibbiHeader from '../components/PibbiHeader'
+import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 
 interface Props { data: AppData; onRefresh: () => void }
 
@@ -121,13 +123,10 @@ export default function Movimientos({ data, onRefresh }: Props) {
 
   return (
     <main className="space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Movimientos</h1>
-        <div className="flex gap-2">
-          <button onClick={() => setShowImport((v) => !v)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Importar CSV</button>
-          <button onClick={exportCsv} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Exportar CSV</button>
-        </div>
-      </div>
+      <PibbiHeader pose={PAGE_PIBBI_POSES.movimientos} title="Movimientos">
+        <button onClick={() => setShowImport((v) => !v)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Importar CSV</button>
+        <button onClick={exportCsv} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Exportar CSV</button>
+      </PibbiHeader>
 
       {txError && (
         <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">

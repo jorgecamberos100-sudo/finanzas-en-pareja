@@ -1,6 +1,8 @@
 // Pruebas de PIBBI: accesorios válidos, poses de las reacciones y modo individual.
 // Lógica pura (sin Supabase ni DOM): la personalización se guarda por usuario
 // y el hogar de 1 persona reparte 100% (quien paga lo absorbe todo).
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { PIBBI_ACCESSORIES, isPibbiAccessory } from '../src/lib/pibbi-accessories.ts'
 import { computeMutualBalance, splitPctFor } from '../src/lib/split.ts'
 import {
@@ -13,7 +15,7 @@ import { MASCOTA_PROGRESO } from '../src/lib/mascota/progreso.ts'
 import { MASCOTA_PERFIL_LAPIZ } from '../src/lib/mascota/perfil-lapiz.ts'
 import { MASCOTA_CALCULADORA } from '../src/lib/mascota/calculadora.ts'
 import { MASCOTA_AVATAR_CIRCULAR } from '../src/lib/mascota/avatar-circular.ts'
-import { PIBBI_POSES, REACTION_POSES } from '../src/lib/pibbi-poses.ts'
+import { PIBBI_POSES, REACTION_POSES, PAGE_PIBBI_POSES, type PibbiPage } from '../src/lib/pibbi-poses.ts'
 
 let pass = 0
 let fail = 0
@@ -88,6 +90,35 @@ for (const [pose, cfg] of Object.entries(PIBBI_POSES)) {
     check(`párpado de ${pose} dentro del marco`, e.left >= 0 && e.left + 18 <= 100 && e.top >= 0 && e.top + 15 <= 100, true)
   }
 }
+
+// 6. PIBBI en todas las ventanas (George, 17 nov): cada vista lleva el
+// encabezado común PibbiHeader con su pose. Lógica pura + fuente: si una
+// ventana pierde su encabezado o usa una pose que no existe, el test falla.
+const root = process.cwd()
+const PAGES: Array<{ page: PibbiPage; file: string; pose: string }> = [
+  { page: 'dashboard', file: 'src/pages/Dashboard.tsx', pose: 'saludando' },
+  { page: 'movimientos', file: 'src/pages/Movimientos.tsx', pose: 'calculadora' },
+  { page: 'presupuesto', file: 'src/pages/Presupuesto.tsx', pose: 'contar' },
+  { page: 'plan', file: 'src/pages/Plan.tsx', pose: 'progreso' },
+  { page: 'chat', file: 'src/pages/Chat.tsx', pose: 'avatarCircular' },
+  { page: 'recordatorios', file: 'src/pages/Reminders.tsx', pose: 'perfilLapiz' },
+  { page: 'onboarding', file: 'src/pages/Onboarding.tsx', pose: 'saludando' },
+]
+check('el mapa cubre las 7 ventanas', Object.keys(PAGE_PIBBI_POSES).sort(), PAGES.map((p) => p.page).sort())
+for (const { page, pose } of PAGES) {
+  check(`pose de ${page} es ${pose}`, PAGE_PIBBI_POSES[page], pose)
+  check(`pose de ${page} existe en PIBBI_POSES`, pose in PIBBI_POSES, true)
+}
+for (const { page, file } of PAGES) {
+  const src = readFileSync(join(root, file), 'utf8')
+  check(`${file} importa PibbiHeader`, src.includes("from '../components/PibbiHeader'"), true)
+  check(`${file} renderiza <PibbiHeader`, src.includes('<PibbiHeader'), true)
+  check(`${file} usa PAGE_PIBBI_POSES.${page}`, src.includes(`PAGE_PIBBI_POSES.${page}`), true)
+}
+const headerSrc = readFileSync(join(root, 'src/components/PibbiHeader.tsx'), 'utf8')
+check('PibbiHeader renderiza Mascota', headerSrc.includes('<Mascota'), true)
+check('PibbiHeader usa PIBBI pequeño h-12', headerSrc.includes('h-12 w-12'), true)
+check('PibbiHeader no tapa botones a 360 px (flex-wrap)', headerSrc.includes('flex-wrap'), true)
 
 console.log(`\n${pass} pasaron, ${fail} fallaron`)
 if (fail > 0) process.exit(1)

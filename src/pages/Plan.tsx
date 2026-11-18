@@ -5,6 +5,8 @@ import { defPlan, puedeCrearMeta } from '../lib/planes'
 import { supabase } from '../lib/supabase'
 import GoalCard from '../components/GoalCard'
 import Paywall from '../components/Paywall'
+import PibbiHeader from '../components/PibbiHeader'
+import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
 import type { Account, Goal } from '../types'
 
@@ -114,7 +116,7 @@ export default function Plan({ data, onRefresh }: Props) {
 
   return (
     <main className="space-y-4 p-4">
-      <h1 className="text-2xl font-bold">Plan</h1>
+      <PibbiHeader pose={PAGE_PIBBI_POSES.plan} title="Plan" subtitle="Tus metas, tus cuentas y tu revisión." />
 
       {error && (
         <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
