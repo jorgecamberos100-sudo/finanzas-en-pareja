@@ -2,7 +2,7 @@
 export type PibbiAccessory = 'ninguno' | 'lentes' | 'gorra' | 'mono' | 'corona'
 
 export const PIBBI_ACCESSORIES: { id: PibbiAccessory; name: string; emoji: string }[] = [
-  { id: 'ninguno', name: 'Sin accesorios', emoji: '🐷' },
+  { id: 'ninguno', name: 'Ninguna', emoji: '🐷' },
   { id: 'lentes', name: 'Lentes', emoji: '👓' },
   { id: 'gorra', name: 'Gorra', emoji: '🧢' },
   { id: 'mono', name: 'Moño', emoji: '🎀' },

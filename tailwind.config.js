@@ -13,6 +13,7 @@ export default {
         humo: '#B9C0E0',
         rosaclaro: '#F9A8B8',
         rosafuerte: '#F4728F',
+        rosatenue: '#F4728F1A', // rosa fuerte al 10%: avisos y selección.
         menta: '#7DDBC3',
         verde: '#4ADE80',
         dorado: '#F5C542',

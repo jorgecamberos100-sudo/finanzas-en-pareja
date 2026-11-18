@@ -6,6 +6,14 @@
    No hay modo claro: el tema es oscuro siempre, para que no quede mitad y mitad. */
 :root {
   color-scheme: dark;
+  /* Espejo de los tokens de Tailwind para el CSS plano (párpados y sombra de PIBBI). */
+  --rosaclaro: #F9A8B8;
+  --rosaparado: #F49DB1;
+  --sombra: rgba(0, 0, 0, 0.45);
+}
+
+html, body {
+  overflow-x: clip;
 }
 
 body {
@@ -26,6 +34,12 @@ select option {
 
 ::selection {
   @apply bg-rosafuerte text-noche;
+}
+
+/* Foco visible para navegación por teclado (Hallmark 26a): anillo rosa
+   claro, instantáneo, con contraste ≥3:1 sobre el fondo azul marino. */
+:focus-visible {
+  @apply outline-none ring-2 ring-rosaclaro ring-offset-2 ring-offset-noche;
 }
 
 /* PIBBI siempre vivo: flota, respira, pestañea y proyecta sombra, todo
@@ -110,7 +124,7 @@ select option {
   height: 15%;
   top: 22%;
   border-radius: 50%;
-  background: linear-gradient(#f9a8b8, #f49db1);
+  background: linear-gradient(var(--rosaclaro), var(--rosaparado));
   transform: scaleY(0);
   transform-origin: top center;
   animation: pibbi-parpadeo 4.2s linear infinite;
@@ -127,7 +141,7 @@ select option {
   bottom: -4px;
   height: 5px;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--sombra);
   filter: blur(4px);
   animation: pibbi-sombra 4.8s linear infinite;
   animation-delay: var(--pibbi-float-delay, 0s);
