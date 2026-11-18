@@ -34,7 +34,7 @@ check('sw.ts sigue con push de recordatorios', sw.includes("addEventListener('pu
 
 const vite = readFileSync(join(root, 'vite.config.ts'), 'utf8')
 check('vite.config no inyecta registro automático (registro manual en main.tsx)', vite.includes('injectRegister: false'))
-check('vite.config usa la paleta azul marino en el manifest', vite.includes("theme_color: '#0F1530'"))
+check('vite.config usa la paleta azul marino en el manifest', vite.includes("theme_color: '#0A0F1E'"))
 
 check('existe src/lib/sw-update.ts', existsSync(join(root, 'src/lib/sw-update.ts')))
 const upd = readFileSync(join(root, 'src/lib/sw-update.ts'), 'utf8')
