@@ -158,6 +158,7 @@ check('household.ts: el helper llama a la RPC create_household', readFileSync(jo
 check('Onboarding: ya no inserta directo en households', !onboarding.includes("from('households').insert"), true)
 check('Onboarding: ya no inserta directo en household_members al crear', !onboarding.includes("from('household_members').insert({ household_id: hh.id"), true)
 check('Onboarding: unirse con código sigue con su RPC (sin tocar)', onboarding.includes("rpc('find_household_by_code'"), true)
+check('Onboarding: unirse inserta el miembro con returning minimal (sin RETURNING la SELECT is_member lo rechaza con 42501)', onboarding.includes("from('household_members').insert(") && onboarding.includes("returning: 'minimal'"), true)
 check('migración 006: función SECURITY DEFINER', mig006.includes('security definer'), true)
 check('migración 006: search_path fijado a public', mig006.includes('set search_path = public'), true)
 check('migración 006: exige usuario autenticado', mig006.includes('auth.uid()'), true)

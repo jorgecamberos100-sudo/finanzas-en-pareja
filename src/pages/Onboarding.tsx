@@ -131,7 +131,14 @@ export default function Onboarding({ onDone }: Props) {
     // find_household_by_code (migración 004), que solo devuelve el id.
     const { data: householdId, error: hError } = await supabase.rpc('find_household_by_code', { p_code: joinCode.trim().toUpperCase() })
     if (hError || !householdId || !user) { setError('Código inválido. Pídele a tu pareja el código de invitación.'); setBusy(false); return }
-    const { error: joinError } = await supabase.from('household_members').insert({ household_id: householdId, user_id: user.id, role: 'miembro' })
+    // Sin `returning: 'minimal'`, PostgREST pide RETURNING y la política
+    // SELECT de household_members (`is_member`) se evalúa con el snapshot
+    // previo al insert — la fila aún no se ve a sí misma como miembro y
+    // Postgres rechaza con 42501 (el mismo bug que tenía crear el hogar).
+    const { error: joinError } = await supabase.from('household_members').insert(
+      { household_id: householdId, user_id: user.id, role: 'miembro' },
+      { returning: 'minimal' },
+    )
     if (joinError) {
       // Si ya era miembro de este hogar, proceder directamente al Dashboard
       if (joinError.code === '23505' || joinError.message.includes('unique') || joinError.message.includes('duplicate')) {
