@@ -124,7 +124,18 @@ export default function Onboarding({ onDone }: Props) {
     const { data: householdId, error: hError } = await supabase.rpc('find_household_by_code', { p_code: joinCode.trim().toUpperCase() })
     if (hError || !householdId || !user) { setError('Código inválido. Pídele a tu pareja el código de invitación.'); setBusy(false); return }
     const { error: joinError } = await supabase.from('household_members').insert({ household_id: householdId, user_id: user.id, role: 'miembro' })
-    if (joinError) { setError(joinError.message); setBusy(false); return }
+    if (joinError) {
+      // Si ya era miembro de este hogar, proceder directamente al Dashboard
+      if (joinError.code === '23505' || joinError.message.includes('unique') || joinError.message.includes('duplicate')) {
+        setHouseholdId(householdId)
+        setBusy(false)
+        onDone()
+        return
+      }
+      setError(joinError.message)
+      setBusy(false)
+      return
+    }
     setHouseholdId(householdId)
     setBusy(false); onDone()
   }
@@ -166,35 +177,39 @@ export default function Onboarding({ onDone }: Props) {
             <>
               <h1 className="text-2xl font-bold">Inicia sesión</h1>
               <p className="mb-4 text-humo">Entra con el correo y la contraseña con los que creaste tu cuenta.</p>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" aria-label="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
               <div className="relative mb-4">
-                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" aria-label="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
                 <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
-              <button onClick={login} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Entrar</button>
+              <button onClick={login} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">
+                {busy ? 'Entrando…' : 'Entrar'}
+              </button>
               <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-rosaclaro">¿No tienes cuenta? Crea una</button>
             </>
           ) : (
             <>
               <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
               <p className="mb-4 text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" aria-label="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" aria-label="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
               <div className="relative mb-2">
-                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" aria-label="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
                 <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
               <div className="relative mb-4">
-                <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
+                <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" aria-label="Confirmar contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
                 <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
-              <button onClick={step1} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Continuar</button>
+              <button onClick={step1} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">
+                {busy ? 'Guardando…' : 'Continuar'}
+              </button>
               <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-rosaclaro">¿Ya tienes cuenta? Inicia sesión</button>
             </>
           )}
@@ -210,7 +225,9 @@ export default function Onboarding({ onDone }: Props) {
           <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
             <p className="text-lg font-bold">🙋 Solo yo por ahora</p>
             <p className="mb-3 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
-            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Usar solo por ahora</button>
+            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">
+              {busy ? 'Creando hogar…' : 'Usar solo por ahora'}
+            </button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
@@ -223,8 +240,10 @@ export default function Onboarding({ onDone }: Props) {
           <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
             <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
             <p className="mb-3 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
-            <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Crear hogar</button>
+            <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" aria-label="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
+            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">
+              {busy ? 'Creando hogar…' : 'Crear hogar'}
+            </button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
@@ -241,13 +260,21 @@ export default function Onboarding({ onDone }: Props) {
               <>
                 {joinCode && <p className="mb-2 rounded-lg bg-rosatenue p-2 text-sm text-rosaclaro  ">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
                 <div className="flex gap-2">
-                  <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" className="flex-1 rounded-xl border p-3 uppercase" />
-                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-noche px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">Unirme</button>
+                  <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" aria-label="Código de invitación" className="flex-1 rounded-xl border p-3 uppercase" />
+                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-noche px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                    {busy ? 'Uniendo…' : 'Unirme'}
+                  </button>
                 </div>
               </>
             ) : (
               <button onClick={() => setJoinExpanded(true)} className="w-full whitespace-nowrap rounded-xl border border-borde bg-tarjeta py-3 font-bold">Tengo un código de invitación</button>
             )}
+          </div>
+
+          <div className="mt-6 text-center">
+            <button type="button" onClick={async () => { await supabase.auth.signOut(); setStep(1); setMode('login'); setError(null) }} className="text-xs text-humo underline hover:text-crema">
+              ¿Quieres usar otra cuenta? Cerrar sesión
+            </button>
           </div>
         </section>
       )}
@@ -272,7 +299,9 @@ export default function Onboarding({ onDone }: Props) {
             <PibbiDresser title="Prendas" />
           </div>
           <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Crear mis cuentas y terminar</button>
+          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">
+            {busy ? 'Creando cuentas…' : 'Crear mis cuentas y terminar'}
+          </button>
         </section>
       )}
 
@@ -285,7 +314,7 @@ export default function Onboarding({ onDone }: Props) {
         </section>
       )}
 
-      {error && <p role="alert" className="mt-4 text-sm text-rojosuave">{error}</p>}
+      {error && <div role="alert" className="mt-4 rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave">⚠️ {error}</div>}
     </div>
   )
 }

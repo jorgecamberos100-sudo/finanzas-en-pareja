@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
-import { dedupeHashSync } from '../lib/format'
+import { dedupeHashSync, formatMoney } from '../lib/format'
 import { supabase } from '../lib/supabase'
 
 interface Props {
@@ -41,7 +41,10 @@ export default function CsvImport({ data, onDone }: Props) {
   const [rows, setRows] = useState<ParsedRow[]>([])
   const [accountId, setAccountId] = useState(data.accounts[0]?.id ?? '')
   const [importing, setImporting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
+
+  const currency = data.household?.currency ?? 'MXN'
 
   const existingHashes = useMemo(
     () => new Set(data.transactions.map((t) => t.dedupe_hash).filter(Boolean)),
@@ -49,6 +52,8 @@ export default function CsvImport({ data, onDone }: Props) {
   )
 
   async function handleFile(file: File) {
+    setError(null)
+    setResult(null)
     const text = await file.text()
     const raw = parseCsv(text)
     // Traer todas las reglas del hogar en una sola consulta para no hacer
@@ -82,9 +87,15 @@ export default function CsvImport({ data, onDone }: Props) {
   }
 
   async function importRows() {
-    if (!data.household || !data.me) return
-    setImporting(true)
+    if (!data.household || !data.me || importing) return
     const fresh = rows.filter((r) => !r.duplicate)
+    if (fresh.length === 0) {
+      setResult(`Todos los movimientos del archivo (${rows.length}) ya estaban registrados como duplicados. No se insertó ninguno nuevo.`)
+      return
+    }
+    setImporting(true)
+    setError(null)
+    setResult(null)
     const payload = fresh.map((r) => ({
       household_id: data.household!.id,
       account_id: accountId,
@@ -101,9 +112,9 @@ export default function CsvImport({ data, onDone }: Props) {
       review_status: 'pendiente' as const, // van a la cola "Por revisar"
       dedupe_hash: r.hash,
     }))
-    const { error } = await supabase.from('transactions').insert(payload)
+    const { error: err } = await supabase.from('transactions').insert(payload)
     setImporting(false)
-    if (error) { setResult(`Error al importar: ${error.message}`); return }
+    if (err) { setError(`Error al importar: ${err.message}`); return }
     setResult(`Importados ${fresh.length} movimientos. ${rows.length - fresh.length} duplicados se omitieron. Los nuevos quedan en "Por revisar".`)
     onDone()
   }
@@ -115,7 +126,7 @@ export default function CsvImport({ data, onDone }: Props) {
         Columnas esperadas: fecha, comercio/descripción y monto. Se deduplica por hash (fecha + monto + comercio + cuenta) y se aplican tus reglas por comercio.
       </p>
       <div className="mb-3 flex gap-2">
-        <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="flex-1 rounded-xl border border-borde p-2 ">
+        <select value={accountId} onChange={(e) => setAccountId(e.target.value)} aria-label="Cuenta para importar" className="flex-1 rounded-xl border border-borde p-2 ">
           {data.accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
         <label className="cursor-pointer rounded-xl bg-rosafuerte px-4 py-2 text-sm font-semibold text-noche">
@@ -132,7 +143,7 @@ export default function CsvImport({ data, onDone }: Props) {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.hash} className={r.duplicate ? 'text-humo line-through' : ''}>
-                    <td>{r.date}</td><td>{r.merchant}</td><td>${r.amount.toFixed(2)}</td>
+                    <td>{r.date}</td><td>{r.merchant}</td><td>{formatMoney(r.amount, currency)}</td>
                     <td>{r.duplicate ? 'Duplicado — se omite' : r.ruleApplied ? 'Regla aplicada' : 'Nuevo'}</td>
                   </tr>
                 ))}
@@ -144,7 +155,8 @@ export default function CsvImport({ data, onDone }: Props) {
           </button>
         </>
       )}
-      {result && <p className="mt-3 text-sm text-verde ">{result}</p>}
+      {error && <div role="alert" className="mt-3 text-sm text-rojosuave">⚠️ {error}</div>}
+      {result && <div role="status" className="mt-3 text-sm text-verde">✅ {result}</div>}
     </div>
   )
 }

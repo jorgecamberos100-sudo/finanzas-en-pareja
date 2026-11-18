@@ -7,13 +7,14 @@ interface Props {
   rolloverBalance?: number
   currency?: string
   onTransfer: (category: Category) => void
+  onEditLimit?: (category: Category) => void
 }
 
 /**
  * Sobre de presupuesto: límite, gastado, disponible, rollover.
  * Alerta al 80% (ámbar) y al 100% (rojo).
  */
-export default function EnvelopeCard({ category, spent, rolloverBalance = 0, currency = 'MXN', onTransfer }: Props) {
+export default function EnvelopeCard({ category, spent, rolloverBalance = 0, currency = 'MXN', onTransfer, onEditLimit }: Props) {
   const limit = category.monthly_limit + (category.rollover ? rolloverBalance : 0)
   const available = Math.round((limit - spent) * 100) / 100
   const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0
@@ -49,9 +50,16 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
         {pct >= 80 && pct < 100 && <span className="ml-2 text-dorado">⚠️ Vas al {pct.toFixed(0)}% del sobre</span>}
         {pct >= 100 && <span className="ml-2 text-rojosuave">⚠️ Sobre al 100% o excedido</span>}
       </p>
-      <button onClick={() => onTransfer(category)} className="mt-3 w-full rounded-xl bg-elevado py-2 text-sm font-semibold ">
-        Traspasar entre sobres
-      </button>
+      <div className="mt-3 flex gap-2">
+        <button onClick={() => onTransfer(category)} className="flex-1 rounded-xl bg-elevado py-2 text-sm font-semibold transition hover:bg-borde">
+          Traspasar
+        </button>
+        {onEditLimit && (
+          <button onClick={() => onEditLimit(category)} className="rounded-xl border border-borde bg-tarjeta px-3 py-2 text-sm font-semibold text-humo transition hover:border-rosafuerte/40 hover:text-crema">
+            Ajustar límite ✏️
+          </button>
+        )}
+      </div>
     </article>
   )
 }

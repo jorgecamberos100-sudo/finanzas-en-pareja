@@ -162,6 +162,12 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Desplazamiento automático al llegar nuevos mensajes o propuestas
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, drafts.length, reminderDrafts.length, busy])
 
   // Zona horaria del dispositivo que captura (ej. "America/Tijuana").
   // Se envía en cada llamada a capture-parse para que "hoy"/"ayer" se
@@ -424,6 +430,10 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     const amount = parseAmount(draft.amount)
     if (!amount) {
       setError('Escribe un monto mayor a $0 en la tarjeta antes de confirmar.')
+      return
+    }
+    if (!draft.date) {
+      setError('Elige una fecha válida en la tarjeta antes de confirmar.')
       return
     }
     if (draft.type !== 'transferencia' && !draft.categoryId) {
@@ -729,7 +739,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           />
           {d.type === 'gasto' && data.partner && (
             <p className="mb-2 text-xs text-humo">
-              Split: {d.splitPct}% lo asume quien pagó · la otra persona le debe {formatMoney((parseAmount(d.amount) * (100 - d.splitPct)) / 100, currency)}
+              Split: {d.splitPct}% lo asume {d.paidBy === data.me?.id ? 'quien pagó (tú)' : (data.partner.name || 'tu pareja')} · {d.paidBy === data.me?.id ? (data.partner.name || 'tu pareja') + ' te debe' : 'le debes a tu pareja'} {formatMoney((parseAmount(d.amount) * (100 - d.splitPct)) / 100, currency)}
             </p>
           )}
           {d.entry.original_text && <p className="mb-2 text-xs italic text-humo">“{d.entry.original_text}”</p>}
@@ -815,6 +825,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       <p className="text-center text-xs text-humo">
         La captura manual con el botón + sigue disponible. El chat nunca guarda sin tu confirmación.
       </p>
+      <div ref={messagesEndRef} />
     </div>
   )
 }

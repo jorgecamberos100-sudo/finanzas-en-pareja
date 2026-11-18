@@ -9,10 +9,12 @@ import { supabase } from '../lib/supabase'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
 
-interface Props { data: AppData; onRefresh: () => void }
+interface Props { data: AppData; onRefresh: () => void; onSignOut?: () => void }
 
-export default function Dashboard({ data, onRefresh }: Props) {
+export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
   const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
+  const [liquidando, setLiquidando] = useState(false)
   const [liquidarError, setLiquidarError] = useState<string | null>(null)
   const currency = data.household?.currency ?? 'MXN'
   const month = monthKey()
@@ -54,8 +56,10 @@ export default function Dashboard({ data, onRefresh }: Props) {
   )
 
   async function liquidar() {
-    if (!mutual || !data.me || !data.household) return
+    if (!mutual || !data.me || !data.household || liquidando) return
     if (!confirm(`¿Confirmas que ${debtorName} le pagó ${formatMoney(mutual.amount, currency)} a ${creditorName}? Se registrará la liquidación.`)) return
+    setLiquidando(true)
+    setLiquidarError(null)
     // La liquidación es una transferencia entre personas: se registra como
     // money_date (revisión) y como transferencia, que NO cuenta como gasto.
     // El saldo mutuo resta estas liquidaciones (computeMutualBalance), así
@@ -64,28 +68,47 @@ export default function Dashboard({ data, onRefresh }: Props) {
       household_id: data.household.id, date: todayIso(),
       notes: `Liquidación de deuda mutua: ${formatMoney(mutual.amount, currency)}`, settled_amount: mutual.amount,
     })
+    setLiquidando(false)
     if (error) { setLiquidarError(`No se pudo registrar la liquidación: ${error.message}`); return }
-    setLiquidarError(null)
     onRefresh()
   }
 
   async function copyInvite() {
     const code = data.household?.invite_code ?? ''
     const link = `${window.location.origin}/onboarding?codigo=${code}`
+    setCopyFailed(false)
     try {
+      if (!navigator.clipboard?.writeText) throw new Error('sin portapapeles')
       await navigator.clipboard.writeText(`Únete a mi hogar en Finanzas en Pareja 🐷 Código: ${code} · Enlace: ${link}`)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 3000)
     } catch {
-      // Sin portapapeles: el código y el enlace se ven en la tarjeta.
+      // Sin portapapeles: el código y el enlace se ven en la tarjeta; avisar para copiarlos a mano.
+      setCopyFailed(true)
     }
   }
 
   return (
     <main className="space-y-4 p-4">
-      <header>
-        <h1 className="text-2xl font-bold">Hola, {data.me?.name ?? 'pareja'} 👋</h1>
-        <p className="text-sm text-humo">{data.household?.name} · {currency} · {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Hola, {data.me?.name ?? 'pareja'} 👋</h1>
+          <p className="text-sm text-humo">{data.household?.name} · {currency} · {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</p>
+        </div>
+        {onSignOut && (
+          <button
+            onClick={() => {
+              if (confirm('¿Cerrar sesión en este dispositivo?')) {
+                onSignOut()
+              }
+            }}
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            className="shrink-0 rounded-xl border border-borde bg-tarjeta px-3 py-1.5 text-xs font-semibold text-humo transition hover:border-rosafuerte hover:text-crema"
+          >
+            Salir 🚪
+          </button>
+        )}
       </header>
 
       {data.transactions.length === 0 && (
@@ -110,6 +133,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
           <button onClick={copyInvite} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">
             {copied ? '¡Copiado! ✅' : 'Copiar código y enlace'}
           </button>
+          {copyFailed && <p role="alert" className="mt-2 text-center text-xs text-dorado">No se pudo copiar automáticamente: copia el código y el enlace de la tarjeta.</p>}
         </section>
       )}
 
@@ -140,7 +164,9 @@ export default function Dashboard({ data, onRefresh }: Props) {
         <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
           <p className="font-bold">⚖️ Deuda mutua</p>
           <p className="text-sm">{debtorName} le debe <strong>{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
-          <button onClick={liquidar} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-noche">Liquidar ahora</button>
+          <button onClick={liquidar} disabled={liquidando} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+            {liquidando ? 'Registrando liquidación…' : 'Liquidar ahora'}
+          </button>
           {liquidarError && <p role="alert" className="mt-2 text-sm text-rojosuave">{liquidarError}</p>}
         </section>
       ) : (
@@ -165,15 +191,32 @@ export default function Dashboard({ data, onRefresh }: Props) {
       )}
 
       <section>
-        <h2 className="mb-2 font-bold">Metas</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-bold">Metas</h2>
+          {data.goals.length > 0 && (
+            <Link to="/plan" className="text-xs font-semibold text-rosaclaro hover:underline">Ver todas</Link>
+          )}
+        </div>
         {data.goals.length === 0 && <p className="text-sm text-humo">Aún no hay metas. Créalas en la pestaña Plan.</p>}
         {data.goals.slice(0, 3).map((g) => {
           const pct = g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0
           return (
-            <div key={g.id} className="mb-2 rounded-2xl border border-borde bg-tarjeta p-3  ">
-              <div className="flex justify-between text-sm"><span>🎯 {g.name}</span><span>{pct.toFixed(0)}%</span></div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-borde "><div className="h-full bg-rosafuerte" style={{ width: `${pct}%` }} /></div>
-            </div>
+            <Link key={g.id} to="/plan" className="mb-2 block rounded-2xl border border-borde bg-tarjeta p-3 transition hover:border-rosafuerte/40">
+              <div className="flex justify-between text-sm">
+                <span className="font-semibold">🎯 {g.name}</span>
+                <span className="text-xs text-humo">{formatMoney(g.current, currency)} / {formatMoney(g.target, currency)} ({pct.toFixed(0)}%)</span>
+              </div>
+              <div
+                role="progressbar"
+                aria-valuenow={Math.round(pct)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Progreso de meta ${g.name}`}
+                className="mt-2 h-2 overflow-hidden rounded-full bg-borde "
+              >
+                <div className="h-full bg-rosafuerte transition-all" style={{ width: `${pct}%` }} />
+              </div>
+            </Link>
           )
         })}
       </section>
@@ -189,15 +232,30 @@ export default function Dashboard({ data, onRefresh }: Props) {
       </section>
 
       <section>
-        <h2 className="mb-2 font-bold">Presupuesto del mes</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-bold">Presupuesto del mes</h2>
+          {data.categories.some((c) => c.monthly_limit > 0) && (
+            <Link to="/presupuesto" className="text-xs font-semibold text-rosaclaro hover:underline">Ver sobres</Link>
+          )}
+        </div>
         {data.categories.filter((c) => c.monthly_limit > 0).slice(0, 5).map((c) => {
           const spent = spentByCategory.get(c.id) ?? 0
           const pct = Math.min(100, (spent / c.monthly_limit) * 100)
           return (
             <div key={c.id} className="mb-2 text-sm">
-              <div className="flex justify-between"><span>{c.icon} {c.name}</span><span>{formatMoney(spent, currency)} / {formatMoney(c.monthly_limit, currency)}</span></div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-borde ">
-                <div className={`h-full ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-rosafuerte'}`} style={{ width: `${pct}%` }} />
+              <div className="flex justify-between">
+                <span>{c.icon} {c.name}</span>
+                <span>{formatMoney(spent, currency)} / {formatMoney(c.monthly_limit, currency)}</span>
+              </div>
+              <div
+                role="progressbar"
+                aria-valuenow={Math.round(pct)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Gasto en ${c.name}`}
+                className="mt-1 h-2 overflow-hidden rounded-full bg-borde "
+              >
+                <div className={`h-full transition-all ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-rosafuerte'}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           )
