@@ -307,7 +307,7 @@ export default function App() {
               {({ isActive }) => (
                 <>
                   <span className={`rounded-full px-4 py-1.5 transition-colors ${isActive ? 'bg-tarjeta shadow-tarjeta' : ''}`}>
-                    <t.icono className="h-5 w-5" />
+                    <t.icono className="h-6 w-6" />
                   </span>
                   <span className="hidden sm:inline">{t.label}</span>
                 </>

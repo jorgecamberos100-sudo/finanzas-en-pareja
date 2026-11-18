@@ -11,7 +11,7 @@ import ChatCapture from '../components/ChatCapture'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
 import ThemeToggle from '../components/ThemeToggle'
-import { Alerta, Boton, IconoBalanza, IconoCheck, IconoCopiar, IconoRopa, IconoSalir, IconoX, Tarjeta } from '../components/ui'
+import { Alerta, Boton, IconoBalanza, IconoCheck, IconoCopiar, IconoMenu, IconoPuntos, IconoRopa, IconoSalir, IconoX, Tarjeta } from '../components/ui'
 
 interface Props {
   data: AppData
@@ -30,6 +30,14 @@ interface Props {
 export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
   const navigate = useNavigate()
   const [vestidor, setVestidor] = useState(false)
+  // Menú "···" estilo Muse: vestir, tema y salir viven ahí, no
+  // amontonados en el encabezado. El encabezado queda mínimo: dos
+  // botones redondos, como en Muse (menú a la izquierda, "···" a la
+  // derecha), sin avatar chiquito ni píldora de Salir.
+  const [menuAbierto, setMenuAbierto] = useState(false)
+  // PIBBI "trabajando": el héroe muestra "escribiendo…" mientras el
+  // chat le pasa el estado (ver onEscribiendo en ChatCapture).
+  const [escribiendo, setEscribiendo] = useState(false)
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
   const [liquidando, setLiquidando] = useState(false)
@@ -115,43 +123,78 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
 
   return (
     <main className="flex min-h-[calc(100dvh-7rem)] flex-col">
-      {/* Encabezado estilo Muse: PIBBI, su nombre y su estado en una
-          línea; a la derecha solo iconos con aire. El "tu cerdito de los
-          ahorros" ya lo dice el saludo, aquí solo estorba. */}
+      {/* Encabezado mínimo estilo Muse: dos botones redondos (menú a la
+          izquierda, "···" a la derecha) y nada más. Vestir, tema y salir
+          viven en el menú; el avatar grande y centrado es el héroe de
+          abajo, no un circulito a la izquierda. */}
       <header className="sticky top-0 z-30 border-b border-borde/60 bg-noche/90 backdrop-blur-xl">
-        <div className="flex items-center gap-2.5 px-4 py-2">
-          <Mascota pose="frente" marco="circulo" className="h-11 w-11" />
-          <div className="min-w-0 flex-1">
-            <p className="font-bold leading-tight">PIBBI</p>
-            <p className="flex items-center gap-1.5 whitespace-nowrap text-xs text-humo">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-verde" aria-hidden="true" /> En línea
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex items-center justify-between px-4 py-2">
+          <button
+            type="button"
+            onClick={() => setMenuAbierto((v) => !v)}
+            aria-label="Menú"
+            aria-expanded={menuAbierto}
+            className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95"
+          >
+            <IconoMenu className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMenuAbierto((v) => !v)}
+            aria-label="Más opciones"
+            aria-expanded={menuAbierto}
+            className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95"
+          >
+            <IconoPuntos className="h-5 w-5" />
+          </button>
+        </div>
+      </header>
+
+      {menuAbierto && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenuAbierto(false)} aria-hidden="true" />
+          <div className="fixed inset-x-4 top-16 z-50 mx-auto max-w-lg rounded-[28px] border border-borde bg-tarjeta p-2 shadow-elevado" role="menu">
             <button
               type="button"
-              onClick={() => setVestidor((v) => !v)}
-              aria-label="Vestir a PIBBI"
-              aria-pressed={vestidor}
-              title="Vestir a PIBBI"
-              className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95"
+              role="menuitem"
+              onClick={() => { setMenuAbierto(false); setVestidor((v) => !v) }}
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left font-semibold text-crema transition active:scale-[0.98]"
             >
-              <IconoRopa className="h-4 w-4" />
+              <IconoRopa className="h-5 w-5 text-doradotexto" /> Vestir a PIBBI
             </button>
-            <ThemeToggle className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95" />
+            <div className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 font-semibold text-crema">
+              <span className="flex-1">Cambiar tema</span>
+              <ThemeToggle className="rounded-full border border-borde bg-elevado p-2.5 text-crema transition active:scale-95" />
+            </div>
             {onSignOut && (
               <button
-                onClick={() => { if (confirm('¿Cerrar sesión en este dispositivo?')) onSignOut() }}
-                title="Cerrar sesión"
-                aria-label="Cerrar sesión"
-                className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95"
+                type="button"
+                role="menuitem"
+                onClick={() => { setMenuAbierto(false); if (confirm('¿Cerrar sesión en este dispositivo?')) onSignOut() }}
+                className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left font-semibold text-rojosuave transition active:scale-[0.98]"
               >
-                <IconoSalir className="h-4 w-4" />
+                <IconoSalir className="h-5 w-5" /> Cerrar sesión
               </button>
             )}
           </div>
+        </>
+      )}
+
+      {/* Héroe estilo Muse: PIBBI grande y centrado arriba del chat, con
+          su nombre y su estado en una píldora debajo. Círculo h-24
+          (96 px CSS; el de Muse mide ~85 px en un Galaxy, este es su
+          equivalente con la imagen HD, nítida). Se desplaza con la
+          conversación, como el avatar de Muse. */}
+      <div className="flex flex-col items-center px-4 pb-1 pt-4 text-center">
+        <Mascota pose="frente" marco="circulo" className="h-24 w-24" />
+        <div className="mt-3 rounded-full border border-borde bg-elevado px-4 py-2 shadow-tarjeta">
+          <p className="font-bold leading-tight">PIBBI</p>
+          <p className="flex items-center justify-center gap-1.5 text-xs text-humo">
+            <span className={`h-1.5 w-1.5 rounded-full ${escribiendo ? 'bg-doradotexto' : 'bg-verde'}`} aria-hidden="true" />
+            {escribiendo ? 'escribiendo…' : 'En línea'}
+          </p>
         </div>
-      </header>
+      </div>
 
       {vestidor && (
         <div className="px-4 pt-3">
@@ -216,6 +259,7 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
         responderLocal={responderLocal}
         sugerencias={sugerencias}
         onIr={(ruta) => navigate(ruta)}
+        onEscribiendo={setEscribiendo}
       />
     </main>
   )

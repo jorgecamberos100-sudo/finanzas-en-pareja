@@ -38,6 +38,9 @@ interface Props {
   /** Atajos en píldora sobre la barra de entrada: preguntan o navegan. */
   sugerencias?: Array<{ etiqueta: string; enviar?: string; ir?: string }>
   onIr?: (ruta: string) => void
+  /** Avisa al héroe del chat cuando PIBBI está escribiendo (su píldora
+      de estado pasa de "En línea" a "escribiendo…", como en Muse). */
+  onEscribiendo?: (v: boolean) => void
 }
 
 interface ChatMessage {
@@ -118,7 +121,7 @@ const REVIEW_LABELS: Record<string, string> = {
  * reconocimiento es-MX del navegador. La IA de servidor es una mejora
  * opcional; si falla, se cae a la vía local sin errores técnicos.
  */
-export default function ChatCapture({ data, onSave, onRefresh, saludo, responderLocal, sugerencias, onIr }: Props) {
+export default function ChatCapture({ data, onSave, onRefresh, saludo, responderLocal, sugerencias, onIr, onEscribiendo }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     saludo && saludo.length > 0
       ? saludo.map((texto, i) => ({ id: `saludo-${i}`, role: 'assistant' as const, text: texto }))
@@ -134,6 +137,11 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
   const [reminderDrafts, setReminderDrafts] = useState<ReminderDraft[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  // PIBBI "escribiendo": tres puntos en burbuja gris, como en Muse, con
+  // una pausa corta antes de la respuesta local para que se sienta vivo.
+  const [escribiendo, setEscribiendo] = useState(false)
+  const escribiendoTimer = useRef<number | null>(null)
+  useEffect(() => { onEscribiendo?.(escribiendo) }, [escribiendo, onEscribiendo])
   const [recording, setRecording] = useState(false)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -152,6 +160,7 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
   // reacción de PIBBI y se detienen grabaciones, dictados u OCR activos.
   useEffect(() => () => {
     if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
+    if (escribiendoTimer.current) window.clearTimeout(escribiendoTimer.current)
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try {
         mediaRecorderRef.current.stream?.getTracks().forEach((t) => t.stop())
@@ -179,7 +188,7 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
   // Desplazamiento automático al llegar nuevos mensajes o propuestas
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, drafts.length, reminderDrafts.length, busy])
+  }, [messages, drafts.length, reminderDrafts.length, busy, escribiendo])
 
   // Zona horaria del dispositivo que captura (ej. "America/Tijuana").
   // Se envía en cada llamada a capture-parse para que "hoy"/"ayer" se
@@ -290,11 +299,18 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
     // PIBBI contesta primero con los datos reales (saldo, gasto, deuda,
     // sobres, metas, avisos): una pregunta no es un movimiento y no va
     // a captura. Si no sabe contestar, el texto sigue su camino normal.
+    // La respuesta local tarda un instante a propósito: PIBBI muestra
+    // los tres puntos de "escribiendo…", como en Muse, en vez de
+    // contestar de golpe y sentirse robot.
     if (responderLocal) {
       const respuesta = responderLocal(trimmed)
       if (respuesta) {
-        pushMessage('assistant', respuesta)
-        setBusy(false)
+        setEscribiendo(true)
+        escribiendoTimer.current = window.setTimeout(() => {
+          pushMessage('assistant', respuesta)
+          setEscribiendo(false)
+          setBusy(false)
+        }, 750)
         return
       }
     }
@@ -604,13 +620,19 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
 
   const speechSupported = dictadoDisponible() || Boolean(navigator.mediaDevices?.getUserMedia)
 
+  // Las sugerencias son la pregunta inicial de PIBBI, como las cajas de
+  // opciones de Muse: se muestran solo antes del primer mensaje del
+  // usuario y luego desaparecen (lo tocado queda en la historia).
+  const mensajesIniciales = saludo && saludo.length > 0 ? saludo.length : 1
+  const sinConversar = messages.length <= mensajesIniciales
+
   return (
     <div className="flex flex-col gap-4 px-4 py-3">
       <div className="space-y-3" aria-live="polite">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] break-words rounded-[22px] px-4 py-3 text-[15px] leading-6 shadow-tarjeta ${
+              className={`max-w-[85%] break-words rounded-[24px] px-5 py-4 text-base leading-7 shadow-tarjeta ${
                 m.role === 'user' ? 'rounded-br-md bg-dorado text-tinta' : 'rounded-bl-md bg-elevado text-crema'
               }`}
             >
@@ -619,7 +641,18 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
             </div>
           </div>
         ))}
-        {busy && !ocr && <PibbiReaction contexto="pensando" mensaje="PIBBI está revisando tu mensaje…" />}
+        {/* PIBBI está escribiendo: tres puntos en burbuja gris, como en
+            Muse, mientras prepara la respuesta local. */}
+        {escribiendo && (
+          <div className="flex justify-start" aria-label="PIBBI está escribiendo">
+            <div className="flex items-center gap-1.5 rounded-[24px] rounded-bl-md bg-elevado px-5 py-4 shadow-tarjeta">
+              <span className="pibbi-punto h-2 w-2 rounded-full bg-humo" aria-hidden="true" />
+              <span className="pibbi-punto h-2 w-2 rounded-full bg-humo" aria-hidden="true" />
+              <span className="pibbi-punto h-2 w-2 rounded-full bg-humo" aria-hidden="true" />
+            </div>
+          </div>
+        )}
+        {busy && !ocr && !escribiendo && <PibbiReaction contexto="pensando" mensaje="PIBBI está revisando tu mensaje…" />}
         {ocr && (
           <Tarjeta className="flex items-center gap-3 border-foco/60 p-3">
             <Spinner className="h-5 w-5 shrink-0 text-doradotexto" />
@@ -632,6 +665,29 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
           </Tarjeta>
         )}
       </div>
+
+      {/* Sugerencias estilo Muse: cajas de ancho completo con borde
+          punteado, una por fila, nunca cortadas. Viven en la
+          conversación (no pegadas a la barra) y solo antes del primer
+          mensaje del usuario. */}
+      {sugerencias && sugerencias.length > 0 && sinConversar && (
+        <div className="space-y-2" role="group" aria-label="Sugerencias">
+          {sugerencias.map((s) => (
+            <button
+              key={s.etiqueta}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (s.ir) onIr?.(s.ir)
+                else if (s.enviar) void handleText(s.enviar)
+              }}
+              className="w-full rounded-2xl border border-dashed border-borde bg-transparent px-4 py-3 text-left text-base font-medium text-crema transition active:scale-[0.98] disabled:opacity-45"
+            >
+              {s.etiqueta}
+            </button>
+          ))}
+        </div>
+      )}
 
       {reaction && <PibbiReaction contexto={reaction} />}
 
@@ -874,35 +930,18 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
       )}
 
       {/*
-        Barra de entrada fija abajo (como en Muse): los atajos en píldora,
-        la foto, la voz y el envío se quedan visibles mientras se lee la
-        conversación. El fondo con blur tapa los mensajes al pasar por debajo.
+        Barra de entrada fija abajo: UNA sola píldora, como en Muse. La
+        foto y la voz van DENTRO de la píldora (no botones sueltos fuera)
+        y el envío es un círculo azul dentro de ella. Sin borde superior:
+        la píldora flota sobre el fondo con blur, como en Muse.
       */}
-      <div className="sticky bottom-[3.5rem] z-30 -mx-4 border-t border-borde/60 bg-noche/90 px-4 pb-1 pt-2 backdrop-blur-xl">
-      {sugerencias && sugerencias.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Sugerencias">
-          {sugerencias.map((s) => (
-            <button
-              key={s.etiqueta}
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                if (s.ir) onIr?.(s.ir)
-                else if (s.enviar) void handleText(s.enviar)
-              }}
-              className="shrink-0 rounded-full border border-borde bg-elevado px-3 py-1.5 text-xs font-semibold text-crema transition active:scale-95 disabled:opacity-45"
-            >
-              {s.etiqueta}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="sticky bottom-[3.5rem] z-30 -mx-4 bg-noche/90 px-4 pb-1 pt-2 backdrop-blur-xl">
       <form
         onSubmit={(e) => {
           e.preventDefault()
           void handleText(input)
         }}
-        className="flex items-end gap-2"
+        className="flex items-center gap-1 rounded-full border border-borde bg-elevado p-1"
       >
         <input
           ref={fileRef}
@@ -922,9 +961,9 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
           aria-label="Subir foto de ticket o libreta"
           onClick={() => fileRef.current?.click()}
           disabled={busy}
-          className="rounded-full bg-elevado p-2.5 text-crema transition hover:bg-borde active:scale-90 disabled:opacity-45"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-crema transition hover:bg-borde active:scale-90 disabled:opacity-45"
         >
-          <IconoCamara />
+          <IconoCamara className="h-5 w-5" />
         </button>
         <button
           type="button"
@@ -935,20 +974,25 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
             else startDictation()
           }}
           disabled={busy || !speechSupported}
-          className={`rounded-full p-2.5 transition active:scale-90 disabled:opacity-45 ${recording || listening ? 'animate-latido-suave bg-rojosuave/15 text-rojosuave' : 'bg-elevado text-crema hover:bg-borde'}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-90 disabled:opacity-45 ${recording || listening ? 'animate-latido-suave bg-rojosuave/15 text-rojosuave' : 'text-crema hover:bg-borde'}`}
         >
-          <IconoMicrofono />
+          <IconoMicrofono className="h-5 w-5" />
         </button>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={listening ? 'Escuchando… habla ahora' : 'Ej. Gasté $350 en Walmart…'}
           aria-label="Escribe un gasto, ingreso o transferencia"
-          className="min-w-0 flex-1 rounded-xl border border-borde p-3 text-sm"
+          className="min-w-0 flex-1 bg-transparent px-1 py-2 text-base outline-none placeholder:text-humo"
         />
-        <Boton type="submit" disabled={busy || !input.trim()} tamano="sm" className="px-3 py-3" aria-label="Enviar mensaje">
-          <IconoEnviar className="h-4 w-4" />
-        </Boton>
+        <button
+          type="submit"
+          disabled={busy || !input.trim()}
+          aria-label="Enviar mensaje"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dorado text-white shadow-fab transition active:scale-90 disabled:opacity-45"
+        >
+          <IconoEnviar className="h-5 w-5" />
+        </button>
       </form>
       </div>
       {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}

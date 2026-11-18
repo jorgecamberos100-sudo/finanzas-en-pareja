@@ -29,6 +29,8 @@ export const IconoFlechaIzq = ({ className }: PIcono) => <Svg className={classNa
 export const IconoCheck = ({ className }: PIcono) => <Svg className={className}><path d="m4.5 12.5 5 5 10-11" /></Svg>
 export const IconoX = ({ className }: PIcono) => <Svg className={className}><path d="M6 6l12 12M18 6 6 18" /></Svg>
 export const IconoMas = ({ className }: PIcono) => <Svg className={className}><path d="M12 5v14M5 12h14" /></Svg>
+export const IconoMenu = ({ className }: PIcono) => <Svg className={className}><path d="M4 7h16M4 12h16M4 17h16" /></Svg>
+export const IconoPuntos = ({ className }: PIcono) => <Svg className={className}><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" /></Svg>
 export const IconoCamara = ({ className }: PIcono) => <Svg className={className}><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1L9 4h6l1.5 2h1A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5Z" /><circle cx="12" cy="12.5" r="3.2" /></Svg>
 export const IconoMicrofono = ({ className }: PIcono) => <Svg className={className}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" /></Svg>
 export const IconoEnviar = ({ className }: PIcono) => <Svg className={className}><path d="M4.5 12 20 4.5 14.5 20l-3-6.5Z" /><path d="m11.5 13.5 8.5-9" /></Svg>

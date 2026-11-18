@@ -244,6 +244,19 @@ select option {
   pointer-events: none;
 }
 
+/* Tres puntos de "PIBBI está escribiendo…", como en Muse: solo
+   transform y opacidad (nada de transition-all), con caída a quieto
+   en prefers-reduced-motion. */
+@keyframes pibbi-puntos {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+.pibbi-punto {
+  animation: pibbi-puntos 1.2s ease-in-out infinite;
+}
+.pibbi-punto:nth-child(2) { animation-delay: 0.15s; }
+.pibbi-punto:nth-child(3) { animation-delay: 0.3s; }
+
 /* Sombra suave bajo el marco de PIBBI: vive fuera del div que flota, así
    puede moverse en contrafase (achicarse cuando PIBBI sube). */
 .pibbi-sombra {
@@ -264,7 +277,8 @@ select option {
   .pibbi-vivo,
   .pibbi-respira,
   .pibbi-parpado,
-  .pibbi-sombra {
+  .pibbi-sombra,
+  .pibbi-punto {
     animation: none;
   }
   main {
