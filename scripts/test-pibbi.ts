@@ -10,6 +10,10 @@ import { MASCOTA_SALUDANDO } from '../src/lib/mascota/saludando.ts'
 import { MASCOTA_PENSATIVO } from '../src/lib/mascota/pensativo.ts'
 import { MASCOTA_CONTAR } from '../src/lib/mascota/contar.ts'
 import { MASCOTA_PROGRESO } from '../src/lib/mascota/progreso.ts'
+import { MASCOTA_PERFIL_LAPIZ } from '../src/lib/mascota/perfil-lapiz.ts'
+import { MASCOTA_CALCULADORA } from '../src/lib/mascota/calculadora.ts'
+import { MASCOTA_AVATAR_CIRCULAR } from '../src/lib/mascota/avatar-circular.ts'
+import { PIBBI_POSES, REACTION_POSES } from '../src/lib/pibbi-poses.ts'
 
 let pass = 0
 let fail = 0
@@ -59,6 +63,31 @@ check('liquidación parcial 200: quedan 300', computeMutualBalance(txs, 'A', 'B'
 check('money date de revisión (0) no afecta', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 0 }]), { debtor_id: 'B', creditor_id: 'A', amount: 500 })
 check('liquidación de más no invierte la deuda', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 600 }]), null)
 check('dos liquidaciones se suman', computeMutualBalance(txs, 'A', 'B', [{ settled_amount: 200 }, { settled_amount: 300 }]), null)
+
+// 5. Poses nuevas con fondo circular negro (George, 17 nov): de perfil con
+//    lápiz y libreta, con calculadora y avatar circular de frente. Son JPEG
+//    (las anteriores son PNG) y cada pose trae sus párpados en su sitio,
+//    si no el parpadeo caería fuera de los ojos.
+const nuevas = { MASCOTA_PERFIL_LAPIZ, MASCOTA_CALCULADORA, MASCOTA_AVATAR_CIRCULAR }
+for (const [name, uri] of Object.entries(nuevas)) {
+  check(`pose ${name} es data URI JPEG`, uri.startsWith('data:image/jpeg;base64,'), true)
+  check(`pose ${name} no está vacía`, uri.length > 10000, true)
+}
+check('apuntando usa perfil con lápiz', REACTION_POSES.apuntando, 'perfilLapiz')
+check('calculando usa calculadora', REACTION_POSES.calculando, 'calculadora')
+check('pensando sigue pensativo', REACTION_POSES.pensando, 'pensativo')
+check('saludando sigue saludando', REACTION_POSES.saludando, 'saludando')
+check('avatar circular es circular', PIBBI_POSES.avatarCircular.circular, true)
+check('solo el avatar es circular', Object.entries(PIBBI_POSES).filter(([, c]) => c.circular).map(([p]) => p), ['avatarCircular'])
+check('perfil con lápiz no lleva prendas', PIBBI_POSES.perfilLapiz.accessories, false)
+check('calculadora no lleva prendas', PIBBI_POSES.calculadora.accessories, false)
+check('perfil con lápiz tiene un solo ojo visible', PIBBI_POSES.perfilLapiz.eyelids.length, 1)
+check('avatar tiene dos ojos', PIBBI_POSES.avatarCircular.eyelids.length, 2)
+for (const [pose, cfg] of Object.entries(PIBBI_POSES)) {
+  for (const e of cfg.eyelids) {
+    check(`párpado de ${pose} dentro del marco`, e.left >= 0 && e.left + 18 <= 100 && e.top >= 0 && e.top + 15 <= 100, true)
+  }
+}
 
 console.log(`\n${pass} pasaron, ${fail} fallaron`)
 if (fail > 0) process.exit(1)

@@ -170,11 +170,11 @@ PIBBI aparece en: bienvenida del Onboarding, pantalla de “¡Listo!”, estado 
 
 ### PIBBI reactivo, personalizable y modo individual
 
-- **Reactivo:** cada que alguien registra un dato, PIBBI aparece reaccionando según el contexto (`src/components/PibbiReaction.tsx`): saludando/apuntando al crear un recordatorio, haciendo cuentas (contando monedas) al guardar un movimiento, pensativo mientras revisa un mensaje del chat, con la gráfica de progreso al aportar a una meta y celebrando al lograrla o al pagar un recordatorio. Las poses nuevas (saludando, pensativo, contando monedas, mostrando progreso) son recortes de la misma hoja de personaje.
+- **Reactivo:** cada que alguien registra un dato, PIBBI aparece reaccionando según el contexto (`src/components/PibbiReaction.tsx`): saludando/apuntando al crear un recordatorio, haciendo cuentas (contando monedas) al guardar un movimiento, pensativo mientras revisa un mensaje del chat, con la gráfica de progreso al aportar a una meta y celebrando al lograrla o al pagar un recordatorio. Las poses nuevas (saludando, pensativo, contando monedas, mostrando progreso) son recortes de la misma hoja de personaje. Desde nov-2026 hay poses con fondo circular negro generadas en el mismo estilo 3D (`src/lib/mascota/perfil-lapiz.ts`, `calculadora.ts`, `avatar-circular.ts`, configuradas en `src/lib/pibbi-poses.ts`): apuntando anota de perfil con lápiz y libreta, calculando saca la calculadora, y el saludo del Chat es el avatar circular negro.
 - **Personalizable:** cada persona viste a su propio PIBBI con lentes, gorra, moño, corona o sin accesorios (`src/components/PibbiDresser.tsx`). La prenda se dibuja en SVG sobre la foto y se guarda por usuario en la tabla `pibbi_customization` (migración `003_pibbi.sql`, RLS por usuario) y en el dispositivo al instante. Se elige en el Onboarding (paso “Viste a PIBBI”, opcional) y se cambia después desde Inicio.
 - **Modo individual:** en el Onboarding se puede elegir “Solo yo por ahora”: el hogar se crea con un solo miembro y reparto 100% (sin 50/50 roto ni deuda mutua). Invitar a la pareja es una opción, no un requisito: en Inicio aparece la tarjeta “Invita a tu pareja (opcional)” con el código y el enlace `/onboarding?codigo=`, y la pareja se une después igual que siempre. El modo en pareja sigue igual.
 
-**Pruebas:** `npm run test:pibbi` (38 casos: accesorios válidos, poses de reacción, reparto 100% en solo vs 50/50 en pareja, y deuda mutua con liquidaciones).
+**Pruebas:** `npm run test:pibbi` (73 casos: accesorios válidos, poses de reacción, reparto 100% en solo vs 50/50 en pareja, deuda mutua con liquidaciones, y poses nuevas de fondo circular negro con sus párpados y su contexto).
 
 ### Correcciones de la auditoría Qwen (PR #9, 17-nov-2026)
 

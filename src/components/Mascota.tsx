@@ -1,20 +1,17 @@
 import { useId } from 'react'
-import { MASCOTA, MASCOTA_AHORRANDO, MASCOTA_CELEBRANDO } from '../lib/mascota-images'
-import { MASCOTA_SALUDANDO } from '../lib/mascota/saludando'
-import { MASCOTA_PENSATIVO } from '../lib/mascota/pensativo'
-import { MASCOTA_CONTAR } from '../lib/mascota/contar'
-import { MASCOTA_PROGRESO } from '../lib/mascota/progreso'
+import { PIBBI_POSES, type MascotaPose } from '../lib/pibbi-poses'
 import { usePibbi, type PibbiAccessory } from '../lib/pibbi'
+
+export type { MascotaPose } from '../lib/pibbi-poses'
 
 /**
  * La mascota de la app: PIBBI, el cerdito rosa de la hoja de personaje.
  * Los recortes ya traen fondo azul marino, así que van en un marco
  * redondeado que se funde con el tema oscuro. Las prendas se dibujan
  * como SVG sobre la imagen, así cada persona ve su propio PIBBI vestido.
+ * Las poses nuevas (perfil con lápiz, calculadora, avatar circular)
+ * traen fondo circular negro, como el avatar de referencia de George.
  */
-export type MascotaPose =
-  | 'frente' | 'celebrando' | 'ahorrando'
-  | 'saludando' | 'pensativo' | 'contar' | 'progreso'
 
 interface Props {
   pose?: MascotaPose
@@ -24,15 +21,9 @@ interface Props {
   className?: string
 }
 
-const POSES: Record<MascotaPose, string> = {
-  frente: MASCOTA,
-  celebrando: MASCOTA_CELEBRANDO,
-  ahorrando: MASCOTA_AHORRANDO,
-  saludando: MASCOTA_SALUDANDO,
-  pensativo: MASCOTA_PENSATIVO,
-  contar: MASCOTA_CONTAR,
-  progreso: MASCOTA_PROGRESO,
-}
+const POSES: Record<MascotaPose, string> = Object.fromEntries(
+  Object.entries(PIBBI_POSES).map(([pose, cfg]) => [pose, cfg.image]),
+) as Record<MascotaPose, string>
 
 /** Prendas dibujadas en SVG sobre la foto de PIBBI (posiciones relativas). */
 function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
@@ -95,6 +86,7 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
   // interior sigue con su animación de flotar y pestañear. La animación CSS
   // de .pibbi-vivo pisa el transform de su propio elemento, por eso la
   // escala vive en el envoltorio y no en el mismo div.
+  const poseCfg = PIBBI_POSES[pose]
   return (
     <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${className}`} style={delays}>
       <div className="pibbi-vivo relative h-full w-full">
@@ -102,17 +94,19 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
             así no pelea con la flotación (translate) del padre y la imagen,
             los párpados y las prendas respiran todos juntos. */}
         <div className="pibbi-respira">
-          <img src={POSES[pose]} alt={alt} className="h-full w-full rounded-3xl object-cover ring-1 ring-borde" />
+          <img src={POSES[pose]} alt={alt} className={`h-full w-full object-cover ring-1 ring-borde ${poseCfg.circular ? 'rounded-full bg-black' : 'rounded-3xl'}`} />
           {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
-              Los ojos están a ~30% de altura y ~28% / ~72% de ancho en las poses
-              de frente; el párpado los cubre por completo al cerrarse. */}
-          <span aria-hidden="true" className="pibbi-parpado" style={{ left: '19%' }} />
-          <span aria-hidden="true" className="pibbi-parpado" style={{ left: '63%' }} />
-          <Accesorio accessory={acc} />
+              Cada pose trae la posición de sus ojos (las de frente los tienen
+              a ~30% de altura y ~28% / ~72% de ancho; las nuevas, en su sitio). */}
+          {poseCfg.eyelids.map((e, i) => (
+            <span key={i} aria-hidden="true" className="pibbi-parpado" style={{ left: `${e.left}%`, top: `${e.top}%` }} />
+          ))}
+          {poseCfg.accessories !== false && <Accesorio accessory={acc} />}
         </div>
       </div>
-      {/* Sombra del suelo: fuera del div que flota, respira en contrafase. */}
-      <span aria-hidden="true" className="pibbi-sombra" />
+      {/* Sombra del suelo: fuera del div que flota, respira en contrafase.
+          El avatar circular no lleva sombra: es un círculo, no está "de pie". */}
+      {!poseCfg.circular && <span aria-hidden="true" className="pibbi-sombra" />}
     </div>
   )
 }
