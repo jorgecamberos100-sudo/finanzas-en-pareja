@@ -1,5 +1,6 @@
 import type { Category } from '../types'
 import { formatMoney } from '../lib/format'
+import { ChipCategoria, IconoAlerta, IconoLapiz } from './ui'
 
 interface Props {
   category: Category
@@ -21,10 +22,10 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
   const bar = pct >= 100 ? 'bg-rojosuave' : pct >= 80 ? 'bg-dorado' : 'bg-verde'
 
   return (
-    <article className="rounded-2xl border border-borde bg-tarjeta p-4  ">
+    <article className="rounded-[28px] border border-borde/70 bg-tarjeta p-4 shadow-tarjeta">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-bold">{category.icon} {category.name}</h3>
+          <h3 className="flex items-center gap-2 font-bold"><ChipCategoria nombre={category.name} group={category.group} className="h-8 w-8" />{category.name}</h3>
           <p className="text-xs text-humo">{category.group}{category.rollover ? ' · rollover activado' : ''}</p>
         </div>
         <span className={`rounded-full px-2 py-1 text-xs font-bold ${available < 0 ? 'bg-rojosuave/15 text-rojosuave' : 'bg-elevado text-humo '}`}>
@@ -47,8 +48,8 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
       </div>
       <p className="mt-1 text-sm">
         Disponible: <strong className={available < 0 ? 'text-rojosuave' : 'text-doradotexto '}>{formatMoney(available, currency)}</strong>
-        {pct >= 80 && pct < 100 && <span className="ml-2 text-doradotexto">⚠️ Vas al {pct.toFixed(0)}% del sobre</span>}
-        {pct >= 100 && <span className="ml-2 text-rojosuave">⚠️ Sobre al 100% o excedido</span>}
+        {pct >= 80 && pct < 100 && <span className="ml-2 inline-flex items-center gap-1 text-doradotexto"><IconoAlerta className="h-3.5 w-3.5" />Vas al {pct.toFixed(0)}% del sobre</span>}
+        {pct >= 100 && <span className="ml-2 inline-flex items-center gap-1 text-rojosuave"><IconoAlerta className="h-3.5 w-3.5" />Sobre al 100% o excedido</span>}
       </p>
       <div className="mt-3 flex gap-2">
         <button onClick={() => onTransfer(category)} className="flex-1 rounded-xl bg-elevado py-2 text-sm font-semibold transition hover:bg-borde">
@@ -56,7 +57,7 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
         </button>
         {onEditLimit && (
           <button onClick={() => onEditLimit(category)} className="rounded-xl border border-borde bg-tarjeta px-3 py-2 text-sm font-semibold text-humo transition hover:border-foco/60 hover:text-crema">
-            Ajustar límite ✏️
+            <span className="flex items-center gap-1.5"><IconoLapiz className="h-4 w-4" />Ajustar límite</span>
           </button>
         )}
       </div>

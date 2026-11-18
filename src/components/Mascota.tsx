@@ -26,6 +26,17 @@ interface Props {
   accessory?: PibbiAccessory
   alt?: string
   className?: string
+  /**
+   * Marco de presentación. 'libre' (por defecto): cuerpo entero con el
+   * fondo recortado, como hasta ahora. 'circulo': círculo grande y
+   * centrado estilo avatar (como el de Muse): fondo suave, anillo tenue,
+   * la imagen va con aire interior (padding 6%) para que nunca se
+   * recorten orejas, brazos ni patitas, y sin sombra de suelo.
+   * La imagen fuente es pequeña (frente 224×258, las demás 138–194 px):
+   * a más de ~112 px de ancho en pantalla 2x ya se nota suave al
+   * acercar. El círculo se usa a h-28 (112 px) como máximo.
+   */
+  marco?: 'libre' | 'circulo'
 }
 
 /** Cache de recortes por imagen fuente (data URI -> data URI sin fondo). */
@@ -123,7 +134,7 @@ function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
   return null
 }
 
-export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-24 w-24' }: Props) {
+export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-24 w-24', marco = 'libre' }: Props) {
   const { accessory: saved } = usePibbi()
   const acc = accessory ?? saved
   // Cada PIBBI lleva su propio retraso negativo (estable por instancia):
@@ -185,7 +196,7 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
   // de .pibbi-vivo pisa el transform de su propio elemento, por eso la
   // escala vive en el envoltorio y no en el mismo div.
   return (
-    <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${className}`} style={delays}>
+    <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${marco === 'circulo' ? 'pibbi-circulo' : ''} ${className}`} style={delays}>
       <div className="pibbi-vivo relative h-full w-full">
         {/* La respiración (escala leve) vive en su propio div, anidado:
             así no pelea con la flotación (translate) del padre y la imagen,
@@ -208,8 +219,9 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
         </div>
       </div>
       {/* Sombra del suelo: fuera del div que flota, respira en contrafase.
-          Las insignias redondas no llevan sombra: no están "de pie". */}
-      {!esInsignia && <span aria-hidden="true" className="pibbi-sombra" />}
+          Las insignias redondas no llevan sombra: no están "de pie".
+          Tampoco el marco circular: el círculo ya es el marco. */}
+      {!esInsignia && marco !== 'circulo' && <span aria-hidden="true" className="pibbi-sombra" />}
     </div>
   )
 }

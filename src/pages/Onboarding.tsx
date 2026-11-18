@@ -12,7 +12,7 @@ import ThemeToggle from '../components/ThemeToggle'
 import GoogleSignInButton from '../components/GoogleSignInButton'
 import {
   Alerta, Boton, Campo, CampoClave, IconoCheck, IconoCopiar, IconoCorreo, IconoCorazon,
-  IconoFlechaDer, IconoFlechaIzq, IconoLlave, IconoUsuario, Logo, PasoBarra, Tarjeta,
+  IconoFlechaDer, IconoFlechaIzq, IconoLlave, IconoUsuario, PasoBarra, Tarjeta,
 } from '../components/ui'
 
 interface Props { onDone: () => void }
@@ -337,8 +337,7 @@ export default function Onboarding({ onDone }: Props) {
 
   return (
     <div className="mx-auto min-h-screen max-w-md px-5 pb-12 pt-6">
-      <div className="mb-6 flex items-center justify-between">
-        <Logo tamano="sm" />
+      <div className="mb-6 flex items-center justify-end">
         <ThemeToggle className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95" />
       </div>
 
@@ -347,9 +346,12 @@ export default function Onboarding({ onDone }: Props) {
       <div key={`${vista}-${step}`} className="animate-paso-entrar">
         {esAuth && (
           <>
-            {/* PIBBI grande, nítido y sin cuadrito; el logo ya trae el nombre. */}
-            <div className="mb-5 flex flex-col items-center text-center">
-              <Mascota pose="saludando" className="h-32 w-32" />
+            {/* PIBBI en círculo grande y centrado, estilo avatar: imagen
+                completa con aire, sin recortar orejas ni brazos. La fuente
+                es pequeña (saludando 164×178): a h-28 (112 px) se ve nítida
+                a tamaño normal; más grande se notaría suave al acercar. */}
+            <div className="mb-6 flex flex-col items-center text-center">
+              <Mascota pose="saludando" marco="circulo" className="h-28 w-28" />
               <h1 className="mt-4 font-display text-2xl font-extrabold tracking-tight">
                 Finanzas <span className="text-doradotexto">en Pareja</span>
               </h1>
@@ -561,7 +563,7 @@ export default function Onboarding({ onDone }: Props) {
 
         {vista === 'registro' && step === 5 && (
           <section className="text-center">
-            <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-28 w-28" />
+            <Mascota pose="celebrando" marco="circulo" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-5 h-24 w-24" />
             <h1 className="font-display text-2xl font-extrabold">¡Listo!</h1>
             <p className="mb-5 mt-1 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
             <Boton onClick={onDone} className="w-full">Ir al inicio <IconoFlechaDer className="h-4 w-4" /></Boton>

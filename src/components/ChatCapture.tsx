@@ -650,7 +650,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               >
                 <option value="">Sin categoría</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
@@ -753,7 +753,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
                   .filter((c) => (d.type === 'ingreso' ? c.group === 'Ingresos' : c.group !== 'Ingresos'))
                   .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.icon} {c.name}
+                      {c.name}
                     </option>
                   ))}
               </select>

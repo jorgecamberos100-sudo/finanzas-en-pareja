@@ -22,7 +22,7 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dirPublic = join(raiz, 'public')
 const dirIconos = join(dirPublic, 'icons')
 
-const FONDO_NUEVO = [7, 19, 12, 255] // #07130C, esmeralda casi negro (tema noche)
+const FONDO_NUEVO = [10, 10, 12, 255] // #0A0A0C, casi negro (tema noche)
 
 // ---------- CRC32 (para los chunks PNG) ----------
 const TABLA_CRC = (() => {
@@ -162,7 +162,7 @@ function recolorearFondo(ancho, alto, rgba) {
   return rgba
 }
 
-// ---------- Maskable: contenido al 76% centrado sobre fondo esmeralda ----------
+// ---------- Maskable: contenido al 76% centrado sobre fondo casi negro ----------
 function remuestrearCaja(src, sw, sh, tw, th) {
   const out = Buffer.alloc(tw * th * 4)
   for (let y = 0; y < th; y++) {
@@ -226,7 +226,7 @@ for (const tam of [192, 512]) {
       writeFileSync(join(dirIconos, 'icon-maskable-512.png'), hacerMaskable(rgba))
       console.log('icon-maskable-512.png generado (zona segura 76%)')
     }
-    console.log(`icon-${tam}.png generado (fondo esmeralda)`)
+    console.log(`icon-${tam}.png generado (fondo casi negro)`)
   } catch (e) {
     console.log(`icon-${tam}.png generado (original, sin recolorear: ${e.message})`)
   }

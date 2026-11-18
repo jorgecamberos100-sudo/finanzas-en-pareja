@@ -9,6 +9,7 @@ import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import Paywall from '../components/Paywall'
+import { ChipCategoria, IconoAlerta, IconoReloj } from '../components/ui'
 import type { Category } from '../types'
 
 interface Props { data: AppData; onRefresh: () => void }
@@ -116,7 +117,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
   }
 
   return (
-    <main className="space-y-4 p-4">
+    <main className="space-y-5 p-5">
       <PibbiHeader
         pose={PAGE_PIBBI_POSES.presupuesto}
         title="Presupuesto"
@@ -142,14 +143,14 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       )}
 
       {error && (
-        <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
-          ⚠️ {error}
+        <div role="alert" className="flex items-start gap-2 rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
+          <IconoAlerta className="mt-0.5 h-4 w-4 shrink-0" />{error}
         </div>
       )}
 
       {editingCategory && (
         <div className="rounded-2xl border border-foco/60 bg-doradotenue p-4">
-          <h3 className="font-bold">Ajustar límite mensual: {editingCategory.icon} {editingCategory.name}</h3>
+          <h3 className="flex items-center gap-2 font-bold"><ChipCategoria nombre={editingCategory.name} group={editingCategory.group} className="h-7 w-7" /> Ajustar límite mensual: {editingCategory.name}</h3>
           <p className="mt-1 text-xs text-humo">Escribe el nuevo monto presupuestado para este sobre.</p>
           <input
             value={newLimit}
@@ -194,7 +195,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
           <div className="space-y-2">
             {unbudgeted.map((c) => (
               <div key={c.id} className="flex items-center justify-between rounded-xl bg-elevado p-2.5 text-sm">
-                <span>{c.icon} {c.name}</span>
+                <span className="flex items-center gap-2 font-medium"><ChipCategoria nombre={c.name} group={c.group} className="h-7 w-7" />{c.name}</span>
                 <button
                   onClick={() => intentarAsignarSobre(c)}
                   className="rounded-lg bg-tarjeta border border-borde px-2.5 py-1 text-xs font-semibold text-doradotexto hover:border-foco"
@@ -229,7 +230,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
         {data.recurring.length === 0 && <p className="text-sm text-humo">Sin recurrentes. Las suscripciones se restan del disponible del mes.</p>}
         {data.recurring.map((r) => (
           <div key={r.id} className="mb-2 flex justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
-            <span>🔁 {r.title} · día {r.due_day}</span><strong>{formatMoney(r.amount, currency)}</strong>
+            <span className="flex items-center gap-2"><IconoReloj className="h-4 w-4 text-humo" />{r.title} · día {r.due_day}</span><strong>{formatMoney(r.amount, currency)}</strong>
           </div>
         ))}
         <p className="text-xs text-humo">Total gastado en sobres este mes: {formatMoney(totalSpent, currency)} de {formatMoney(totalBudget, currency)} presupuestados.</p>

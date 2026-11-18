@@ -1,10 +1,10 @@
-// Pruebas del tema esmeralda día/noche (nov 2026): SOLO la paleta
-// "Emerald Finance", en dos versiones: noche = esmeralda oscura (fondo
-// verde casi negro) y día = esmeralda clara (fondo blanco verdoso).
-// Los temas viejos (noche azul marino, día papel crema) se eliminaron.
-// Sin rosa en la interfaz: el rosa es solo de PIBBI; la señal de
-// dinero es la menta brillante (relleno de botones) y la esmeralda es
-// marca/foco/positivo, y el foco es menta en noche y esmeralda en día.
+// Pruebas del tema día/noche (nov 2026): SOLO la paleta "negro + azul"
+// (estándar Muse, referencia del usuario): noche = fondo casi negro
+// con acento azul brillante, día = fondo casi blanco con el mismo azul.
+// La paleta anterior ("Emerald Finance", verde) se eliminó porque el
+// usuario la veía mediocre y no usaría la app. Sin rosa en la interfaz:
+// el rosa es solo de PIBBI; el acento es el azul (relleno de botones,
+// foco, enlaces) y el verde queda solo para lo positivo (ingresos).
 // Estas comprobaciones son a nivel de fuente y de lógica pura: si
 // alguien reintroduce el rosa, el dorado o un tema viejo en la
 // interfaz, o rompe el interruptor o la migración, el test falla antes
@@ -33,8 +33,8 @@ check('valor raro -> noche', temaDesdeStorage('rosa'), 'noche')
 check('vacío -> noche', temaDesdeStorage(''), 'noche')
 check('ciclo: noche -> día', siguienteTema('noche'), 'dia')
 check('ciclo: día -> noche', siguienteTema('dia'), 'noche')
-check('meta noche', META_THEME_COLOR['noche'], '#07130C')
-check('meta día', META_THEME_COLOR['dia'], '#EDF5EF')
+check('meta noche', META_THEME_COLOR['noche'], '#0A0A0C')
+check('meta día', META_THEME_COLOR['dia'], '#F7F7F8')
 check('aplicarTema actualiza el meta theme-color', readFileSync(join(root, 'src/lib/tema.ts'), 'utf8').includes('meta[name="theme-color"]'))
 check('clave de guardado', TEMA_KEY, 'finanzas-tema')
 
@@ -49,24 +49,24 @@ check('tailwind tiene doradotenue', tw.includes("doradotenue: 'rgb(var(--dorado-
 check('tailwind tiene tinta', tw.includes("tinta: 'rgb(var(--tinta-rgb)"))
 check('tailwind mapea noche a variable', tw.includes("noche: 'rgb(var(--noche-rgb)"))
 
-// 3. Variables CSS en index.css: SOLO dos temas esmeralda.
+// 3. Variables CSS en index.css: SOLO dos temas (negro + azul).
 const css = readFileSync(join(root, 'src/index.css'), 'utf8')
 check('css tiene bloque noche', css.includes(":root[data-theme='noche']"))
 check('css tiene bloque día', css.includes(":root[data-theme='dia']"))
 check('css NO tiene bloque esmeralda', !css.includes(":root[data-theme='esmeralda']"))
-check('noche: fondo verde casi negro #07130C', css.includes('--noche-rgb: 7 19 12'))
-check('noche: tarjeta #122B1E', css.includes('--tarjeta-rgb: 18 43 30'))
-check('noche: borde #2A4A38', css.includes('--borde-rgb: 42 74 56'))
-check('noche: texto #E7F2EB', css.includes('--crema-rgb: 231 242 235'))
-check('noche: foco menta #20B981', css.includes('--foco-rgb: 32 185 129'))
-check('día: fondo #EDF5EF', css.includes('--noche-rgb: 237 245 239'))
+check('noche: fondo casi negro #0A0A0C', css.includes('--noche-rgb: 10 10 12'))
+check('noche: tarjeta #1C1C1F', css.includes('--tarjeta-rgb: 28 28 31'))
+check('noche: borde #2C2C31', css.includes('--borde-rgb: 44 44 49'))
+check('noche: texto #F5F5F7', css.includes('--crema-rgb: 245 245 247'))
+check('noche: foco azul #3B82F6', css.includes('--foco-rgb: 59 130 246'))
+check('día: fondo #F7F7F8', css.includes('--noche-rgb: 247 247 248'))
 check('día: tarjeta #FFFFFF', css.includes('--tarjeta-rgb: 255 255 255'))
-check('día: texto #0C2B1C', css.includes('--crema-rgb: 12 43 28'))
-check('día: marca #137A55', css.includes('--verde-rgb: 19 122 85'))
-check('día: botón menta #20B981', css.includes('--dorado-rgb: 32 185 129'))
-check('día: acento-texto #0B5C3D', css.includes('--doradotexto-rgb: 11 92 61'))
-check('día: alerta coral #C2410C', css.includes('--rojosuave-rgb: 194 65 12'))
-check('día: foco esmeralda', css.includes('--foco-rgb: 19 122 85'))
+check('día: texto #111113', css.includes('--crema-rgb: 17 17 19'))
+check('día: verde positivo #15803D', css.includes('--verde-rgb: 21 128 61'))
+check('día: botón azul #2563EB', css.includes('--dorado-rgb: 37 99 235'))
+check('día: acento-texto #1D4ED8', css.includes('--doradotexto-rgb: 29 78 216'))
+check('día: alerta rojo #DC2626', css.includes('--rojosuave-rgb: 220 38 38'))
+check('día: foco azul', css.includes('--foco-rgb: 37 99 235'))
 // Nada de las paletas viejas (noche azul marino, día papel crema, dorado).
 check('sin fondo azul marino viejo', !css.includes('--noche-rgb: 10 15 30'))
 check('sin tarjeta azul marino vieja', !css.includes('--tarjeta-rgb: 35 46 82'))
@@ -76,12 +76,10 @@ check('sin dorado #F5C542 en el css', !css.includes('#F5C542') && !css.includes(
 check('sin fondo crema viejo', !css.includes('#F7F1E3'))
 
 // 3b. Contrastes de AMBOS temas (WCAG AA, texto normal >= 4.5:1).
-// Noche: la esmeralda #137A55 es demasiado oscura para texto sobre
-// fondo oscuro (3.6:1), así que los acentos usan variantes claras
-// (menta #7DDBC3, verde #4ADE80, acento #6EE7B7, coral #FF8A80).
-// Día: la menta brillante #20B981 es demasiado clara para texto
-// (2.5:1) y el coral #E4572E también (3.7:1); los tokens de texto
-// usan sus variantes oscuras y el #20B981 queda solo como relleno.
+// Noche: el acento es azul #2563EB (botón, 5.2:1 con texto blanco) y
+// el foco #3B82F6 (claro, para anillos sobre fondo oscuro). Día: el
+// mismo azul #2563EB; los textos de acento usan variantes oscuras
+// (#1D4ED8) y el verde solo para lo positivo (#15803D).
 type Rgb = [number, number, number]
 function lin(c: number): number { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) }
 function lum(rgb: Rgb): number { return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]) }
@@ -153,7 +151,10 @@ function* walk(dir: string): Generator<string> {
   }
 }
 const pibbiFiles = new Set(['Mascota.tsx', 'mascota-images.ts'])
-const pinkRe = /(rosafuerte|rosaclaro|rosatenue|#F4728F|#F9A8B8|text-noche|bg-rosafuerte)/
+const pinkRe = /(rosafuerte|rosaclaro|rosatenue|#F4728F|#F9A8B8|bg-rosafuerte)/
+// Nota (rediseño negro+azul): `text-noche` ya no es rosa; `noche` es el
+// token negro casi negro (#0A0A0C) y se usa como texto oscuro legítimo
+// (p. ej. botón oscuro sobre fondo claro), así que salió del regex.
 let pinkHits: string[] = []
 for (const f of walk(join(root, 'src'))) {
   const base = f.split('/').pop()!
@@ -176,12 +177,14 @@ check('ThemeToggle usa sol y luna (SVG, no emoji)', toggle.includes('<svg') && !
 const main = readFileSync(join(root, 'src/main.tsx'), 'utf8')
 check('main.tsx aplica el tema antes del render', main.includes('aplicarTema(leerTema())'))
 const app = readFileSync(join(root, 'src/App.tsx'), 'utf8')
-check('App.tsx muestra el interruptor en la barra', app.includes('<ThemeToggle'))
+check('App.tsx ya no mete el interruptor en la barra inferior', !app.includes('<ThemeToggle'))
+const dash = readFileSync(join(root, 'src/pages/Dashboard.tsx'), 'utf8')
+check('Dashboard muestra el interruptor en el encabezado', dash.includes('<ThemeToggle'))
 const onb = readFileSync(join(root, 'src/pages/Onboarding.tsx'), 'utf8')
 check('Onboarding muestra el interruptor en el encabezado', onb.includes('<ThemeToggle'))
 
-// 6. Usos de PIBBI de la propuesta "Emerald Finance": gasto excesivo =
-// PIBBI preocupado (pensativo), sin juzgar, en Presupuesto.
+// 6. Usos de PIBBI: gasto excesivo = PIBBI preocupado (pensativo),
+// sin juzgar, en Presupuesto.
 const pres = readFileSync(join(root, 'src/pages/Presupuesto.tsx'), 'utf8')
 check('Presupuesto: PIBBI pensativo cuando un sobre se pasa', pres.includes('pose="pensativo"') && pres.includes('Te pasaste un poco'))
 check('Presupuesto: el mensaje no juzga', pres.includes('sin drama'))
@@ -190,9 +193,9 @@ check('Presupuesto: el mensaje no juzga', pres.includes('sin drama'))
 // object-contain (no recorta orejas ni patitas) y los tamaños bajaron.
 const mascota = readFileSync(join(root, 'src/components/Mascota.tsx'), 'utf8')
 check('Mascota usa object-contain (cuerpo entero)', mascota.includes('object-contain'))
+check('Mascota tiene marco circular', mascota.includes('pibbi-circulo'))
 check('Mascota: el avatar circular sigue con object-cover', mascota.includes('object-cover'))
 check('Mascota: tamaño por defecto más pequeño', mascota.includes("className = 'h-24 w-24'"))
-const dash = readFileSync(join(root, 'src/pages/Dashboard.tsx'), 'utf8')
 check('Dashboard: PIBBI h-16', dash.includes('<Mascota className="h-16 w-16'))
 
 console.log(`\ntest-tema: ${pass} pasaron, ${fail} fallaron`)

@@ -4,13 +4,13 @@ import { REACTION_POSES, type ReactionContext } from '../lib/pibbi-poses'
 export type { ReactionContext } from '../lib/pibbi-poses'
 
 const REACTIONS: Record<ReactionContext, { pose: MascotaPose; text: string }> = {
-  saludando: { pose: REACTION_POSES.saludando, text: '¡Hola! 👋' },
-  apuntando: { pose: REACTION_POSES.apuntando, text: '¡Anotado! 📝' },
-  calculando: { pose: REACTION_POSES.calculando, text: 'Haciendo cuentas… 🧮' },
-  pensando: { pose: REACTION_POSES.pensando, text: 'Déjame pensar… 🤔' },
-  celebrando: { pose: REACTION_POSES.celebrando, text: '¡Lo lograste! 🎉' },
-  progreso: { pose: REACTION_POSES.progreso, text: '¡Vas muy bien! 📈' },
-  ahorrando: { pose: REACTION_POSES.ahorrando, text: '¡A ahorrar! 🪙' },
+  saludando: { pose: REACTION_POSES.saludando, text: '¡Hola!' },
+  apuntando: { pose: REACTION_POSES.apuntando, text: '¡Anotado!' },
+  calculando: { pose: REACTION_POSES.calculando, text: 'Haciendo cuentas…' },
+  pensando: { pose: REACTION_POSES.pensando, text: 'Déjame pensar…' },
+  celebrando: { pose: REACTION_POSES.celebrando, text: '¡Lo lograste!' },
+  progreso: { pose: REACTION_POSES.progreso, text: '¡Vas muy bien!' },
+  ahorrando: { pose: REACTION_POSES.ahorrando, text: '¡A ahorrar!' },
 }
 
 interface Props {

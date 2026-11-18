@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import { dedupeHashSync, formatMoney } from '../lib/format'
 import { supabase } from '../lib/supabase'
+import { IconoAlerta, IconoCheck } from './ui'
 
 interface Props {
   data: AppData
@@ -155,8 +156,8 @@ export default function CsvImport({ data, onDone }: Props) {
           </button>
         </>
       )}
-      {error && <div role="alert" className="mt-3 text-sm text-rojosuave">⚠️ {error}</div>}
-      {result && <div role="status" className="mt-3 text-sm text-verde">✅ {result}</div>}
+      {error && <div role="alert" className="mt-3 flex items-start gap-2 text-sm text-rojosuave"><IconoAlerta className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
+      {result && <div role="status" className="mt-3 flex items-start gap-2 text-sm text-verde"><IconoCheck className="mt-0.5 h-4 w-4 shrink-0" />{result}</div>}
     </div>
   )
 }

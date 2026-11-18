@@ -51,6 +51,48 @@ export const IconoIngreso = ({ className }: PIcono) => <Svg className={className
 export const IconoTransferencia = ({ className }: PIcono) => <Svg className={className}><path d="M4 8h13m0 0-3.5-3.5M17 8l-3.5 3.5" /><path d="M20 16H7m0 0 3.5-3.5M7 16l3.5 3.5" /></Svg>
 export const IconoReloj = ({ className }: PIcono) => <Svg className={className}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></Svg>
 export const IconoBuscar = ({ className }: PIcono) => <Svg className={className}><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Svg>
+export const IconoCarrito = ({ className }: PIcono) => <Svg className={className}><path d="M3 5h2l2.4 11.4A2 2 0 0 0 9.4 18h7.9a2 2 0 0 0 2-1.6L21 9H6" /><circle cx="10" cy="21" r="1.2" fill="currentColor" stroke="none" /><circle cx="17.5" cy="21" r="1.2" fill="currentColor" stroke="none" /></Svg>
+export const IconoAuto = ({ className }: PIcono) => <Svg className={className}><path d="M5 16 6.5 9.5A2 2 0 0 1 8.5 8h7a2 2 0 0 1 2 1.5L19 16" /><rect x="3.5" y="16" width="17" height="4" rx="1.5" /><circle cx="7.5" cy="20" r="1.6" /><circle cx="16.5" cy="20" r="1.6" /></Svg>
+export const IconoSalud = ({ className }: PIcono) => <Svg className={className}><path d="M12 5v14M5 12h14" /><circle cx="12" cy="12" r="9" /></Svg>
+export const IconoComer = ({ className }: PIcono) => <Svg className={className}><path d="M7 3v8a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M9 3v18" /><path d="M17 3c-2 0-3 2-3 5v3h3v10" /></Svg>
+export const IconoOcio = ({ className }: PIcono) => <Svg className={className}><circle cx="12" cy="12" r="9" /><path d="M10 8.5v7l6-3.5Z" fill="currentColor" stroke="none" /></Svg>
+export const IconoTv = ({ className }: PIcono) => <Svg className={className}><rect x="3" y="5" width="18" height="13" rx="2.5" /><path d="M9 21h6" /></Svg>
+export const IconoLibro = ({ className }: PIcono) => <Svg className={className}><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5Z" /><path d="M4 20.5V5.5M20 18v3H6.5" /></Svg>
+export const IconoRopa = ({ className }: PIcono) => <Svg className={className}><path d="M9 4 4 7l2 3 1.5-1V20h9V9l1.5 1 2-3-5-3a3 3 0 0 1-6 0Z" /></Svg>
+export const IconoLapiz = ({ className }: PIcono) => <Svg className={className}><path d="M4 20h4L20 8a2.4 2.4 0 0 0-4-4L4 16Z" /><path d="m13.5 6.5 4 4" /></Svg>
+export const IconoBasura = ({ className }: PIcono) => <Svg className={className}><path d="M4 7h16M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2M6.5 7l1 13h9l1-13" /><path d="M10 11v5M14 11v5" /></Svg>
+export const IconoMaletin = ({ className }: PIcono) => <Svg className={className}><rect x="3.5" y="8" width="17" height="12" rx="2.5" /><path d="M9 8V6.5A2.5 2.5 0 0 1 11.5 4h1A2.5 2.5 0 0 1 15 6.5V8M3.5 13h17" /></Svg>
+export const IconoSol = ({ className }: PIcono) => <Svg className={className}><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19" /></Svg>
+export const IconoLuna = ({ className }: PIcono) => <Svg className={className}><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z" /></Svg>
+
+// ---------- Icono de categoría (SVG, nunca emoji) ----------
+// Las categorías guardan un emoji en `icon` (dato viejo de la semilla);
+// la interfaz ya no lo dibuja: se elige el SVG por nombre/grupo.
+export function IconoCategoria({ nombre, group, className = 'h-5 w-5' }: { nombre: string; group?: string; className?: string }) {
+  const n = `${group ?? ''} ${nombre}`.toLowerCase()
+  if (n.includes('renta') || n.includes('vivienda') || n.includes('hipoteca')) return <IconoInicio className={className} />
+  if (n.includes('luz') || n.includes('servicio') || n.includes('internet') || n.includes('agua')) return <IconoBrillo className={className} />
+  if (n.includes('súper') || n.includes('super') || n.includes('despensa') || n.includes('mercado')) return <IconoCarrito className={className} />
+  if (n.includes('gasolina') || n.includes('transporte') || n.includes('gas')) return <IconoAuto className={className} />
+  if (n.includes('salud') || n.includes('farmacia')) return <IconoSalud className={className} />
+  if (n.includes('comer') || n.includes('restaurante')) return <IconoComer className={className} />
+  if (n.includes('ocio') || n.includes('entretenimiento')) return <IconoOcio className={className} />
+  if (n.includes('suscrip')) return <IconoTv className={className} />
+  if (n.includes('educación') || n.includes('educacion')) return <IconoLibro className={className} />
+  if (n.includes('ropa')) return <IconoRopa className={className} />
+  if (n.includes('sueldo') || n.includes('ingreso')) return <IconoMaletin className={className} />
+  if (n.includes('meta') || n.includes('ahorro')) return <IconoMeta className={className} />
+  return <IconoAlerta className={className} />
+}
+
+/** Chip redondo con el icono SVG de la categoría (estilo avatar). */
+export function ChipCategoria({ nombre, group, className = 'h-9 w-9' }: { nombre: string; group?: string; className?: string }) {
+  return (
+    <span className={`flex shrink-0 items-center justify-center rounded-full bg-elevado text-doradotexto ${className}`} aria-hidden="true">
+      <IconoCategoria nombre={nombre} group={group} className="h-5 w-5" />
+    </span>
+  )
+}
 
 // ---------- Spinner propio (aro menta) ----------
 export function Spinner({ className = 'h-5 w-5' }: { className?: string }) {
@@ -70,19 +112,19 @@ interface PropsBoton extends ButtonHTMLAttributes<HTMLButtonElement> {
   cargando?: boolean
 }
 const ESTILO_VARIANTE: Record<VarianteBoton, string> = {
-  primario: 'bg-dorado text-tinta shadow-fab hover:brightness-105',
+  primario: 'bg-dorado text-white shadow-fab hover:brightness-110',
   secundario: 'border border-borde bg-elevado text-crema hover:border-foco/60',
   fantasma: 'text-doradotexto hover:bg-elevado',
-  oscuro: 'bg-tinta text-white hover:brightness-110',
+  oscuro: 'bg-crema text-noche hover:brightness-95',
   peligro: 'bg-rojosuave/15 text-rojosuave hover:bg-rojosuave/25',
 }
 export function Boton({ variante = 'primario', tamano = 'md', cargando = false, disabled, className = '', children, type = 'button', ...rest }: PropsBoton) {
-  const pad = tamano === 'sm' ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'
+  const pad = tamano === 'sm' ? 'px-4 py-2 text-xs' : 'px-5 py-3.5 text-sm'
   return (
     <button
       type={type}
       disabled={disabled || cargando}
-      className={`inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-2xl font-bold tracking-wide transition-all duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 ${pad} ${ESTILO_VARIANTE[variante]} ${className}`}
+      className={`inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-bold tracking-wide transition-all duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 ${pad} ${ESTILO_VARIANTE[variante]} ${className}`}
       {...rest}
     >
       {cargando && <Spinner className="h-4 w-4" />}
@@ -158,7 +200,7 @@ export function CampoClave({ etiqueta, error, ayuda, className = '', ...rest }: 
 
 // ---------- Tarjeta / esqueleto / alerta ----------
 export function Tarjeta({ className = '', children }: { className?: string; children: ReactNode }) {
-  return <div className={`rounded-3xl border border-borde bg-tarjeta shadow-tarjeta ${className}`}>{children}</div>
+  return <div className={`rounded-[28px] border border-borde/70 bg-tarjeta shadow-tarjeta ${className}`}>{children}</div>
 }
 export function Esqueleto({ className = '' }: { className?: string }) {
   return <div className={`esqueleto rounded-2xl ${className}`} aria-hidden="true" />

@@ -154,7 +154,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
               aria-invalid={Boolean(errores.categoria)}
               className={`w-full rounded-xl border bg-tarjeta p-3 transition-colors focus:border-foco ${errores.categoria ? 'border-rojosuave ring-1 ring-rojosuave/40' : 'border-borde'}`}>
               <option value="">Elige una categoría…</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             {errores.categoria && <p role="alert" className="mt-1.5 text-xs font-medium text-rojosuave">{errores.categoria}</p>}
           </div>

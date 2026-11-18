@@ -12,9 +12,10 @@ import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiDresser from '../components/PibbiDresser'
 import {
-  Alerta, Boton, IconoBalanza, IconoCalendario, IconoCampana, IconoCheck, IconoCopiar,
+  Alerta, Boton, ChipCategoria, IconoBalanza, IconoCalendario, IconoCampana, IconoCheck, IconoCopiar,
   IconoCorazon, IconoMeta, IconoSalir, IconoSobre, Logo, Tarjeta,
 } from '../components/ui'
+import ThemeToggle from '../components/ThemeToggle'
 
 interface Props { data: AppData; onRefresh: () => void; onSignOut?: () => void }
 
@@ -96,19 +97,22 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
   }
 
   return (
-    <main className="space-y-4 p-4">
+    <main className="space-y-5 p-5">
       <div className="flex items-center justify-between">
         <Logo tamano="sm" conPibbi={false} />
-        {onSignOut && (
-          <button
-            onClick={() => { if (confirm('¿Cerrar sesión en este dispositivo?')) onSignOut() }}
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
-            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-borde bg-tarjeta px-3 py-1.5 text-xs font-semibold text-humo transition hover:border-foco hover:text-crema active:scale-95"
-          >
-            <IconoSalir className="h-4 w-4" /> Salir
-          </button>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95" />
+          {onSignOut && (
+            <button
+              onClick={() => { if (confirm('¿Cerrar sesión en este dispositivo?')) onSignOut() }}
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-borde bg-tarjeta px-3 py-2 text-xs font-semibold text-humo transition hover:border-foco hover:text-crema active:scale-95"
+            >
+              <IconoSalir className="h-4 w-4" /> Salir
+            </button>
+          )}
+        </div>
       </div>
 
       <PibbiHeader
@@ -259,7 +263,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
           return (
             <div key={c.id} className="mb-2 text-sm">
               <div className="flex justify-between">
-                <span>{c.icon} {c.name}</span>
+                <span className="flex items-center gap-2 font-medium"><ChipCategoria nombre={c.name} group={c.group} className="h-7 w-7" />{c.name}</span>
                 <span className="nums">{formatMoney(spent, currency)} / {formatMoney(c.monthly_limit, currency)}</span>
               </div>
               <div

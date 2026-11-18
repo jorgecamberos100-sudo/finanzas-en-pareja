@@ -9,6 +9,7 @@ import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
 import type { Account, Goal } from '../types'
+import { IconoAlerta, IconoCheck, IconoLapiz } from '../components/ui'
 
 interface Props { data: AppData; onRefresh: () => void }
 
@@ -50,7 +51,7 @@ export default function Plan({ data, onRefresh }: Props) {
     })
     setBusy(false)
     if (err) { setError(`No se pudo crear la meta: ${err.message}`); return }
-    setGoalName(''); setGoalTarget(''); setGoalDate(''); setMessage('Meta creada 🎉')
+    setGoalName(''); setGoalTarget(''); setGoalDate(''); setMessage('Meta creada')
     setReaction('ahorrando')
     onRefresh()
   }
@@ -109,23 +110,23 @@ export default function Plan({ data, onRefresh }: Props) {
     })
     setBusy(false)
     if (err) { setError(`No se pudo guardar la revisión: ${err.message}`); return }
-    setMoneyNotes(''); setMessage(data.partner ? 'Money date guardado 💬. Recuerden exportar su CSV de respaldo en Movimientos.' : 'Revisión guardada 💬. Recuerda exportar tu CSV de respaldo en Movimientos.')
+    setMoneyNotes(''); setMessage(data.partner ? 'Money date guardado. Recuerden exportar su CSV de respaldo en Movimientos.' : 'Revisión guardada. Recuerda exportar tu CSV de respaldo en Movimientos.')
     setReaction('pensando')
     onRefresh()
   }
 
   return (
-    <main className="space-y-4 p-4">
+    <main className="space-y-5 p-5">
       <PibbiHeader pose={PAGE_PIBBI_POSES.plan} title="Plan" subtitle="Tus metas, tus cuentas y tu revisión." />
 
       {error && (
-        <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
-          ⚠️ {error}
+        <div role="alert" className="flex items-start gap-2 rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
+          <IconoAlerta className="mt-0.5 h-4 w-4 shrink-0" />{error}
         </div>
       )}
       {message && (
-        <div role="status" className="rounded-xl bg-verde/10 p-3 text-sm text-verde">
-          ✅ {message}
+        <div role="status" className="flex items-start gap-2 rounded-2xl bg-verde/10 p-3 text-sm text-verde">
+          <IconoCheck className="mt-0.5 h-4 w-4 shrink-0" />{message}
         </div>
       )}
 
@@ -188,7 +189,7 @@ export default function Plan({ data, onRefresh }: Props) {
           <div key={a.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
             <div className="min-w-0 pr-2">
               <p className="font-semibold truncate">{a.name}</p>
-              <p className="text-xs text-humo">{a.type} · {a.visibility === 'privada' ? '🔒 privada' : a.visibility === 'solo_saldo' ? '👁️ solo saldo' : '👥 compartida'}</p>
+              <p className="text-xs text-humo">{a.type} · {a.visibility === 'privada' ? 'privada' : a.visibility === 'solo_saldo' ? 'solo saldo' : 'compartida'}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <strong className={a.type === 'deuda' || a.type === 'tarjeta' ? 'text-rojosuave' : ''}>{formatMoney(a.balance, currency)}</strong>
@@ -198,7 +199,7 @@ export default function Plan({ data, onRefresh }: Props) {
                 aria-label={`Ajustar saldo de ${a.name}`}
                 className="rounded-lg border border-borde px-2 py-1 text-xs text-humo hover:text-crema"
               >
-                ✏️
+                <IconoLapiz className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -207,7 +208,7 @@ export default function Plan({ data, onRefresh }: Props) {
       </section>
 
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
-        <h2 className="font-bold">💬 {data.partner ? 'Money date' : 'Mi revisión'}</h2>
+        <h2 className="font-bold">{data.partner ? 'Money date' : 'Mi revisión'}</h2>
         <p className="mb-2 text-sm text-humo">{data.partner ? 'Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde Inicio).' : 'Tu revisión: resumen del período, notas y acuerdos.'}</p>
         <textarea value={moneyNotes} onChange={(e) => setMoneyNotes(e.target.value)} placeholder="Notas y acuerdos de hoy…" rows={3} className="mb-2 w-full rounded-xl border p-2" />
         <button onClick={saveMoneyDate} disabled={busy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">

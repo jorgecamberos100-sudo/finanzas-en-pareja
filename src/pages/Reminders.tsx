@@ -19,6 +19,7 @@ import {
   unsubscribePush,
 } from '../lib/reminders'
 import Mascota from '../components/Mascota'
+import { IconoBasura } from '../components/ui'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
@@ -124,7 +125,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       : await supabase.from('reminders').insert(payload)
     setBusy(false)
     if (err) { setError(`No se pudo guardar el recordatorio: ${err.message}`); return }
-    setMessage(editingId ? 'Recordatorio actualizado 🔔' : 'Recordatorio creado 🔔 Te avisaré ese día.')
+    setMessage(editingId ? 'Recordatorio actualizado' : 'Recordatorio creado. Te avisaré ese día.')
     if (!editingId) setReaction('apuntando')
     resetForm()
     onRefresh()
@@ -143,7 +144,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       .eq('id', r.id)
     setBusy(false)
     if (err) { setError(`No se pudo marcar como pagado: ${err.message}`); return }
-    setMessage(next ? `Pagado. El siguiente quedó para el ${formatDateEs(next)}.` : 'Marcado como pagado ✅')
+    setMessage(next ? `Pagado. El siguiente quedó para el ${formatDateEs(next)}.` : 'Marcado como pagado')
     setReaction('celebrando')
     onRefresh()
   }
@@ -156,7 +157,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     const { error: err } = await supabase.from('reminders').update({ is_done: false, done_at: null }).eq('id', r.id)
     setBusy(false)
     if (err) { setError(`No se pudo reactivar: ${err.message}`); return }
-    setMessage('Recordatorio reactivado 🔔')
+    setMessage('Recordatorio reactivado')
     onRefresh()
   }
 
@@ -189,7 +190,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       timezone: deviceTimeZone(),
     })
     if (error) { setMessage(error.message); return }
-    setMessage(`Recordatorio mensual de “${rec.title}” creado 🔔`)
+    setMessage(`Recordatorio mensual de “${rec.title}” creado`)
     onRefresh()
   }
 
@@ -203,11 +204,11 @@ export default function Reminders({ data, onRefresh }: Props) {
     setPushBusy(false)
     if (!res.ok) {
       // Sin push, las notificaciones locales (app abierta) ya funcionan con el permiso.
-      setMessage(`Notificación local activada ✅. Push en este celular: ${res.error}`)
+      setMessage(`Notificación local activada. Push en este celular: ${res.error}`)
       return
     }
     setPushOn(true)
-    setMessage('Notificaciones activadas en este celular 🔔 También te avisaré aunque la app esté cerrada.')
+    setMessage('Notificaciones activadas en este celular. También te avisaré aunque la app esté cerrada.')
   }
 
   async function disablePush() {
@@ -223,15 +224,15 @@ export default function Reminders({ data, onRefresh }: Props) {
     const status = reminderStatus(r)
     const d = daysUntil(r.due_date)
     const badge =
-      status === 'overdue' ? `⚠️ Vencido hace ${-d} día${-d === 1 ? '' : 's'}` :
-      status === 'today' ? '📅 Vence hoy' :
-      status === 'tomorrow' ? '📅 Vence mañana' :
-      `📅 En ${d} días`
+      status === 'overdue' ? `Vencido hace ${-d} día${-d === 1 ? '' : 's'}` :
+      status === 'today' ? 'Vence hoy' :
+      status === 'tomorrow' ? 'Vence mañana' :
+      `En ${d} días`
     return (
       <div key={r.id} className="mb-2 rounded-2xl border border-borde bg-tarjeta p-3  ">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="font-bold">🔔 {r.title}</p>
+            <p className="font-bold">{r.title}</p>
             <p className="text-sm text-humo">
               {formatDateEs(r.due_date)}{r.due_time ? ` · ${r.due_time} h` : ''} · {RECURRENCE_LABELS[r.recurrence]}
             </p>
@@ -245,10 +246,10 @@ export default function Reminders({ data, onRefresh }: Props) {
         {!r.is_done && (
           <div className="mt-2 flex gap-2">
             <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta">
-              {r.recurrence === 'once' ? 'Marcar pagado ✅' : 'Pagado · siguiente ➡️'}
+              {r.recurrence === 'once' ? 'Marcar pagado' : 'Pagado · siguiente'}
             </button>
             <button onClick={() => startEdit(r)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Editar</button>
-            <button onClick={() => void deleteReminder(r)} aria-label={`Eliminar ${r.title}`} className="rounded-xl bg-elevado px-3 py-2 text-sm ">🗑️</button>
+            <button onClick={() => void deleteReminder(r)} aria-label={`Eliminar ${r.title}`} className="rounded-full bg-elevado p-2 text-sm"><IconoBasura className="h-4 w-4" /></button>
           </div>
         )}
         {r.is_done && (
@@ -262,18 +263,18 @@ export default function Reminders({ data, onRefresh }: Props) {
     <main className="space-y-4 p-4">
       <PibbiHeader
         pose={PAGE_PIBBI_POSES.recordatorios}
-        title="Recordatorios 🔔"
+        title="Recordatorios"
         subtitle="Avisos de pagos futuros para los dos. También puedes escribir en el Chat “recuérdame pagar la renta el 1ro” y se crea aquí."
       />
 
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
-        <h2 className="font-bold">📱 Notificaciones en este celular</h2>
+        <h2 className="font-bold">Notificaciones en este celular</h2>
         <p className="mb-2 text-sm text-humo">
           Con la app abierta o instalada te aviso a la hora del recordatorio. Para avisar aunque la app esté cerrada, activa también el push (gratis, con claves VAPID).
         </p>
         <p className="mb-2 text-sm">
-          Notificaciones: <strong>{perm === 'granted' ? 'activadas ✅' : perm === 'denied' ? 'bloqueadas en el navegador' : perm === 'unsupported' ? 'no soportadas aquí' : 'sin activar'}</strong>
-          {pushSupported() && <> · Push: <strong>{pushOn ? 'activado ✅' : 'apagado'}</strong></>}
+          Notificaciones: <strong>{perm === 'granted' ? 'activadas' : perm === 'denied' ? 'bloqueadas en el navegador' : perm === 'unsupported' ? 'no soportadas aquí' : 'sin activar'}</strong>
+          {pushSupported() && <> · Push: <strong>{pushOn ? 'activado' : 'apagado'}</strong></>}
         </p>
         {notificationsSupported() && perm !== 'granted' && (
           <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
@@ -300,7 +301,7 @@ export default function Reminders({ data, onRefresh }: Props) {
           <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setError(null) }} aria-label="Categoría del recordatorio" className="rounded-xl border p-2 text-sm">
             <option value="">Sin categoría</option>
             {data.categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -323,12 +324,12 @@ export default function Reminders({ data, onRefresh }: Props) {
         <input value={note} onChange={(e) => { setNote(e.target.value); setError(null) }} placeholder="Nota (opcional)" aria-label="Nota adicional" className="mb-2 w-full rounded-xl border p-2" />
         <div className="flex gap-2">
           <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            {busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear recordatorio 🔔'}
+            {busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear recordatorio'}
           </button>
           {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}
         </div>
-        {error && <div role="alert" className="mt-2 text-sm text-rojosuave">⚠️ {error}</div>}
-        {message && <div role="status" className="mt-2 text-sm text-verde">✅ {message}</div>}
+        {error && <div role="alert" className="mt-2 text-sm text-rojosuave">{error}</div>}
+        {message && <div role="status" className="mt-2 text-sm text-verde">{message}</div>}
         {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
       </section>
 
@@ -340,9 +341,9 @@ export default function Reminders({ data, onRefresh }: Props) {
             const has = reminders.some((r) => r.recurring_id === rec.id && !r.is_done)
             return (
               <div key={rec.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
-                <span>📅 Día {rec.due_day} · {rec.title} · <strong>{formatMoney(rec.amount, currency)}</strong></span>
+                <span>Día {rec.due_day} · {rec.title} · <strong>{formatMoney(rec.amount, currency)}</strong></span>
                 {has
-                  ? <span className="text-xs font-semibold text-verde">🔔 Ya tiene aviso</span>
+                  ? <span className="text-xs font-semibold text-verde">Ya tiene aviso</span>
                   : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-dorado px-3 py-1.5 text-xs font-bold text-tinta">+ Aviso mensual</button>}
               </div>
             )
@@ -365,7 +366,7 @@ export default function Reminders({ data, onRefresh }: Props) {
           </div>
           {done.map((r) => (
             <div key={r.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm opacity-70  ">
-              <span>✅ {r.title} · {formatDateEs(r.due_date)}{r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}</span>
+              <span>{r.title} · {formatDateEs(r.due_date)}{r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}</span>
               <button onClick={() => void reactivate(r)} className="rounded-xl bg-elevado px-3 py-1.5 text-xs font-semibold ">Reactivar</button>
             </div>
           ))}

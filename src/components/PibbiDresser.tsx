@@ -20,7 +20,7 @@ export default function PibbiDresser({ title = 'Viste a PIBBI' }: Props) {
 
   return (
     <div>
-      <p className="mb-2 font-bold">{title} 🎀</p>
+      <p className="mb-2 font-bold">{title}</p>
       <div className="grid grid-cols-5 gap-2">
         {PIBBI_ACCESSORIES.map((a) => (
           <button
@@ -34,7 +34,7 @@ export default function PibbiDresser({ title = 'Viste a PIBBI' }: Props) {
             }`}
           >
             <Mascota pose="frente" accessory={a.id} alt={a.id === 'ninguno' ? 'PIBBI sin prenda' : `PIBBI con ${a.name}`} className="h-10 w-10" />
-            <span className="text-center text-[11px] leading-tight text-humo">{a.emoji} {a.name}</span>
+            <span className="text-center text-[11px] leading-tight text-humo">{a.name}</span>
           </button>
         ))}
       </div>

@@ -39,10 +39,10 @@ export default {
         // aviso/selección): menta en noche, esmeralda en día.
         foco: 'rgb(var(--foco-rgb) / <alpha-value>)',
       },
-      // Tipografía propia: Inter para interfaz, Sora para títulos y montos.
+      // Tipografía: una sola familia, Inter, en todo (estándar limpio).
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
       // Sombras por tema (las variables viven en src/index.css): suaves en
       // día, profundas en noche. Dan la sensación de tarjeta física.

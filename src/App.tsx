@@ -21,7 +21,6 @@ import Plan from './pages/Plan'
 import Chat from './pages/Chat'
 import Reminders from './pages/Reminders'
 import QuickAddModal from './components/QuickAddModal'
-import ThemeToggle from './components/ThemeToggle'
 
 export interface AppData {
   household: Household | null
@@ -74,7 +73,7 @@ function UpdateBanner() {
 function PantallaCarga() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 p-6" role="status" aria-label="Cargando tus datos">
-      <Mascota pose="saludando" className="h-24 w-24" />
+      <Mascota pose="saludando" marco="circulo" className="h-28 w-28" />
       <Logo tamano="md" conPibbi={false} />
       <Spinner className="h-6 w-6 text-doradotexto" />
       <div className="w-full space-y-3">
@@ -291,27 +290,28 @@ export default function App() {
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-dorado text-tinta shadow-fab transition-transform duration-150 hover:scale-105 active:scale-90"
+        className="fixed bottom-[5.5rem] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-dorado text-white shadow-fab transition-transform duration-150 hover:scale-105 active:scale-90"
       >
         <IconoMas className="h-7 w-7" />
       </button>
 
-      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-elevado">
-        {tabs.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 text-center text-[11px] leading-tight transition-colors sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-doradotexto' : 'text-humo'}`}>
-            {({ isActive }) => (
-              <>
-                <span className={`rounded-xl px-3 py-1 transition-colors ${isActive ? 'bg-doradotenue' : ''}`}>
-                  <t.icono className="h-5 w-5" />
-                </span>
-                <span className="sm:hidden">{t.short}</span>
-                <span className="hidden sm:inline">{t.label}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
-        <ThemeToggle className="flex min-w-0 flex-col items-center justify-center px-2 text-humo" />
+      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-lg border-t border-borde/60 bg-noche/90 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
+        <div className="flex justify-around px-2">
+          {tabs.map((t) => (
+            <NavLink key={t.to} to={t.to} end={t.to === '/'}
+              className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center gap-1 text-[10px] font-medium transition-colors ${isActive ? 'text-doradotexto' : 'text-humo'}`}>
+              {({ isActive }) => (
+                <>
+                  <span className={`rounded-full px-4 py-1.5 transition-colors ${isActive ? 'bg-tarjeta shadow-tarjeta' : ''}`}>
+                    <t.icono className="h-5 w-5" />
+                  </span>
+                  <span className="sm:hidden">{t.short}</span>
+                  <span className="hidden sm:inline">{t.label}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
       </nav>
 
       {quickAddOpen && (

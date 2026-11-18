@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconoCheck } from './ui'
 import { PLANES, etiquetaPrecio, iniciarCheckout } from '../lib/planes'
 import type { PlanId } from '../types'
 
@@ -54,10 +55,10 @@ export default function Paywall({ motivo, onClose }: Props) {
         <p className="mb-3 text-sm text-humo">{motivo}</p>
 
         <ul className="mb-3 space-y-1.5 text-sm">
-          <li>✅ Capturas con IA ilimitadas (uso justo: {plus.capturasIaMes} al mes)</li>
-          <li>✅ Sobres y metas sin límite</li>
-          <li>✅ Historial completo, sin límite de 90 días</li>
-          <li>✅ Exportar tus movimientos en CSV</li>
+          <li className="flex items-start gap-2"><IconoCheck className="mt-0.5 h-4 w-4 shrink-0 text-verde" />Capturas con IA ilimitadas (uso justo: {plus.capturasIaMes} al mes)</li>
+          <li className="flex items-start gap-2"><IconoCheck className="mt-0.5 h-4 w-4 shrink-0 text-verde" />Sobres y metas sin límite</li>
+          <li className="flex items-start gap-2"><IconoCheck className="mt-0.5 h-4 w-4 shrink-0 text-verde" />Historial completo, sin límite de 90 días</li>
+          <li className="flex items-start gap-2"><IconoCheck className="mt-0.5 h-4 w-4 shrink-0 text-verde" />Exportar tus movimientos en CSV</li>
         </ul>
 
         <div className="mb-3 rounded-2xl border border-foco/60 bg-doradotenue p-4">
