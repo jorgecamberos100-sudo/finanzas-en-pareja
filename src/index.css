@@ -2,16 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dos temas en toda la app (ver src/lib/tema.ts): noche (paleta A ·
-   Marino afinado, por defecto) y día (paleta C · Papel crema). El
-   interruptor cambia solo data-theme en <html>; los componentes usan
-   los mismos tokens en ambos temas. */
-/* Dos temas (ver src/lib/tema.ts): noche (paleta A · Marino afinado, por
-   defecto) y día (paleta C · Papel crema). Los tokens de Tailwind son
+/* Tres temas en toda la app (ver src/lib/tema.ts): noche (paleta A ·
+   Marino afinado, por defecto), día (paleta C · Papel crema) y
+   esmeralda (propuesta "Emerald Finance": verde esmeralda #137A55 y
+   menta #20B981). El interruptor cambia solo data-theme en <html>;
+   los componentes usan los mismos tokens en los tres temas. */
+/* Tres temas (ver src/lib/tema.ts): noche (paleta A · Marino afinado, por
+   defecto), día (paleta C · Papel crema) y esmeralda (verde esmeralda
+   #137A55 + menta #20B981, fondo blanco verdoso). Los tokens de Tailwind son
    `rgb(var(--X-rgb) / <alpha-value>)`, así cambiar de tema es solo
    cambiar data-theme en <html>. Sin rosa en la interfaz: el rosa es
-   solo de PIBBI; el acento principal es el dorado (dinero) y el foco
-   es dorado en noche y tinta en día. */
+   solo de PIBBI; el acento principal es el dorado (dinero) en noche/día
+   y la menta brillante en esmeralda, y el foco es dorado en noche,
+   tinta en día y esmeralda en el tema esmeralda. */
 :root, :root[data-theme='noche'] {
   color-scheme: dark;
   /* Paleta A · Marino afinado. */
@@ -50,6 +53,35 @@
   --rojosuave-rgb: 180 35 24;
   --tinta-rgb: 27 35 64;
   --foco-rgb: 27 35 64;
+}
+
+:root[data-theme='esmeralda'] {
+  color-scheme: light;
+  /* Esmeralda · propuesta "Emerald Finance" (ChatGPT, nov 2026):
+     marca verde esmeralda #137A55, menta #20B981, fondo claro blanco
+     verdoso, fondo oscuro verde casi negro. El verde domina la
+     interfaz; el rosa sigue siendo solo de PIBBI.
+     Contrastes medidos (AA, texto normal >= 4.5:1): texto/fondo 13.7,
+     secundario/fondo 5.3, esmeralda/fondo 4.8, botón menta/tinta 6.0,
+     acento-texto/tarjeta 8.0, coral/tarjeta 5.2. La menta brillante
+     #20B981 es demasiado clara para texto (2.5:1), así que el token
+     menta usa su variante oscura #0B7A4D (5.4:1) y el #20B981 queda
+     como relleno de los botones principales (dorado); el coral
+     #E4572E también es claro para texto (3.7:1), así que el token de
+     alerta usa su variante oscura #C2410C (5.2:1). */
+  --noche-rgb: 237 245 239;
+  --tarjeta-rgb: 255 255 255;
+  --elevado-rgb: 247 251 248;
+  --borde-rgb: 196 216 203;
+  --crema-rgb: 12 43 28;
+  --humo-rgb: 74 107 90;
+  --menta-rgb: 11 122 77;
+  --verde-rgb: 19 122 85;
+  --dorado-rgb: 32 185 129;
+  --doradotexto-rgb: 11 92 61;
+  --rojosuave-rgb: 194 65 12;
+  --tinta-rgb: 12 43 28;
+  --foco-rgb: 19 122 85;
 }
 
 html, body {
