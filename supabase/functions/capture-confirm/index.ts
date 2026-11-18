@@ -121,5 +121,24 @@ Deno.serve(async (req) => {
     if (insertedRow) inserted.push(insertedRow.id as string)
   }
 
-  return jsonResponse({ inserted, duplicates, errors, inserted_count: inserted.length })
+  // Contador de capturas con IA (migración 005, planes Free/Plus/Fundadores):
+  // 1 captura por llamada que insertó al menos un movimiento. La vía
+  // principal del contador es el cliente (ChatCapture llama a la RPC tras
+  // confirmar), porque la app hoy confirma con App.addTransaction (insert
+  // directo) y NO pasa por esta función; este incremento es la defensa en
+  // profundidad para esta función desplegada. Si la RPC falla (migración
+  // 005 aún sin aplicar), no se rompe la confirmación: el contador
+  // simplemente no se registra hasta aplicarla.
+  let capturasIa: { allowed?: unknown; used?: unknown; limit_captures?: unknown; plan?: unknown } | null = null
+  if (inserted.length > 0) {
+    try {
+      const { data: rpcData } = await supabase.rpc('increment_ai_capture', { p_household_id: householdId })
+      const row = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as typeof capturasIa
+      if (row && typeof row === 'object') capturasIa = row
+    } catch {
+      // Contador secundario: los movimientos ya quedaron guardados.
+    }
+  }
+
+  return jsonResponse({ inserted, duplicates, errors, inserted_count: inserted.length, capturas_ia: capturasIa })
 })

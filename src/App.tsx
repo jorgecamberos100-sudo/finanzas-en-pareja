@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import { supabase, getHouseholdId, setHouseholdId, clearHouseholdId, findMyHouseholdId } from './lib/supabase'
 import { useReminderNotifications } from './lib/reminders'
+import { cargarPlan } from './lib/planes-db'
 import { onUpdateAvailable, applyUpdate } from './lib/sw-update'
 import { PibbiProvider } from './lib/pibbi'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
-import type { Account, Category, Goal, Household, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
+import type { Account, Category, Goal, Household, HouseholdPlan, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
@@ -28,11 +29,13 @@ export interface AppData {
   reminders: Reminder[]
   /** Liquidaciones de deuda mutua (money_dates con settled_amount > 0). */
   settlements: MoneyDate[]
+  /** Plan del hogar (Free / Plus / Fundadores, migración 005). null = Free. */
+  plan: HouseholdPlan | null
 }
 
 const EMPTY: AppData = {
   household: null, me: null, partner: null,
-  accounts: [], categories: [], transactions: [], goals: [], recurring: [], reminders: [], settlements: [],
+  accounts: [], categories: [], transactions: [], goals: [], recurring: [], reminders: [], settlements: [], plan: null,
 }
 
 /**
@@ -125,6 +128,10 @@ export default function App() {
       ])
       if (hh.error) { setSyncError(hh.error.message); return }
 
+      // Plan del hogar (migración 005). Se carga aparte y tolera que la
+      // tabla aún no exista en producción: sin fila, el hogar es Free.
+      const planRow = await cargarPlan(hid)
+
       const memberRows = (members.data ?? []) as Array<{ user_id: string; user: UserProfile }>
       const me = memberRows.find((m) => m.user_id === user.id)?.user ?? { id: user.id, name: user.email ?? 'Yo', email: user.email ?? '' }
       const partnerMember = memberRows.find((m) => m.user_id !== user.id)
@@ -140,6 +147,7 @@ export default function App() {
         recurring: (recurring.data ?? []) as Recurring[],
         reminders: (reminders.data ?? []) as Reminder[],
         settlements: (settlements.data ?? []) as MoneyDate[],
+        plan: planRow,
       })
       // Carga exitosa: limpiar cualquier error de sincronización anterior.
       setSyncError(null)
@@ -190,6 +198,7 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'money_dates', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'household_members', filter: `household_id=eq.${householdId}` }, () => loadAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'household_plan', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
