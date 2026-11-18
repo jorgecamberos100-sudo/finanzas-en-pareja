@@ -6,12 +6,12 @@ import { formatMoney, todayIso } from '../lib/format'
 import { computeMutualBalance } from '../lib/split'
 import { supabase } from '../lib/supabase'
 import { mensajeHumano } from '../lib/errores'
-import { contextoPibbi, responderPibbi, saludoPibbi } from '../lib/pibbi-respuestas'
+import { contextoPibbi, nombreParaSaludo, responderPibbi, saludoPibbi } from '../lib/pibbi-respuestas'
 import ChatCapture from '../components/ChatCapture'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
 import ThemeToggle from '../components/ThemeToggle'
-import { Alerta, Boton, IconoBalanza, IconoCheck, IconoCopiar, IconoRopa, IconoSalir, Tarjeta } from '../components/ui'
+import { Alerta, Boton, IconoBalanza, IconoCheck, IconoCopiar, IconoRopa, IconoSalir, IconoX, Tarjeta } from '../components/ui'
 
 interface Props {
   data: AppData
@@ -34,6 +34,16 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
   const [copyFailed, setCopyFailed] = useState(false)
   const [liquidando, setLiquidando] = useState(false)
   const [liquidarError, setLiquidarError] = useState<string | null>(null)
+  // La invitación no es una tarjeta gigante en el chat: es una tira
+  // compacta que se puede cerrar y no vuelve (se guarda por código).
+  const inviteCode = data.household?.invite_code ?? ''
+  const [invitarOculto, setInvitarOculto] = useState(() => {
+    try { return inviteCode ? localStorage.getItem(`fp-invitar-${inviteCode}`) === '1' : false } catch { return false }
+  })
+  function ocultarInvitar() {
+    setInvitarOculto(true)
+    try { if (inviteCode) localStorage.setItem(`fp-invitar-${inviteCode}`, '1') } catch { /* sin almacenamiento */ }
+  }
 
   const currency = data.household?.currency ?? 'MXN'
   const ctx = useMemo(
@@ -61,8 +71,8 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
     () => (data.me && data.partner ? computeMutualBalance(data.transactions, data.me.id, data.partner.id, data.settlements) : null),
     [data.transactions, data.me, data.partner, data.settlements],
   )
-  const debtorName = mutual?.debtor_id === data.me?.id ? 'Tú' : data.partner?.name ?? 'Tu pareja'
-  const creditorName = mutual?.creditor_id === data.me?.id ? 'ti' : data.partner?.name ?? 'tu pareja'
+  const debtorName = mutual?.debtor_id === data.me?.id ? 'Tú' : (data.partner ? nombreParaSaludo(data.partner.name) : 'Tu pareja')
+  const creditorName = mutual?.creditor_id === data.me?.id ? 'ti' : (data.partner ? nombreParaSaludo(data.partner.name) : 'tu pareja')
 
   async function liquidar() {
     if (!mutual || !data.me || !data.household || liquidando) return
@@ -105,14 +115,17 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
 
   return (
     <main className="flex min-h-[calc(100dvh-7rem)] flex-col">
-      {/* Encabezado fijo estilo Muse: PIBBI en su círculo, su nombre y
-          su estado; a la derecha vestir, tema y salir. */}
+      {/* Encabezado estilo Muse: PIBBI, su nombre y su estado en una
+          línea; a la derecha solo iconos con aire. El "tu cerdito de los
+          ahorros" ya lo dice el saludo, aquí solo estorba. */}
       <header className="sticky top-0 z-30 border-b border-borde/60 bg-noche/90 backdrop-blur-xl">
-        <div className="flex items-center gap-3 px-4 py-2.5">
+        <div className="flex items-center gap-2.5 px-4 py-2">
           <Mascota pose="frente" marco="circulo" className="h-11 w-11" />
           <div className="min-w-0 flex-1">
             <p className="font-bold leading-tight">PIBBI</p>
-            <p className="text-xs text-humo">En línea · tu cerdito de los ahorros</p>
+            <p className="flex items-center gap-1.5 whitespace-nowrap text-xs text-humo">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-verde" aria-hidden="true" /> En línea
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <button
@@ -131,9 +144,9 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
                 onClick={() => { if (confirm('¿Cerrar sesión en este dispositivo?')) onSignOut() }}
                 title="Cerrar sesión"
                 aria-label="Cerrar sesión"
-                className="flex shrink-0 items-center gap-1.5 rounded-full border border-borde bg-tarjeta px-3 py-2 text-xs font-semibold text-humo transition hover:border-foco hover:text-crema active:scale-95"
+                className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95"
               >
-                <IconoSalir className="h-4 w-4" /> Salir
+                <IconoSalir className="h-4 w-4" />
               </button>
             )}
           </div>
@@ -160,21 +173,38 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
         </div>
       )}
 
-      {/* Hogar de 1 persona: invitar a la pareja es una opción, no un requisito. */}
-      {!data.partner && data.household && (
+      {/* Hogar de 1 persona: invitar a la pareja es una tira compacta y
+          descartable, no una tarjeta gigante tapando el chat. La URL
+          nunca se muestra (se partía a mitad de palabra): solo el código
+          y el botón de copiar; el enlace va dentro del texto copiado. */}
+      {!data.partner && data.household && !invitarOculto && (
         <div className="px-4 pt-3">
-          <Tarjeta className="border-foco/60 p-4">
-            <p className="font-bold">Invita a tu pareja (opcional)</p>
-            <p className="mb-3 mt-1 text-sm text-humo">Usas la app solo por ahora. Cuando quieras, tu pareja crea su cuenta y se une con este código.</p>
-            <div className="mb-3 rounded-2xl bg-doradotenue p-3 text-center">
-              <p className="font-display text-2xl font-extrabold tracking-[0.25em] text-doradotexto">{data.household.invite_code}</p>
-              <p className="mt-1 break-all text-xs text-humo">{`${window.location.origin}/onboarding?codigo=${data.household.invite_code}`}</p>
-            </div>
-            <Boton onClick={copyInvite} className="w-full">
-              {copied ? <><IconoCheck className="h-4 w-4" /> ¡Copiado!</> : <><IconoCopiar className="h-4 w-4" /> Copiar código y enlace</>}
-            </Boton>
-            {copyFailed && <p role="alert" className="mt-2 text-center text-xs text-doradotexto">No se pudo copiar automáticamente: copia el código y el enlace de la tarjeta.</p>}
-          </Tarjeta>
+          <div className="flex items-center gap-2 rounded-full border border-borde bg-tarjeta py-1.5 pl-3 pr-1.5 shadow-tarjeta">
+            <p className="min-w-0 flex-1 truncate text-xs">
+              <span className="font-bold text-crema">Invita a tu pareja</span>
+              <span className="text-humo"> · código </span>
+              <span className="font-bold tracking-[0.2em] text-doradotexto">{data.household.invite_code}</span>
+            </p>
+            <button
+              type="button"
+              onClick={copyInvite}
+              aria-label="Copiar código y enlace de invitación"
+              title="Copiar código y enlace"
+              className="shrink-0 rounded-full bg-elevado p-2 text-crema transition active:scale-90"
+            >
+              {copied ? <IconoCheck className="h-4 w-4" /> : <IconoCopiar className="h-4 w-4" />}
+            </button>
+            <button
+              type="button"
+              onClick={ocultarInvitar}
+              aria-label="Ocultar invitación"
+              title="Ocultar"
+              className="shrink-0 rounded-full bg-elevado p-2 text-humo transition active:scale-90"
+            >
+              <IconoX className="h-4 w-4" />
+            </button>
+          </div>
+          {copyFailed && <p role="alert" className="mt-1.5 text-center text-xs text-doradotexto">No se pudo copiar: el código es {data.household.invite_code}, cópialo a mano.</p>}
         </div>
       )}
 

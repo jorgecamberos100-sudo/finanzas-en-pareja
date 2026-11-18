@@ -605,13 +605,13 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
   const speechSupported = dictadoDisponible() || Boolean(navigator.mediaDevices?.getUserMedia)
 
   return (
-    <div className="flex flex-col gap-3 p-4">
-      <div className="space-y-2" aria-live="polite">
+    <div className="flex flex-col gap-4 px-4 py-3">
+      <div className="space-y-3" aria-live="polite">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm shadow-tarjeta ${
-                m.role === 'user' ? 'rounded-br-sm bg-dorado text-tinta' : 'rounded-bl-sm bg-elevado text-crema'
+              className={`max-w-[85%] break-words rounded-[22px] px-4 py-3 text-[15px] leading-6 shadow-tarjeta ${
+                m.role === 'user' ? 'rounded-br-md bg-dorado text-tinta' : 'rounded-bl-md bg-elevado text-crema'
               }`}
             >
               {m.imageUrl && <img src={m.imageUrl} alt="Foto enviada para capturar" className="mb-2 max-h-48 rounded-xl object-cover" />}
@@ -878,9 +878,9 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
         la foto, la voz y el envío se quedan visibles mientras se lee la
         conversación. El fondo con blur tapa los mensajes al pasar por debajo.
       */}
-      <div className="sticky bottom-[5.25rem] z-30 -mx-4 border-t border-borde/60 bg-noche/90 px-4 pb-1 pt-2 backdrop-blur-xl">
+      <div className="sticky bottom-[3.5rem] z-30 -mx-4 border-t border-borde/60 bg-noche/90 px-4 pb-1 pt-2 backdrop-blur-xl">
       {sugerencias && sugerencias.length > 0 && (
-        <div className="mb-2 flex gap-2 overflow-x-auto" role="group" aria-label="Sugerencias">
+        <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Sugerencias">
           {sugerencias.map((s) => (
             <button
               key={s.etiqueta}
@@ -950,9 +950,6 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
           <IconoEnviar className="h-4 w-4" />
         </Boton>
       </form>
-      <p className="pt-1 text-center text-xs text-humo">
-        La foto y la voz se procesan gratis en tu teléfono. La captura manual con el botón + sigue disponible. El chat nunca guarda sin tu confirmación.
-      </p>
       </div>
       {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
       <div ref={messagesEndRef} />

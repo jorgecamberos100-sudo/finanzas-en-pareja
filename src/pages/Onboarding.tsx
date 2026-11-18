@@ -4,6 +4,7 @@ import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
 import { crearHogar } from '../lib/household'
 import { resolverSesionExistente } from '../lib/google-auth'
 import { mensajeHumano } from '../lib/errores'
+import { nombreParaSaludo } from '../lib/pibbi-respuestas'
 import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
@@ -150,7 +151,7 @@ export default function Onboarding({ onDone }: Props) {
     }
     const user = data.user
     if (user && data.session) {
-      await supabase.from('users').upsert({ id: user.id, name: name.trim() || email.split('@')[0], email: email.trim() })
+      await supabase.from('users').upsert({ id: user.id, name: name.trim() || nombreParaSaludo(email.trim()), email: email.trim() })
       setBusy(false); setStep(2)
     } else {
       // Confirmación de correo activada: avisar en español y mandar al login.
@@ -181,7 +182,7 @@ export default function Onboarding({ onDone }: Props) {
     if (!user) { setError('No se pudo iniciar sesión. Inténtalo de nuevo.'); setBusy(false); return }
     // Asegurar la fila de perfil (igual que el registro): la necesitan las
     // invitaciones y el hogar. No cambia ninguna regla de negocio.
-    const nombreMeta = (user.user_metadata?.name as string | undefined) ?? email.trim().split('@')[0]
+    const nombreMeta = (user.user_metadata?.name as string | undefined) ?? nombreParaSaludo(email.trim())
     await supabase.from('users').upsert({ id: user.id, name: nombreMeta, email: user.email ?? email.trim() })
     const householdId = await findMyHouseholdId(user.id)
     setBusy(false)
@@ -270,7 +271,7 @@ export default function Onboarding({ onDone }: Props) {
     const { data: householdId, error: hError } = await supabase.rpc('find_household_by_code', { p_code: joinCode.trim().toUpperCase() })
     if (hError || !householdId || !user) { setError('Código inválido. Pídele a tu pareja el código de invitación.'); setBusy(false); return }
     // Asegurar la fila de perfil antes de unirse (FK de household_members).
-    await supabase.from('users').upsert({ id: user.id, name: user.email?.split('@')[0] ?? 'Yo', email: user.email ?? '' })
+    await supabase.from('users').upsert({ id: user.id, name: user.email ? nombreParaSaludo(user.email) : 'Yo', email: user.email ?? '' })
     // OJO: sin `.select()` a propósito — si se pidiera RETURNING, la
     // política SELECT de household_members (`is_member`) se evaluaría con
     // el snapshot previo al insert y Postgres rechazaría con 42501

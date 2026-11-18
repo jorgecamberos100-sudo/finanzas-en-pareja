@@ -14,7 +14,7 @@ globalThis.Date = class extends _RealDate {
   }
 } as DateConstructor
 
-import { contextoPibbi, responderPibbi, saludoPibbi, type PibbiDatos } from '../src/lib/pibbi-respuestas.ts'
+import { contextoPibbi, nombreParaSaludo, responderPibbi, saludoPibbi, type PibbiDatos } from '../src/lib/pibbi-respuestas.ts'
 
 let pass = 0
 let fail = 0
@@ -106,6 +106,16 @@ contiene('saludo hola', responderPibbi('Hola', ctx), 'Hola, Jorge')
 // Sin pareja: la deuda mutua no aplica.
 const solo = contextoPibbi({ ...datos, partnerId: null, partnerName: null })
 contiene('deuda sin pareja', responderPibbi('¿Quién le debe a quién?', solo), 'cuando tu pareja se una')
+
+// Nombre para saludar: nunca el prefijo del correo crudo.
+check('nombre: "jorgecamberos200@gmail.com" -> Jorge', nombreParaSaludo('jorgecamberos200@gmail.com'), 'Jorge')
+check('nombre: "jorgecamberos200" -> Jorge', nombreParaSaludo('jorgecamberos200'), 'Jorge')
+check('nombre: "juan.perez99" -> Juan', nombreParaSaludo('juan.perez99'), 'Juan')
+check('nombre: "maria123" -> María', nombreParaSaludo('maria123'), 'María')
+check('nombre: "María López" se queda', nombreParaSaludo('María López'), 'María López')
+check('nombre: "Ana" se queda', nombreParaSaludo('Ana'), 'Ana')
+check('nombre: vacío -> pareja', nombreParaSaludo(''), 'pareja')
+contiene('saludo con prefijo de correo nombra Jorge', saludoPibbi(contextoPibbi({ ...datos, meName: 'jorgecamberos200', transactions: [] }))[0], 'Hola, Jorge')
 
 // Lo que NO contesta: null y el texto sigue a captura.
 check('gasto nuevo: null (va a captura)', responderPibbi('Gasté $350 en Walmart', ctx), null)

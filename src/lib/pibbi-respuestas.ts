@@ -49,6 +49,10 @@ export interface PibbiContexto {
 export function contextoPibbi(d: PibbiDatos): PibbiContexto {
   const mes = monthKey()
   const hoy = todayIso()
+  // El nombre que se saluda es el nombre bonito, nunca el prefijo del
+  // correo: "jorgecamberos200" se saluda como "Jorge".
+  const nombre = nombreParaSaludo(d.meName)
+  const pareja = d.partnerName ? nombreParaSaludo(d.partnerName) : null
   const patrimonio = d.accounts.reduce((acc, a) => acc + (a.type === 'deuda' || a.type === 'tarjeta' ? -a.balance : a.balance), 0)
   const { ingresos, gastos } = monthTotals(d.transactions, mes)
   const gastoHoy = d.transactions
@@ -63,8 +67,8 @@ export function contextoPibbi(d: PibbiDatos): PibbiContexto {
     : null
   const deuda = mutual
     ? {
-        deudor: mutual.debtor_id === d.meId ? 'Tú' : (d.partnerName ?? 'Tu pareja'),
-        acreedor: mutual.creditor_id === d.meId ? 'ti' : (d.partnerName ?? 'tu pareja'),
+        deudor: mutual.debtor_id === d.meId ? 'Tú' : (pareja ?? 'Tu pareja'),
+        acreedor: mutual.creditor_id === d.meId ? 'ti' : (pareja ?? 'tu pareja'),
         amount: mutual.amount,
       }
     : null
@@ -106,8 +110,8 @@ export function contextoPibbi(d: PibbiDatos): PibbiContexto {
   }))
 
   return {
-    nombre: d.meName,
-    pareja: d.partnerName,
+    nombre,
+    pareja,
     currency: d.currency,
     patrimonio,
     ingresosMes: ingresos,
@@ -133,6 +137,64 @@ function normalizar(texto: string): string {
     .replace(/[^a-z0-9 $%?.]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+/**
+ * Nombre bonito para saludar. El perfil guarda a veces el prefijo del
+ * correo ("jorgecamberos200") y eso se ve horrible en el saludo.
+ * Reglas: un nombre real (con espacio y sin números) se usa tal cual;
+ * si no, se deriva del correo sin números ni puntos: se quitan los
+ * dígitos, se parten los separadores y, si queda una sola palabra
+ * pegada ("jorgecamberos"), se reconoce el nombre de pila al inicio.
+ * Nunca se muestra el correo crudo ni su prefijo con números.
+ */
+const NOMBRES_COMUNES = [
+  'Sebastián', 'Fernando', 'Alejandra', 'Francisco', 'Guillermo',
+  'Valentina', 'Santiago', 'Verónica', 'Magdalena', 'Benjamín', 'Cristina',
+  'Alejandro', 'Catalina', 'Montserrat', 'Guadalupe', 'Bernardo',
+  'Mariana', 'Gabriela', 'Fernanda', 'Patricia', 'Virginia', 'Mauricio',
+  'Leonardo', 'Federico', 'Eduardo', 'Roberto', 'Ricardo', 'Alberto',
+  'Enrique', 'Gabriel', 'Martín', 'Adrián', 'César', 'Héctor', 'Iván',
+  'Jesús', 'Raúl', 'Rubén', 'Tomás', 'Andrés', 'Javier', 'Miguel',
+  'Daniel', 'Carlos', 'Jorge', 'José', 'Juan', 'Luis', 'Ana', 'María',
+  'Pedro', 'Pablo', 'Diego', 'Manuel', 'Rafael', 'Arturo', 'Óscar',
+  'Sergio', 'Víctor', 'Antonio', 'Rodrigo', 'Emilio', 'Felipe', 'Gerardo',
+  'Hugo', 'Ignacio', 'Jaime', 'Joaquín', 'Julio', 'Marco', 'Nicolás',
+  'Omar', 'Ramón', 'Rogelio', 'Salvador', 'Alfonso', 'Alfredo', 'Álvaro',
+  'Armando', 'Cristian', 'Ernesto', 'Esteban', 'Gustavo', 'Jacobo',
+  'Alicia', 'Angélica', 'Beatriz', 'Blanca', 'Carmen', 'Carolina',
+  'Cecilia', 'Claudia', 'Daniela', 'Diana', 'Elena', 'Elizabeth',
+  'Graciela', 'Irene', 'Isabel', 'Julieta', 'Karen', 'Laura', 'Leticia',
+  'Liliana', 'Lourdes', 'Lucía', 'Marcela', 'Mercedes', 'Miriam',
+  'Natalia', 'Norma', 'Olga', 'Paola', 'Pilar', 'Regina', 'Rosa',
+  'Rosario', 'Sandra', 'Silvia', 'Sofía', 'Sonia', 'Susana', 'Teresa',
+  'Valeria', 'Vanessa', 'Yolanda', 'Adriana',
+]
+
+function capitalizar(palabra: string): string {
+  return palabra ? palabra[0].toUpperCase() + palabra.slice(1) : palabra
+}
+
+export function nombreParaSaludo(nombre: string): string {
+  const limpio = (nombre ?? '').trim()
+  if (!limpio) return 'pareja'
+  if (limpio.toLowerCase() === 'pareja') return 'pareja'
+  const local = limpio.includes('@') ? limpio.split('@')[0] : limpio
+  // Nombre real: tiene espacio y ningún dígito ("Jorge Camberos").
+  if (/ /.test(local) && !/\d/.test(local)) return local
+  // Quitar dígitos y partir por separadores ("juan.perez99" -> Juan).
+  const sinDigitos = local.replace(/\d+/g, '')
+  const partes = sinDigitos.split(/[._\-+]+/).filter(Boolean)
+  if (partes.length > 1) return capitalizar(partes[0].toLowerCase())
+  const pegado = normalizar(partes[0] ?? '')
+  if (!pegado) return 'pareja'
+  // Palabra pegada ("jorgecamberos"): reconocer el nombre de pila al
+  // inicio; el más largo primero para que "andrés" gane a "ana".
+  const ordenados = [...NOMBRES_COMUNES].sort((a, b) => normalizar(b).length - normalizar(a).length)
+  for (const n of ordenados) {
+    if (pegado.startsWith(normalizar(n))) return n
+  }
+  return capitalizar(pegado)
 }
 
 function tiene(t: string, ...palabras: string[]): boolean {

@@ -252,14 +252,15 @@ export default function App() {
   if (!householdId || !data.household) return <PibbiProvider><UpdateBanner /><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
 
   // La home es el chat con PIBBI (como en Muse): 5 pestañas, sin
-  // "Inicio" aparte. En móvil se reparte el ancho en partes iguales
-  // (flex-1) y se usan las etiquetas cortas; en ≥640 px, las completas.
+  // "Inicio" aparte. En móvil solo iconos bien espaciados, como en
+  // Muse: las etiquetas se cortaban ("Movim.", "Presup.") y eso es
+  // peor que no ponerlas; en ≥640 px, las etiquetas completas.
   const tabs = [
-    { to: '/', label: 'PIBBI', short: 'PIBBI', icono: IconoChat },
-    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icono: IconoLista },
-    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icono: IconoSobre },
-    { to: '/plan', label: 'Plan', short: 'Plan', icono: IconoMeta },
-    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icono: IconoCampana },
+    { to: '/', label: 'PIBBI', icono: IconoChat },
+    { to: '/movimientos', label: 'Movimientos', icono: IconoLista },
+    { to: '/presupuesto', label: 'Presupuesto', icono: IconoSobre },
+    { to: '/plan', label: 'Plan', icono: IconoMeta },
+    { to: '/recordatorios', label: 'Avisos', icono: IconoCampana },
   ]
   const location = useLocation()
   const enChat = location.pathname === '/'
@@ -267,7 +268,7 @@ export default function App() {
   return (
     <PibbiProvider>
     <UpdateBanner />
-    <div className="mx-auto min-h-screen max-w-lg pb-28">
+    <div className="mx-auto min-h-screen max-w-lg pb-24">
       {syncError && (
         <div className="m-3"><Alerta>{syncError}</Alerta></div>
       )}
@@ -292,7 +293,7 @@ export default function App() {
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-[5.5rem] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-dorado text-white shadow-fab transition-transform duration-150 hover:scale-105 active:scale-90"
+        className="fixed bottom-[4.5rem] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-dorado text-white shadow-fab transition-transform duration-150 hover:scale-105 active:scale-90"
       >
         <IconoMas className="h-7 w-7" />
       </button>
@@ -308,7 +309,6 @@ export default function App() {
                   <span className={`rounded-full px-4 py-1.5 transition-colors ${isActive ? 'bg-tarjeta shadow-tarjeta' : ''}`}>
                     <t.icono className="h-5 w-5" />
                   </span>
-                  <span className="sm:hidden">{t.short}</span>
                   <span className="hidden sm:inline">{t.label}</span>
                 </>
               )}
