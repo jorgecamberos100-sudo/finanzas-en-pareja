@@ -4,6 +4,8 @@ import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
 import { crearHogar } from '../lib/household'
 import { resolverSesionExistente } from '../lib/google-auth'
 import Mascota from '../components/Mascota'
+import PibbiHeader from '../components/PibbiHeader'
+import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiDresser from '../components/PibbiDresser'
 import ThemeToggle from '../components/ThemeToggle'
 import GoogleSignInButton from '../components/GoogleSignInButton'
@@ -266,8 +268,12 @@ export default function Onboarding({ onDone }: Props) {
 
       {step === 2 && (
         <section>
-          <h1 className="text-2xl font-bold">¿Cómo quieres usar la app?</h1>
-          <p className="mb-4 text-humo">Puedes usarla solo por ahora e invitar a tu pareja después, o en pareja desde el inicio.</p>
+          <PibbiHeader
+            pose={PAGE_PIBBI_POSES.onboarding}
+            title="¿Cómo quieres usar la app?"
+            subtitle="Puedes usarla solo por ahora e invitar a tu pareja después, o en pareja desde el inicio."
+            className="mb-4"
+          />
 
           {/* Modo individual: hogar de 1 persona, sin código ni invitación obligatoria. */}
           <div className="mb-4 rounded-2xl border-2 border-foco p-4 ">
@@ -329,8 +335,12 @@ export default function Onboarding({ onDone }: Props) {
 
       {step === 3 && (
         <section>
-          <h1 className="text-2xl font-bold">{soloMode ? 'Invita a tu pareja (opcional)' : 'Invita a tu pareja'}</h1>
-          <p className="mb-4 text-humo">{soloMode ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.' : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}</p>
+          <PibbiHeader
+            pose={PAGE_PIBBI_POSES.onboarding}
+            title={soloMode ? 'Invita a tu pareja (opcional)' : 'Invita a tu pareja'}
+            subtitle={soloMode ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.' : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}
+            className="mb-4"
+          />
           <div className="mb-4 rounded-2xl bg-doradotenue p-4 text-center ">
             <p className="text-3xl font-black tracking-widest text-doradotexto ">{inviteCode}</p>
             <p className="mt-1 text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
