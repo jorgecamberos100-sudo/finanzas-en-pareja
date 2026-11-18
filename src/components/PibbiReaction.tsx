@@ -27,7 +27,7 @@ interface Props {
 export default function PibbiReaction({ contexto, mensaje, className = '' }: Props) {
   const r = REACTIONS[contexto]
   return (
-    <div className={`flex items-center gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-3 ${className}`}>
+    <div className={`flex items-center gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-3 ${className}`}>
       <Mascota pose={r.pose} alt={`PIBBI ${contexto}`} className="h-14 w-14 shrink-0" />
       <p className="text-sm font-semibold text-crema">{mensaje ?? r.text}</p>
     </div>

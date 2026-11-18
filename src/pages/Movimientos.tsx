@@ -148,7 +148,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
         {hasActiveFilters && (
           <div className="flex items-center justify-between text-xs text-humo px-1">
             <span>Filtrando {filtered.length} de {data.transactions.length} movimientos</span>
-            <button onClick={clearFilters} className="font-semibold text-rosaclaro hover:underline">Limpiar filtros</button>
+            <button onClick={clearFilters} className="font-semibold text-doradotexto hover:underline">Limpiar filtros</button>
           </div>
         )}
       </div>
@@ -161,7 +161,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
             <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
               isDeleting={deletingId === tx.id}
               onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)}
-              action={<button onClick={() => approve(tx.id)} disabled={approvingId === tx.id} className="rounded-lg bg-rosafuerte px-3 py-1 text-xs font-bold text-noche disabled:opacity-50">{approvingId === tx.id ? '…' : 'Aprobar'}</button>} />
+              action={<button onClick={() => approve(tx.id)} disabled={approvingId === tx.id} className="rounded-lg bg-dorado px-3 py-1 text-xs font-bold text-tinta disabled:opacity-50">{approvingId === tx.id ? '…' : 'Aprobar'}</button>} />
           ))}
         </section>
       )}
@@ -173,10 +173,10 @@ export default function Movimientos({ data, onRefresh }: Props) {
             <div className="rounded-2xl border border-borde bg-tarjeta p-6 text-center">
               <p className="font-semibold text-crema">No se encontraron movimientos con los filtros actuales.</p>
               <p className="mt-1 text-sm text-humo">Prueba ajustando los términos de búsqueda o los filtros.</p>
-              <button onClick={clearFilters} className="mt-3 rounded-xl bg-elevado px-4 py-2 text-sm font-semibold text-rosaclaro">Limpiar filtros</button>
+              <button onClick={clearFilters} className="mt-3 rounded-xl bg-elevado px-4 py-2 text-sm font-semibold text-doradotexto">Limpiar filtros</button>
             </div>
           ) : (
-            <div className="flex items-start gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+            <div className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
               <Mascota pose="ahorrando" alt="PIBBI sentado con una moneda" className="h-20 w-20 shrink-0" />
               <div>
                 <p className="font-bold">Aún no hay movimientos 🐷</p>

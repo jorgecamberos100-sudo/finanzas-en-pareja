@@ -97,7 +97,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       <section className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Ingresos</p><p className="font-bold text-verde">{formatMoney(ingresos, currency)}</p></div>
         <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Presupuestado</p><p className="font-bold">{formatMoney(totalBudget, currency)}</p></div>
-        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Por asignar</p><p className="font-bold text-rosaclaro">{formatMoney(porAsignar, currency)}</p></div>
+        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Por asignar</p><p className="font-bold text-doradotexto">{formatMoney(porAsignar, currency)}</p></div>
       </section>
       <p className="text-sm text-humo">
         Recurrentes proyectados este mes: <strong>{formatMoney(recurringTotal, currency)}</strong> · Disponible real tras recurrentes: <strong>{formatMoney(disponibleReal, currency)}</strong>
@@ -110,7 +110,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       )}
 
       {editingCategory && (
-        <div className="rounded-2xl border border-rosafuerte bg-[#F4728F1A] p-4">
+        <div className="rounded-2xl border border-foco/60 bg-doradotenue p-4">
           <h3 className="font-bold">Ajustar límite mensual: {editingCategory.icon} {editingCategory.name}</h3>
           <p className="mt-1 text-xs text-humo">Escribe el nuevo monto presupuestado para este sobre.</p>
           <input
@@ -124,7 +124,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
             <button
               onClick={saveCategoryLimit}
               disabled={busy}
-              className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50"
+              className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50"
             >
               {busy ? 'Guardando…' : 'Guardar nuevo límite'}
             </button>
@@ -159,7 +159,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
                 <span>{c.icon} {c.name}</span>
                 <button
                   onClick={() => startEditLimit(c)}
-                  className="rounded-lg bg-tarjeta border border-borde px-2.5 py-1 text-xs font-semibold text-rosaclaro hover:border-rosafuerte"
+                  className="rounded-lg bg-tarjeta border border-borde px-2.5 py-1 text-xs font-semibold text-doradotexto hover:border-foco"
                 >
                   + Asignar presupuesto
                 </button>
@@ -170,7 +170,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       )}
 
       {transferFrom && (
-        <div className="rounded-2xl border border-rosafuerte bg-[#F4728F1A] p-4  ">
+        <div className="rounded-2xl border border-foco bg-doradotenue p-4  ">
           <h3 className="font-bold">Traspasar desde {transferFrom.name}</h3>
           <select value={transferTo} onChange={(e) => setTransferTo(e.target.value)} className="mb-2 mt-2 w-full rounded-xl border p-2">
             <option value="">Hacia…</option>
@@ -178,7 +178,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
           </select>
           <input value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} inputMode="decimal" placeholder="Monto" className="mb-2 w-full rounded-xl border p-2" />
           <div className="flex gap-2">
-            <button onClick={doTransfer} disabled={busy} className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+            <button onClick={doTransfer} disabled={busy} className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
               {busy ? 'Traspasando…' : 'Confirmar traspaso'}
             </button>
             <button onClick={() => { setTransferFrom(null); setError(null) }} className="rounded-xl bg-borde px-4 ">Cancelar</button>

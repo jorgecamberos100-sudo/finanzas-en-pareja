@@ -131,7 +131,7 @@ export default function Plan({ data, onRefresh }: Props) {
             <input value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} inputMode="decimal" placeholder="Monto objetivo" className="min-w-0 flex-1 rounded-xl border p-2" />
             <input value={goalDate} onChange={(e) => setGoalDate(e.target.value)} type="date" className="min-w-0 flex-1 rounded-xl border p-2" />
           </div>
-          <button onClick={createGoal} disabled={busy} className="mt-2 w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+          <button onClick={createGoal} disabled={busy} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
             {busy ? 'Creando…' : 'Crear meta'}
           </button>
         </div>
@@ -140,7 +140,7 @@ export default function Plan({ data, onRefresh }: Props) {
       <section>
         <h2 className="mb-2 font-bold">Cuentas y patrimonio</h2>
         {editingAccount && (
-          <div className="mb-3 rounded-2xl border border-rosafuerte bg-[#F4728F1A] p-4">
+          <div className="mb-3 rounded-2xl border border-foco/60 bg-doradotenue p-4">
             <h3 className="font-bold">Ajustar saldo: {editingAccount.name}</h3>
             <p className="mt-1 text-xs text-humo">Actualiza el saldo actual de esta cuenta para conciliar tu dinero.</p>
             <input
@@ -154,7 +154,7 @@ export default function Plan({ data, onRefresh }: Props) {
               <button
                 onClick={updateAccountBalance}
                 disabled={busy}
-                className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50"
+                className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50"
               >
                 {busy ? 'Actualizando…' : 'Guardar saldo'}
               </button>
@@ -194,7 +194,7 @@ export default function Plan({ data, onRefresh }: Props) {
         <h2 className="font-bold">💬 {data.partner ? 'Money date' : 'Mi revisión'}</h2>
         <p className="mb-2 text-sm text-humo">{data.partner ? 'Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde Inicio).' : 'Tu revisión: resumen del período, notas y acuerdos.'}</p>
         <textarea value={moneyNotes} onChange={(e) => setMoneyNotes(e.target.value)} placeholder="Notas y acuerdos de hoy…" rows={3} className="mb-2 w-full rounded-xl border p-2" />
-        <button onClick={saveMoneyDate} disabled={busy} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+        <button onClick={saveMoneyDate} disabled={busy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
           {busy ? 'Guardando…' : 'Guardar money date'}
         </button>
         {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}

@@ -42,7 +42,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className="rounded-full bg-[#F4728F1A] px-2 py-1 text-sm font-bold text-rosaclaro ">{pct.toFixed(0)}%</span>
+          <span className="rounded-full bg-doradotenue px-2 py-1 text-sm font-bold text-doradotexto ">{pct.toFixed(0)}%</span>
           {onDelete && (
             <button
               onClick={() => onDelete(goal)}
@@ -64,7 +64,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
         aria-label={`Progreso de meta ${goal.name}`}
         className="relative mt-3 h-3 overflow-visible rounded-full bg-borde "
       >
-        <div className="h-full rounded-full bg-rosafuerte transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-dorado transition-all" style={{ width: `${pct}%` }} />
         {goal.due_date && (
           <div className="absolute -top-1 h-5 w-0.5 bg-dorado" style={{ left: `${expected}%` }} title={`Ritmo esperado: ${expected.toFixed(0)}%`} />
         )}
@@ -79,7 +79,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
       {pct >= 100 && (
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-elevado p-3">
           <Mascota pose="celebrando" alt="PIBBI celebrando la meta alcanzada" className="h-14 w-14 shrink-0" />
-          <p className="text-sm font-bold text-dorado">¡Meta alcanzada! 🎉 PIBBI celebra contigo.</p>
+          <p className="text-sm font-bold text-doradotexto">¡Meta alcanzada! 🎉 PIBBI celebra contigo.</p>
         </div>
       )}
 
@@ -109,7 +109,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
           />
           <button
             onClick={handleCustomSubmit}
-            className="rounded-xl bg-rosafuerte px-4 py-2 text-xs font-extrabold text-noche"
+            className="rounded-xl bg-dorado px-4 py-2 text-xs font-extrabold text-tinta"
           >
             Aportar
           </button>

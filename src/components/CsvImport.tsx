@@ -129,7 +129,7 @@ export default function CsvImport({ data, onDone }: Props) {
         <select value={accountId} onChange={(e) => setAccountId(e.target.value)} aria-label="Cuenta para importar" className="flex-1 rounded-xl border border-borde p-2 ">
           {data.accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
-        <label className="cursor-pointer rounded-xl bg-rosafuerte px-4 py-2 text-sm font-semibold text-noche">
+        <label className="cursor-pointer rounded-xl bg-dorado px-4 py-2 text-sm font-semibold text-tinta">
           Elegir archivo CSV
           <input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f) }} />
         </label>
@@ -150,7 +150,7 @@ export default function CsvImport({ data, onDone }: Props) {
               </tbody>
             </table>
           </div>
-          <button onClick={importRows} disabled={importing} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
+          <button onClick={importRows} disabled={importing} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
             {importing ? 'Importando…' : `Importar ${rows.filter((r) => !r.duplicate).length} movimientos nuevos`}
           </button>
         </>

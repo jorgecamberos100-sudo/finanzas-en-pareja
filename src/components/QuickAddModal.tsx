@@ -142,7 +142,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
             <div className="grid grid-cols-3 gap-2">
               {(['50/50', 'personalizado', 'absorbe_todo'] as SplitMode[]).map((m) => (
                 <button key={m} onClick={() => setSplitMode(m)}
-                  className={`rounded-xl py-2 text-xs font-semibold ${splitMode === m ? 'bg-rosafuerte text-noche' : 'bg-elevado text-humo '}`}>
+                  className={`rounded-xl py-2 text-xs font-semibold ${splitMode === m ? 'bg-dorado text-tinta' : 'bg-elevado text-humo '}`}>
                   {m === '50/50' ? '50 / 50' : m === 'personalizado' ? 'Personalizado' : 'Lo absorbe todo'}
                 </button>
               ))}
@@ -177,7 +177,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
 
         {error && <p role="alert" className="mb-3 text-sm text-rojosuave">{error}</p>}
         <button onClick={handleSave} disabled={saving}
-          className="w-full rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:opacity-50">
+          className="w-full rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:opacity-50">
           {saving ? 'Guardando…' : 'Guardar movimiento'}
         </button>
         {type === 'transferencia' && <p className="mt-2 text-center text-xs text-humo">Las transferencias entre cuentas propias no cuentan como gasto en los reportes.</p>}
