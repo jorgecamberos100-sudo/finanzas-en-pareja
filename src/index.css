@@ -1,83 +1,81 @@
-/* Hallmark · v2.0.0 · polish · genre: playful · built: the project · redesign: polish */
-/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V3 · weakest: V, las pantallas comparten una sola carcasa por diseño; la pulida conserva el sistema y corrige solo lo que nombran las gates */
-/* Hallmark · nota: Inter es la única familia por decisión del usuario (estándar Muse) y #2563EB es el azul ancla elegido del mismo estándar; ninguna de las dos es un default sin pensar */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Dos temas, paleta "negro + azul" (estándar Muse, referencia del usuario):
-   noche = fondo casi negro, superficies gris oscuro, acento azul brillante;
-   día = fondo gris muy claro, tarjetas blancas, mismo acento azul.
-   El interruptor cambia solo data-theme en <html>; los componentes usan
-   los mismos tokens en los dos temas. */
-/* Dos temas (ver src/lib/tema.ts): noche (casi negro) y día (blanco).
-   Los tokens de Tailwind son `rgb(var(--X-rgb) / <alpha-value>)`, así
-   cambiar de tema es solo cambiar data-theme en <html>. Sin rosa en la
-   interfaz: el rosa es solo de PIBBI; el acento es azul brillante
-   (botones y foco) y el verde queda solo para lo positivo (ingresos). */
+/* Dos temas, SOLO la paleta "Emerald Finance" (ver src/lib/tema.ts):
+   noche = esmeralda oscura (fondo verde casi negro), día = esmeralda
+   clara (fondo blanco verdoso). El interruptor cambia solo data-theme
+   en <html>; los componentes usan los mismos tokens en los dos temas. */
+/* Dos temas (ver src/lib/tema.ts): noche (esmeralda oscura, fondo verde
+   casi negro) y día (esmeralda clara, fondo blanco verdoso). Los tokens
+   de Tailwind son `rgb(var(--X-rgb) / <alpha-value>)`, así cambiar de
+   tema es solo cambiar data-theme en <html>. Sin rosa en la interfaz:
+   el rosa es solo de PIBBI; la señal de dinero es la menta brillante
+   (relleno de botones) y la esmeralda es marca/foco/positivo, y el foco
+   es menta en noche y esmeralda en día. */
 :root, :root[data-theme='noche'] {
   color-scheme: dark;
-  /* Noche casi negra #0A0A0C, acento azul #2563EB (botón, 5.2:1 con
-     texto blanco) y foco #3B82F6. Contrastes AA (texto normal >= 4.5:1)
-     verificados en scripts/test-tema.ts. */
-  --noche-rgb: 10 10 12;
-  --tarjeta-rgb: 28 28 31;
-  --elevado-rgb: 38 38 44;
-  --borde-rgb: 44 44 49;
-  --crema-rgb: 245 245 247;
-  --humo-rgb: 156 163 175;
-  --menta-rgb: 52 211 153;
-  --verde-rgb: 52 199 89;
-  --dorado-rgb: 37 99 235;
-  --doradotexto-rgb: 110 168 254;
-  --rojosuave-rgb: 255 107 107;
-  --tinta-rgb: 255 255 255;
-  --foco-rgb: 59 130 246;
+  /* Esmeralda oscura · propuesta "Emerald Finance" (ChatGPT, nov 2026):
+     fondo verde casi negro #07130C. La esmeralda #137A55 es demasiado
+     oscura para texto sobre fondo oscuro (3.6:1), así que los acentos
+     de texto usan sus variantes claras: menta #7DDBC3, verde #4ADE80,
+     acento-texto #6EE7B7, alerta coral claro #FF8A80; la menta
+     brillante #20B981 queda como relleno de los botones principales
+     (con tinta #0C2B1C, 6.0:1) y como foco.
+     Contrastes medidos (AA, texto normal >= 4.5:1): texto/fondo 16.5,
+     secundario/fondo 10.8, verde/tarjeta 8.7, botón menta/tinta 6.0,
+     acento-texto/tarjeta 9.9, coral/tarjeta 6.6, menta/tarjeta 9.2,
+     foco/fondo 7.5. */
+  --noche-rgb: 7 19 12;
+  --tarjeta-rgb: 18 43 30;
+  --elevado-rgb: 23 56 36;
+  --borde-rgb: 42 74 56;
+  --crema-rgb: 231 242 235;
+  --humo-rgb: 169 203 182;
+  --menta-rgb: 125 219 195;
+  --verde-rgb: 74 222 128;
+  --dorado-rgb: 32 185 129;
+  --doradotexto-rgb: 110 231 183;
+  --rojosuave-rgb: 255 138 128;
+  --tinta-rgb: 12 43 28;
+  --foco-rgb: 32 185 129;
   /* PIBBI (sin tocar): párpados y sombra. */
   --rosaclaro: #F9A8B8;
   --rosaparado: #F49DB1;
   --sombra: rgba(0, 0, 0, 0.45);
-  /* Sombra proyectada de PIBBI recortado. */
-  --sombra-pibbi: 0 8px 14px rgba(0, 0, 0, 0.28);
-  /* Botón de Google (especificación de la marca: borde #dadce0, texto
-     #1f1f1f, fondo blanco): valores fijos en ambos temas. */
-  --google-borde-rgb: 218 220 224;
-  --google-tinta-rgb: 31 31 31;
-  /* Sombras de tarjetas y botón flotante (tema noche): profundas. */
-  --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
-  --sombra-elevada: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 56px -20px rgba(0, 0, 0, 0.7);
-  --sombra-fab: 0 8px 24px rgba(37, 99, 235, 0.45), 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-theme='dia'] {
   color-scheme: light;
-  /* Día casi blanco #F7F7F8, mismo acento azul #2563EB. Contrastes AA
-     verificados en scripts/test-tema.ts. */
-  --noche-rgb: 247 247 248;
+  /* Esmeralda clara · propuesta "Emerald Finance" (ChatGPT, nov 2026):
+     marca verde esmeralda #137A55, menta #20B981, fondo claro blanco
+     verdoso. El verde domina la interfaz; el rosa sigue siendo solo
+     de PIBBI.
+     Contrastes medidos (AA, texto normal >= 4.5:1): texto/fondo 13.7,
+     secundario/fondo 5.3, esmeralda/fondo 4.8, botón menta/tinta 6.0,
+     acento-texto/tarjeta 8.0, coral/tarjeta 5.2. La menta brillante
+     #20B981 es demasiado clara para texto (2.5:1), así que el token
+     menta usa su variante oscura #0B7A4D (5.4:1) y el #20B981 queda
+     como relleno de los botones principales (dorado); el coral
+     #E4572E también es claro para texto (3.7:1), así que el token de
+     alerta usa su variante oscura #C2410C (5.2:1). */
+  --noche-rgb: 237 245 239;
   --tarjeta-rgb: 255 255 255;
-  --elevado-rgb: 240 240 243;
-  --borde-rgb: 229 229 234;
-  --crema-rgb: 17 17 19;
-  --humo-rgb: 91 91 96;
-  --menta-rgb: 4 120 87;
-  --verde-rgb: 21 128 61;
-  --dorado-rgb: 37 99 235;
-  --doradotexto-rgb: 29 78 216;
-  --rojosuave-rgb: 220 38 38;
-  --tinta-rgb: 255 255 255;
-  --foco-rgb: 37 99 235;
-  /* Sombras suaves de día: tarjetas blancas que flotan sobre el fondo. */
-  --sombra-tarjeta: 0 1px 2px rgba(17, 17, 19, 0.05), 0 12px 32px -18px rgba(17, 17, 19, 0.16);
-  --sombra-elevada: 0 2px 6px rgba(17, 17, 19, 0.06), 0 24px 56px -22px rgba(17, 17, 19, 0.22);
-  --sombra-fab: 0 8px 24px rgba(37, 99, 235, 0.35), 0 3px 8px rgba(17, 17, 19, 0.15);
+  --elevado-rgb: 247 251 248;
+  --borde-rgb: 196 216 203;
+  --crema-rgb: 12 43 28;
+  --humo-rgb: 74 107 90;
+  --menta-rgb: 11 122 77;
+  --verde-rgb: 19 122 85;
+  --dorado-rgb: 32 185 129;
+  --doradotexto-rgb: 11 92 61;
+  --rojosuave-rgb: 194 65 12;
+  --tinta-rgb: 12 43 28;
+  --foco-rgb: 19 122 85;
 }
 
 html, body {
   overflow-x: clip;
-}
-
-html {
-  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -86,9 +84,6 @@ body {
 
 input, select, textarea {
   @apply border-borde bg-tarjeta text-crema transition-colors;
-  /* 16px mínimo: iOS deja de hacer zoom automático al enfocar un campo. */
-  font-size: 16px;
-  caret-color: rgb(var(--foco-rgb));
 }
 
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
@@ -112,46 +107,6 @@ select option {
    sobre el fondo en ambos temas. */
 :focus-visible {
   @apply outline-none ring-2 ring-foco ring-offset-2 ring-offset-noche;
-}
-
-/* Hallmark 49: las etiquetas largas de los botones llevan
-   whitespace-nowrap (Tailwind); esta regla lo declara también en la
-   hoja del proyecto para que el análisis estático lo vea. */
-.whitespace-nowrap { white-space: nowrap; }
-
-/* Montos y cifras: figuras tabulares para que las columnas alineen. */
-.nums {
-  font-variant-numeric: tabular-nums lining-nums;
-}
-
-/* Esqueleto de carga con brillo que barre (nunca texto plano "Cargando…"). */
-.esqueleto {
-  position: relative;
-  overflow: hidden;
-  background: rgb(var(--elevado-rgb));
-}
-.esqueleto::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgb(var(--crema-rgb) / 0.07), transparent);
-  animation: barrido 1.6s infinite;
-}
-@keyframes barrido {
-  100% { transform: translateX(100%); }
-}
-
-/* PIBBI recortado (sin el cuadrito de fondo): sombra proyectada suave
-   para que se sienta apoyado sobre la tarjeta, en ambos temas. */
-.pibbi-recorte {
-  filter: drop-shadow(var(--sombra-pibbi));
-}
-
-/* Barra de desplazamiento discreta, acorde al tema. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(var(--borde-rgb)) transparent;
 }
 
 /* PIBBI siempre vivo: flota, respira, pestañea y proyecta sombra, todo
@@ -244,19 +199,6 @@ select option {
   pointer-events: none;
 }
 
-/* Tres puntos de "PIBBI está escribiendo…", como en Muse: solo
-   transform y opacidad (nada de transition-all), con caída a quieto
-   en prefers-reduced-motion. */
-@keyframes pibbi-puntos {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
-  30% { transform: translateY(-3px); opacity: 1; }
-}
-.pibbi-punto {
-  animation: pibbi-puntos 1.2s ease-in-out infinite;
-}
-.pibbi-punto:nth-child(2) { animation-delay: 0.15s; }
-.pibbi-punto:nth-child(3) { animation-delay: 0.3s; }
-
 /* Sombra suave bajo el marco de PIBBI: vive fuera del div que flota, así
    puede moverse en contrafase (achicarse cuando PIBBI sube). */
 .pibbi-sombra {
@@ -273,24 +215,33 @@ select option {
   pointer-events: none;
 }
 
+/* Baile de PIBBI (sistema de mascota igualito al de Muse): giro completo
+   con saltos, en su propio envoltorio para no pelear con la flotación
+   (.pibbi-vivo) ni la respiración. Se activa con la clase .pibbi-baila
+   (botón ¡Baila! del panel y celebraciones: meta lograda, pago hecho).
+   Con prefers-reduced-motion, quieto. */
+@keyframes pibbi-baile {
+  0%   { transform: translateY(0) rotate(0deg); }
+  25%  { transform: translateY(-12px) rotate(-20deg); }
+  50%  { transform: translateY(0) rotate(0deg); }
+  75%  { transform: translateY(-12px) rotate(20deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
+
+.pibbi-baila {
+  animation: pibbi-baile 1.2s ease-in-out infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pibbi-vivo,
   .pibbi-respira,
   .pibbi-parpado,
   .pibbi-sombra,
-  .pibbi-punto {
+  .pibbi-baila {
     animation: none;
   }
   main {
-    animation: none;
-  }
-  .esqueleto::after {
-    animation: none;
-  }
-  .animate-hoja-subir,
-  .animate-paso-entrar,
-  .animate-aparecer,
-  .animate-latido-suave {
     animation: none;
   }
 }
@@ -304,32 +255,4 @@ select option {
 
 main {
   animation: vista-fade-in 0.25s ease-out;
-}
-/* Marco circular de PIBBI (estilo avatar: círculo grande y centrado,
-   imagen completa con aire, sin recortar orejas ni brazos): la imagen
-   va con object-contain y relleno interior, así nada toca el borde. */
-.pibbi-circulo {
-  border-radius: 9999px;
-  background: rgb(var(--elevado-rgb));
-  box-shadow: inset 0 0 0 1px rgb(var(--borde-rgb)), var(--sombra-tarjeta);
-  overflow: hidden;
-}
-/* El aire interior vive en el contenedor que flota (inset 7%): así la
-   imagen, los párpados y las prendas se mueven juntos y el parpadeo
-   sigue cayendo sobre los ojos. Con padding en la <img> sola, los
-   párpados quedarían desalineados. */
-.pibbi-circulo > .pibbi-vivo {
-  position: absolute;
-  inset: 7%;
-  height: auto;
-  width: auto;
-}
-/* EXCEPCIÓN HD: la pose 'frente' ya trae su propio aire dentro del
-   recorte cuadrado cerrado (2% sobre el círculo mínimo del cerdito),
-   así que en el círculo va sin inset: PIBBI llena el círculo de borde
-   a borde (70.6% de ancho, 89.9% de alto) sin recortar orejas, brazos
-   ni patitas. La flotación (±4 px) puede rozar la punta de la oreja
-   con el borde en el punto más alto del ciclo, como el avatar de Muse. */
-.pibbi-circulo.pibbi-circulo-hd > .pibbi-vivo {
-  inset: 0;
 }

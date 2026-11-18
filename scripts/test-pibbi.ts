@@ -15,8 +15,12 @@ import { MASCOTA_PROGRESO } from '../src/lib/mascota/progreso.ts'
 import { MASCOTA_PERFIL_LAPIZ } from '../src/lib/mascota/perfil-lapiz.ts'
 import { MASCOTA_CALCULADORA } from '../src/lib/mascota/calculadora.ts'
 import { MASCOTA_AVATAR_CIRCULAR } from '../src/lib/mascota/avatar-circular.ts'
-import { MASCOTA_HD } from '../src/lib/mascota/pibbi-hd.ts'
 import { PIBBI_POSES, REACTION_POSES, PAGE_PIBBI_POSES, type PibbiPage } from '../src/lib/pibbi-poses.ts'
+import {
+  DEFAULT_MASCOT_NAME, HEADER_SIZE_CLASS, MASCOT_NAME_SUGGESTIONS,
+  celebracionPibbi, isPibbiSize, isPibbiVibe, normalizarNombreMascota,
+  saludoPibbi, textoReaccion,
+} from '../src/lib/pibbi-identidad.ts'
 
 let pass = 0
 let fail = 0
@@ -86,17 +90,6 @@ check('perfil con lápiz no lleva prendas', PIBBI_POSES.perfilLapiz.accessories,
 check('calculadora no lleva prendas', PIBBI_POSES.calculadora.accessories, false)
 check('perfil con lápiz tiene un solo ojo visible', PIBBI_POSES.perfilLapiz.eyelids.length, 1)
 check('avatar tiene dos ojos', PIBBI_POSES.avatarCircular.eyelids.length, 2)
-// 5b. Pose principal en HD (George, 18 nov 2026): imagen nueva 1231×1278,
-//     recorte cuadrado cerrado 1134×1134 (círculo mínimo del cerdito + 2%
-//     de aire, 18 nov 2026): JPEG, y la pose 'frente' la usa como círculo
-//     negro. Párpados medidos en el recorte (ojos a 35.8% / 62.7% de ancho
-//     y 30.0% de alto).
-check('frente HD es data URI JPEG', MASCOTA_HD.startsWith('data:image/jpeg;base64,'), true)
-check('frente HD no está vacía', MASCOTA_HD.length > 10000, true)
-check('frente usa la imagen HD', PIBBI_POSES.frente.image, MASCOTA_HD)
-check('frente HD es avatar negro', PIBBI_POSES.frente.avatarNegro, true)
-check('frente HD no es circular (ese flag es solo del avatarCircular)', PIBBI_POSES.frente.circular, undefined)
-check('frente: párpados medidos en el recorte cerrado', PIBBI_POSES.frente.eyelids, [{ left: 26.8, top: 22.5 }, { left: 53.7, top: 22.5 }])
 for (const [pose, cfg] of Object.entries(PIBBI_POSES)) {
   for (const e of cfg.eyelids) {
     check(`párpado de ${pose} dentro del marco`, e.left >= 0 && e.left + 18 <= 100 && e.top >= 0 && e.top + 15 <= 100, true)
@@ -108,13 +101,15 @@ for (const [pose, cfg] of Object.entries(PIBBI_POSES)) {
 // ventana pierde su encabezado o usa una pose que no existe, el test falla.
 const root = process.cwd()
 const PAGES: Array<{ page: PibbiPage; file: string; pose: string }> = [
+  { page: 'dashboard', file: 'src/pages/Dashboard.tsx', pose: 'saludando' },
   { page: 'movimientos', file: 'src/pages/Movimientos.tsx', pose: 'calculadora' },
   { page: 'presupuesto', file: 'src/pages/Presupuesto.tsx', pose: 'contar' },
   { page: 'plan', file: 'src/pages/Plan.tsx', pose: 'progreso' },
+  { page: 'chat', file: 'src/pages/Chat.tsx', pose: 'avatarCircular' },
   { page: 'recordatorios', file: 'src/pages/Reminders.tsx', pose: 'perfilLapiz' },
   { page: 'onboarding', file: 'src/pages/Onboarding.tsx', pose: 'saludando' },
 ]
-check('el mapa cubre las 5 ventanas', Object.keys(PAGE_PIBBI_POSES).sort(), PAGES.map((p) => p.page).sort())
+check('el mapa cubre las 7 ventanas', Object.keys(PAGE_PIBBI_POSES).sort(), PAGES.map((p) => p.page).sort())
 for (const { page, pose } of PAGES) {
   check(`pose de ${page} es ${pose}`, PAGE_PIBBI_POSES[page], pose)
   check(`pose de ${page} existe en PIBBI_POSES`, pose in PIBBI_POSES, true)
@@ -127,16 +122,80 @@ for (const { page, file } of PAGES) {
 }
 const headerSrc = readFileSync(join(root, 'src/components/PibbiHeader.tsx'), 'utf8')
 check('PibbiHeader renderiza Mascota', headerSrc.includes('<Mascota'), true)
-check('PibbiHeader usa PIBBI pequeño h-12', headerSrc.includes('h-12 w-12'), true)
+check('PibbiHeader: avatar en círculo', headerSrc.includes('circular'), true)
+check('PibbiHeader muestra el nombre de la mascota', headerSrc.includes('{name}'), true)
+check('PibbiHeader abre el panel al tocar (PibbiPanel)', headerSrc.includes('PibbiPanel'), true)
+check('PibbiHeader: tamaño del avatar según el ajuste (HEADER_SIZE_CLASS)', headerSrc.includes('HEADER_SIZE_CLASS[size]'), true)
 check('PibbiHeader no tapa botones a 360 px (flex-wrap)', headerSrc.includes('flex-wrap'), true)
 
-// 6b. La home es el chat con PIBBI (18 nov 2026): ya no usa PibbiHeader,
-// tiene su propio encabezado fijo con PIBBI en círculo, como en Muse.
-const chat = readFileSync(join(root, 'src/pages/Chat.tsx'), 'utf8')
-check('Chat: encabezado propio con PIBBI en círculo', chat.includes('<Mascota pose="frente" marco="circulo"'), true)
-check('Chat: el encabezado nombra a PIBBI', chat.includes('PIBBI'), true)
-check('Chat: no usa PibbiHeader (encabezado propio)', !chat.includes('PibbiHeader'), true)
-check('Chat: usa el chat de captura', chat.includes('<ChatCapture'), true)
+// 7. Sistema de mascota igualito al de Muse (George, 17 nov): nombre,
+//    vibe, tamaño, panel y baile. Lógica pura + fuente.
+check('nombre por defecto es PIBBI', DEFAULT_MASCOT_NAME, 'PIBBI')
+check('2 sugerencias de nombre', MASCOT_NAME_SUGGESTIONS.length, 2)
+check('sugerencias incluyen PIBBI', MASCOT_NAME_SUGGESTIONS.includes('PIBBI'), true)
+check('normalizar: quita espacios', normalizarNombreMascota('  Chonchito  '), 'Chonchito')
+check('normalizar: vacío vuelve a PIBBI', normalizarNombreMascota(''), 'PIBBI')
+check('normalizar: null vuelve a PIBBI', normalizarNombreMascota(null), 'PIBBI')
+check('normalizar: solo espacios vuelve a PIBBI', normalizarNombreMascota('   '), 'PIBBI')
+check('normalizar: corta a 20 caracteres', normalizarNombreMascota('a'.repeat(30)).length, 20)
+check('vibe alegre válida', isPibbiVibe('alegre'), true)
+check('vibe bromista válida', isPibbiVibe('bromista'), true)
+check('vibe enojado no válida', isPibbiVibe('enojado'), false)
+check('vibe null no válida', isPibbiVibe(null), false)
+check('tamaño grande válido', isPibbiSize('grande'), true)
+check('tamaño enorme no válido', isPibbiSize('enorme'), false)
+check('tamaño del encabezado: compacto 32 px', HEADER_SIZE_CLASS.compacto, 'h-8 w-8')
+check('tamaño del encabezado: normal 40 px', HEADER_SIZE_CLASS.normal, 'h-10 w-10')
+check('tamaño del encabezado: grande 56 px', HEADER_SIZE_CLASS.grande, 'h-14 w-14')
+for (const vibe of ['alegre', 'tranquilo', 'motivador', 'bromista'] as const) {
+  check(`saludo ${vibe} usa el nombre`, saludoPibbi(vibe, 'Chonchito').includes('Chonchito'), true)
+  check(`celebración ${vibe} no está vacía`, celebracionPibbi(vibe, 'Chonchito').length > 10, true)
+}
+check('saludo alegre por defecto dice PIBBI', saludoPibbi('alegre', 'PIBBI').includes('Soy PIBBI'), true)
+check('celebración alegre usa el nombre', celebracionPibbi('alegre', 'Chonchito').includes('Chonchito'), true)
+check('reacción celebrando usa el nombre', textoReaccion('celebrando', 'alegre', 'Chonchito').includes('Chonchito'), true)
+check('reacción saludando no está vacía', textoReaccion('saludando', 'tranquilo', 'PIBBI').length > 0, true)
+check('reacción apuntando sigue igual', textoReaccion('apuntando', 'alegre', 'PIBBI'), '¡Anotado! 📝')
+
+// Migración 007: la identidad vive en pibbi_customization.
+const mig007 = readFileSync(join(root, 'supabase/migrations/007_mascota_identidad.sql'), 'utf8')
+check('migración 007: extiende pibbi_customization', mig007.includes('alter table public.pibbi_customization'), true)
+check('migración 007: mascot_name con default PIBBI', mig007.includes('mascot_name') && mig007.includes("default 'PIBBI'"), true)
+check('migración 007: vibe con default alegre y sus 4 valores', mig007.includes("default 'alegre'") && ['alegre', 'tranquilo', 'motivador', 'bromista'].every((v) => mig007.includes(`'${v}'`)), true)
+check('migración 007: size con default normal y sus 3 valores', mig007.includes("default 'normal'") && ['compacto', 'normal', 'grande'].every((s) => mig007.includes(`'${s}'`)), true)
+
+// Fuente: el panel, el baile y el avatar del chat existen.
+const panelSrc = readFileSync(join(root, 'src/components/PibbiPanel.tsx'), 'utf8')
+check('PibbiPanel tiene botón ¡Baila!', panelSrc.includes('¡Baila!'), true)
+check('PibbiPanel tiene editar nombre', panelSrc.includes('PibbiNameEditor'), true)
+check('PibbiPanel tiene personalidad', panelSrc.includes('Personalidad') && panelSrc.includes('PIBBI_VIBES'), true)
+check('PibbiPanel tiene aspecto (prendas)', panelSrc.includes('PibbiDresser'), true)
+check('PibbiPanel tiene tamaño', panelSrc.includes('Tamaño') && panelSrc.includes('PIBBI_SIZES'), true)
+check('PibbiPanel cierra con X y tocando fuera', panelSrc.includes('aria-label="Cerrar"') && panelSrc.includes('aria-label="Cerrar el panel"'), true)
+check('PibbiPanel: avatar grande 96 px, 120 px al bailar', panelSrc.includes('h-24 w-24') && panelSrc.includes('h-[120px] w-[120px]'), true)
+const mascotaSrc = readFileSync(join(root, 'src/components/Mascota.tsx'), 'utf8')
+check('Mascota acepta prop dancing', mascotaSrc.includes('dancing'), true)
+check('Mascota acepta prop circular', mascotaSrc.includes('circular'), true)
+check('Mascota usa el nombre en su alt por defecto', mascotaSrc.includes('nuestro cerdito de los ahorros'), true)
+const cssSrc = readFileSync(join(root, 'src/index.css'), 'utf8')
+check('CSS tiene animación de baile (giro + salto)', cssSrc.includes('@keyframes pibbi-baile') && cssSrc.includes('rotate(360deg)') && cssSrc.includes('translateY(-12px)'), true)
+check('CSS tiene clase .pibbi-baila', cssSrc.includes('.pibbi-baila'), true)
+check('Baile respeta prefers-reduced-motion', cssSrc.includes('.pibbi-baila') && cssSrc.includes('prefers-reduced-motion'), true)
+const chatSrc = readFileSync(join(root, 'src/components/ChatCapture.tsx'), 'utf8')
+check('Chat: avatar de 32 px junto a mensajes de la mascota', chatSrc.includes('avatarCircular') && chatSrc.includes('h-8 w-8'), true)
+check('Chat: tocar el avatar abre el panel', chatSrc.includes('PibbiPanel'), true)
+const onboardingSrc = readFileSync(join(root, 'src/pages/Onboarding.tsx'), 'utf8')
+check('Onboarding paso 4: selector de nombre junto a las prendas', onboardingSrc.includes('PibbiNameEditor'), true)
+check('Onboarding usa el saludo según la vibe', onboardingSrc.includes('saludoPibbi'), true)
+const pibbiSrc = readFileSync(join(root, 'src/lib/pibbi.tsx'), 'utf8')
+check('Provider expone nombre/vibe/tamaño y sus setters', ['setName', 'setVibe', 'setSize'].every((s) => pibbiSrc.includes(s)), true)
+check('Provider lee la identidad de la BD (migración 007)', pibbiSrc.includes('mascot_name, vibe, size'), true)
+check('Provider tiene fallback localStorage sin sesión', pibbiSrc.includes('MASCOT_NAME_STORAGE_KEY'), true)
+const reactionSrc = readFileSync(join(root, 'src/components/PibbiReaction.tsx'), 'utf8')
+check('Reacción celebra bailando a 120 px', reactionSrc.includes('h-[120px] w-[120px]') && reactionSrc.includes('dancing'), true)
+check('Reacción usa el texto según la vibe', reactionSrc.includes('textoReaccion'), true)
+const goalSrc = readFileSync(join(root, 'src/components/GoalCard.tsx'), 'utf8')
+check('Meta lograda: celebración según la vibe y baile', goalSrc.includes('celebracionPibbi') && goalSrc.includes('dancing'), true)
 
 console.log(`\n${pass} pasaron, ${fail} fallaron`)
 if (fail > 0) process.exit(1)

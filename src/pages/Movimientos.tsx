@@ -8,11 +8,12 @@ import Paywall from '../components/Paywall'
 import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
-import { ChipCategoria, Confirmar, IconoAlerta, IconoBasura, IconoBuscar, IconoCheck, IconoReloj } from '../components/ui'
+import { usePibbi } from '../lib/pibbi'
 
 interface Props { data: AppData; onRefresh: () => void }
 
 export default function Movimientos({ data, onRefresh }: Props) {
+  const { name: mascotName } = usePibbi()
   const [search, setSearch] = useState('')
   const [filterPerson, setFilterPerson] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -21,8 +22,6 @@ export default function Movimientos({ data, onRefresh }: Props) {
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
-  const [txMensaje, setTxMensaje] = useState<string | null>(null)
-  const [txAEliminar, setTxAEliminar] = useState<{ id: string; merchant: string | null; amount: number } | null>(null)
   // Motivo del paywall (null = cerrado).
   const [paywall, setPaywall] = useState<string | null>(null)
 
@@ -80,29 +79,26 @@ export default function Movimientos({ data, onRefresh }: Props) {
     if (approvingId) return
     setApprovingId(id)
     setTxError(null)
-    setTxMensaje(null)
     const { error } = await supabase.from('transactions').update({ review_status: 'aprobado' }).eq('id', id)
     setApprovingId(null)
     if (error) {
       setTxError(`No se pudo aprobar: ${error.message}`)
       return
     }
-    setTxMensaje('Movimiento aprobado.')
     onRefresh()
   }
 
-  async function deleteTx(id: string) {
+  async function deleteTx(id: string, merchant: string | null, amount: number) {
     if (deletingId) return
+    if (!confirm(`¿Eliminar este movimiento${merchant ? ` de "${merchant}"` : ''} por ${formatMoney(amount, currency)}?`)) return
     setDeletingId(id)
     setTxError(null)
-    setTxMensaje(null)
     const { error } = await supabase.from('transactions').delete().eq('id', id)
     setDeletingId(null)
     if (error) {
       setTxError(`No se pudo eliminar el movimiento: ${error.message}`)
       return
     }
-    setTxMensaje('Movimiento eliminado.')
     onRefresh()
   }
 
@@ -128,20 +124,15 @@ export default function Movimientos({ data, onRefresh }: Props) {
   }
 
   return (
-    <main className="space-y-5 p-5">
-      <PibbiHeader pose={PAGE_PIBBI_POSES.movimientos} title="Movimientos" className="-mx-5 -mt-5 px-5 pb-3 pt-3">
+    <main className="space-y-4 p-4">
+      <PibbiHeader pose={PAGE_PIBBI_POSES.movimientos} title="Movimientos">
         <button onClick={() => setShowImport((v) => !v)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Importar CSV</button>
         <button onClick={exportCsv} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Exportar CSV</button>
       </PibbiHeader>
 
       {txError && (
-        <div role="alert" className="flex items-start gap-2 rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
-          <IconoAlerta className="mt-0.5 h-4 w-4 shrink-0" />{txError}
-        </div>
-      )}
-      {txMensaje && (
-        <div role="status" className="flex items-start gap-2 rounded-2xl bg-verde/10 p-3 text-sm text-verde">
-          <IconoCheck className="mt-0.5 h-4 w-4 shrink-0" />{txMensaje}
+        <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
+          ⚠️ {txError}
         </div>
       )}
 
@@ -156,7 +147,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
             aria-label="Buscar movimientos"
             className="w-full rounded-xl border border-borde p-2.5 pl-9 text-sm"
           />
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-humo" aria-hidden="true"><IconoBuscar className="h-4 w-4" /></span>
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-humo" aria-hidden="true">🔍</span>
           {search && (
             <button onClick={() => setSearch('')} aria-label="Limpiar búsqueda" className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-humo hover:text-crema">✕</button>
           )}
@@ -187,12 +178,12 @@ export default function Movimientos({ data, onRefresh }: Props) {
 
       {pending.length > 0 && (
         <section>
-          <h2 className="mb-2 flex items-center gap-2 font-bold"><IconoReloj className="h-5 w-5 text-doradotexto" /> Por revisar ({pending.length})</h2>
+          <h2 className="mb-2 font-bold">⏳ Por revisar ({pending.length})</h2>
           <p className="mb-2 text-sm text-humo">Movimientos importados o con nota. Tu pareja puede aprobarlos.</p>
           {pending.map((tx) => (
             <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
               isDeleting={deletingId === tx.id}
-              onDelete={() => setTxAEliminar({ id: tx.id, merchant: tx.merchant, amount: tx.amount })}
+              onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)}
               action={<button onClick={() => approve(tx.id)} disabled={approvingId === tx.id} className="rounded-lg bg-dorado px-3 py-1 text-xs font-bold text-tinta disabled:opacity-50">{approvingId === tx.id ? '…' : 'Aprobar'}</button>} />
           ))}
         </section>
@@ -209,10 +200,10 @@ export default function Movimientos({ data, onRefresh }: Props) {
             </div>
           ) : (
             <div className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
-              <Mascota pose="ahorrando" alt="PIBBI sentado con una moneda" className="h-16 w-16 shrink-0" />
+              <Mascota pose="ahorrando" alt={`${mascotName} sentado con una moneda`} className="h-16 w-16 shrink-0" />
               <div>
-                <p className="font-bold">Aún no hay movimientos</p>
-                <p className="text-sm text-humo">Escríbele a PIBBI en el Chat o mándale la foto de un ticket.</p>
+                <p className="font-bold">Aún no hay movimientos 🐷</p>
+                <p className="text-sm text-humo">Toca “+” para registrar el primero, o mándale a {mascotName} la foto de un ticket en el Chat.</p>
               </div>
             </div>
           )
@@ -220,36 +211,25 @@ export default function Movimientos({ data, onRefresh }: Props) {
         {recientes.map((tx) => (
           <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
             isDeleting={deletingId === tx.id}
-            onDelete={() => setTxAEliminar({ id: tx.id, merchant: tx.merchant, amount: tx.amount })} />
+            onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)} />
         ))}
         {antiguos.length > 0 && (
           <div className="rounded-2xl border border-foco/60 bg-doradotenue p-4">
-            <p className="font-bold">{antiguos.length} movimientos de hace más de 90 días</p>
+            <p className="font-bold">📦 {antiguos.length} movimientos de hace más de 90 días</p>
             <p className="mt-1 text-sm text-humo">
               El plan {defPlan(data.plan).nombre} muestra los últimos 90 días. Con Plus ves todo tu historial.
             </p>
             <button
               onClick={() => setPaywall(`Tienes ${antiguos.length} movimientos de hace más de 90 días. Con Plus ves todo tu historial, sin límite.`)}
-              className="mt-2 w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
+              className="mt-2 w-full rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
             >
-              Ver historial completo
+              Ver historial completo con Plus
             </button>
           </div>
         )}
       </section>
 
       {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
-
-      {/* Confirmación dentro de la app (no el diálogo del navegador). */}
-      <Confirmar
-        abierto={txAEliminar !== null}
-        titulo="¿Eliminar este movimiento?"
-        mensaje={txAEliminar ? `Se borrará el movimiento${txAEliminar.merchant ? ` de “${txAEliminar.merchant}”` : ''} por ${formatMoney(txAEliminar.amount, currency)}.` : ''}
-        textoConfirmar="Eliminar"
-        peligro
-        onCancelar={() => setTxAEliminar(null)}
-        onConfirmar={() => { const t = txAEliminar; setTxAEliminar(null); if (t) void deleteTx(t.id) }}
-      />
     </main>
   )
 }
@@ -270,9 +250,9 @@ function TxRow({ tx, currency, categoryById, accountById, userById, action, onDe
   return (
     <div className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3  ">
       <div className="min-w-0 pr-2">
-        <p className="flex items-center gap-2 truncate font-semibold">{cat ? <><ChipCategoria nombre={cat.name} group={cat.group} className="h-7 w-7" />{cat.name}</> : tx.type === 'transferencia' ? 'Transferencia' : 'Sin categoría'}</p>
+        <p className="truncate font-semibold">{cat ? `${cat.icon} ${cat.name}` : tx.type === 'transferencia' ? '⇄ Transferencia' : 'Sin categoría'}</p>
         <p className="truncate text-xs text-humo">
-          {tx.merchant ? `${tx.merchant} · ` : ''}{formatDateEs(tx.date)} · {accountById.get(tx.account_id)?.name} · pagó {userById.get(tx.paid_by) ?? 'sin registrar'}
+          {tx.merchant ? `${tx.merchant} · ` : ''}{formatDateEs(tx.date)} · {accountById.get(tx.account_id)?.name} · pagó {userById.get(tx.paid_by) ?? '—'}
           {tx.note ? ` · ${tx.note}` : ''}
         </p>
       </div>
@@ -285,9 +265,9 @@ function TxRow({ tx, currency, categoryById, accountById, userById, action, onDe
             disabled={isDeleting}
             aria-label={`Eliminar movimiento de ${tx.merchant ?? 'comercio'} por ${formatMoney(tx.amount, currency)}`}
             title="Eliminar movimiento"
-            className="rounded-full bg-elevado p-2 text-humo transition hover:text-rojosuave disabled:opacity-50"
+            className="rounded-lg bg-elevado px-2 py-1 text-xs text-humo transition hover:text-rojosuave disabled:opacity-50"
           >
-            <IconoBasura className="h-4 w-4" />
+            🗑️
           </button>
         )}
       </div>

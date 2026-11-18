@@ -19,10 +19,10 @@ import {
   unsubscribePush,
 } from '../lib/reminders'
 import Mascota from '../components/Mascota'
-import { Confirmar, IconoBasura } from '../components/ui'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
+import { usePibbi } from '../lib/pibbi'
 
 interface Props {
   data: AppData
@@ -40,6 +40,7 @@ function nextRecurringDate(dueDay: number, today: string): string {
 }
 
 export default function Reminders({ data, onRefresh }: Props) {
+  const { name: mascotName } = usePibbi()
   const currency = data.household?.currency ?? 'MXN'
   const reminders = data.reminders ?? []
   const [title, setTitle] = useState('')
@@ -71,10 +72,6 @@ export default function Reminders({ data, onRefresh }: Props) {
   const urgent = pending.filter((r) => reminderStatus(r) === 'overdue' || reminderStatus(r) === 'today' || reminderStatus(r) === 'tomorrow')
   const upcoming = pending.filter((r) => reminderStatus(r) === 'upcoming')
   const done = sorted.filter((r) => r.is_done).slice(0, 10)
-  // La lista manda: el formulario de creación vive plegado detrás de un
-  // botón y solo se abre solo cuando no hay pendientes.
-  const [formAbierto, setFormAbierto] = useState(pending.length === 0)
-  const [avisoAEliminar, setAvisoAEliminar] = useState<Reminder | null>(null)
 
   function resetForm() {
     setTitle('')
@@ -87,7 +84,6 @@ export default function Reminders({ data, onRefresh }: Props) {
     setEditingId(null)
     setError(null)
     setMessage(null)
-    setFormAbierto(false)
   }
 
   function startEdit(r: Reminder) {
@@ -101,7 +97,6 @@ export default function Reminders({ data, onRefresh }: Props) {
     setEditingId(r.id)
     setError(null)
     setMessage(null)
-    setFormAbierto(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -131,10 +126,9 @@ export default function Reminders({ data, onRefresh }: Props) {
       : await supabase.from('reminders').insert(payload)
     setBusy(false)
     if (err) { setError(`No se pudo guardar el recordatorio: ${err.message}`); return }
-    const eraEdicion = Boolean(editingId)
+    setMessage(editingId ? 'Recordatorio actualizado 🔔' : 'Recordatorio creado 🔔 Te avisaré ese día.')
+    if (!editingId) setReaction('apuntando')
     resetForm()
-    setMessage(eraEdicion ? 'Recordatorio actualizado' : 'Recordatorio creado. Te avisaré ese día.')
-    if (!eraEdicion) setReaction('apuntando')
     onRefresh()
   }
 
@@ -151,7 +145,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       .eq('id', r.id)
     setBusy(false)
     if (err) { setError(`No se pudo marcar como pagado: ${err.message}`); return }
-    setMessage(next ? `Pagado. El siguiente quedó para el ${formatDateEs(next)}.` : 'Marcado como pagado')
+    setMessage(next ? `Pagado. El siguiente quedó para el ${formatDateEs(next)}.` : 'Marcado como pagado ✅')
     setReaction('celebrando')
     onRefresh()
   }
@@ -164,12 +158,13 @@ export default function Reminders({ data, onRefresh }: Props) {
     const { error: err } = await supabase.from('reminders').update({ is_done: false, done_at: null }).eq('id', r.id)
     setBusy(false)
     if (err) { setError(`No se pudo reactivar: ${err.message}`); return }
-    setMessage('Recordatorio reactivado')
+    setMessage('Recordatorio reactivado 🔔')
     onRefresh()
   }
 
   async function deleteReminder(r: Reminder) {
     if (busy) return
+    if (!confirm(`¿Eliminar el recordatorio “${r.title}”?`)) return
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -196,7 +191,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       timezone: deviceTimeZone(),
     })
     if (error) { setMessage(error.message); return }
-    setMessage(`Recordatorio mensual de “${rec.title}” creado`)
+    setMessage(`Recordatorio mensual de “${rec.title}” creado 🔔`)
     onRefresh()
   }
 
@@ -210,11 +205,11 @@ export default function Reminders({ data, onRefresh }: Props) {
     setPushBusy(false)
     if (!res.ok) {
       // Sin push, las notificaciones locales (app abierta) ya funcionan con el permiso.
-      setMessage(`Notificación local activada. Push en este celular: ${res.error}`)
+      setMessage(`Notificación local activada ✅. Push en este celular: ${res.error}`)
       return
     }
     setPushOn(true)
-    setMessage('Notificaciones activadas en este celular. También te avisaré aunque la app esté cerrada.')
+    setMessage('Notificaciones activadas en este celular 🔔 También te avisaré aunque la app esté cerrada.')
   }
 
   async function disablePush() {
@@ -230,15 +225,15 @@ export default function Reminders({ data, onRefresh }: Props) {
     const status = reminderStatus(r)
     const d = daysUntil(r.due_date)
     const badge =
-      status === 'overdue' ? `Vencido hace ${-d} día${-d === 1 ? '' : 's'}` :
-      status === 'today' ? 'Vence hoy' :
-      status === 'tomorrow' ? 'Vence mañana' :
-      `En ${d} días`
+      status === 'overdue' ? `⚠️ Vencido hace ${-d} día${-d === 1 ? '' : 's'}` :
+      status === 'today' ? '📅 Vence hoy' :
+      status === 'tomorrow' ? '📅 Vence mañana' :
+      `📅 En ${d} días`
     return (
       <div key={r.id} className="mb-2 rounded-2xl border border-borde bg-tarjeta p-3  ">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="font-bold">{r.title}</p>
+            <p className="font-bold">🔔 {r.title}</p>
             <p className="text-sm text-humo">
               {formatDateEs(r.due_date)}{r.due_time ? ` · ${r.due_time} h` : ''} · {RECURRENCE_LABELS[r.recurrence]}
             </p>
@@ -252,10 +247,10 @@ export default function Reminders({ data, onRefresh }: Props) {
         {!r.is_done && (
           <div className="mt-2 flex gap-2">
             <button onClick={() => void markDone(r)} className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta">
-              {r.recurrence === 'once' ? 'Marcar pagado' : 'Pagado · siguiente'}
+              {r.recurrence === 'once' ? 'Marcar pagado ✅' : 'Pagado · siguiente ➡️'}
             </button>
             <button onClick={() => startEdit(r)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Editar</button>
-            <button onClick={() => setAvisoAEliminar(r)} aria-label={`Eliminar ${r.title}`} className="rounded-full bg-elevado p-2 text-sm"><IconoBasura className="h-4 w-4" /></button>
+            <button onClick={() => void deleteReminder(r)} aria-label={`Eliminar ${r.title}`} className="rounded-xl bg-elevado px-3 py-2 text-sm ">🗑️</button>
           </div>
         )}
         {r.is_done && (
@@ -269,26 +264,36 @@ export default function Reminders({ data, onRefresh }: Props) {
     <main className="space-y-4 p-4">
       <PibbiHeader
         pose={PAGE_PIBBI_POSES.recordatorios}
-        title="Recordatorios"
-        subtitle="Avisos de pagos futuros para los dos."
-        className="-mx-4 -mt-4 px-4 pb-3 pt-3"
+        title="Recordatorios 🔔"
+        subtitle="Avisos de pagos futuros para los dos. También puedes escribir en el Chat “recuérdame pagar la renta el 1ro” y se crea aquí."
       />
 
-      {/* Avisos de error/éxito y la reacción de PIBBI viven fuera del
-          formulario para que se vean también cuando está plegado. */}
-      {error && <div role="alert" className="rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">{error}</div>}
-      {message && <div role="status" className="rounded-2xl bg-verde/10 p-3 text-sm text-verde">{message}</div>}
-      {reaction && <div><PibbiReaction contexto={reaction} /></div>}
+      <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
+        <h2 className="font-bold">📱 Notificaciones en este celular</h2>
+        <p className="mb-2 text-sm text-humo">
+          Con la app abierta o instalada te aviso a la hora del recordatorio. Para avisar aunque la app esté cerrada, activa también el push (gratis, con claves VAPID).
+        </p>
+        <p className="mb-2 text-sm">
+          Notificaciones: <strong>{perm === 'granted' ? 'activadas ✅' : perm === 'denied' ? 'bloqueadas en el navegador' : perm === 'unsupported' ? 'no soportadas aquí' : 'sin activar'}</strong>
+          {pushSupported() && <> · Push: <strong>{pushOn ? 'activado ✅' : 'apagado'}</strong></>}
+        </p>
+        {notificationsSupported() && perm !== 'granted' && (
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
+            Activar notificaciones en este celular
+          </button>
+        )}
+        {perm === 'granted' && pushSupported() && !pushOn && (
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
+            {pushBusy ? 'Activando…' : 'Activar también cuando la app esté cerrada (push)'}
+          </button>
+        )}
+        {perm === 'granted' && pushOn && (
+          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full rounded-xl bg-elevado py-2 font-bold ">
+            Desactivar push en este celular
+          </button>
+        )}
+      </section>
 
-      {/* La lista manda: el formulario vive plegado detrás de este botón
-          y solo se abre solo cuando no hay pendientes. */}
-      {!formAbierto && (
-        <button onClick={() => setFormAbierto(true)} className="w-full rounded-full bg-dorado py-3 font-extrabold tracking-wide text-tinta">
-          + Nuevo recordatorio
-        </button>
-      )}
-
-      {formAbierto && (
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
         <h2 className="mb-2 font-bold">{editingId ? 'Editar recordatorio' : 'Nuevo recordatorio'}</h2>
         <input value={title} onChange={(e) => { setTitle(e.target.value); setError(null) }} placeholder="Título (ej. Renta, Luz, Netflix)" aria-label="Título del recordatorio" className="mb-2 w-full rounded-xl border p-2" />
@@ -297,7 +302,7 @@ export default function Reminders({ data, onRefresh }: Props) {
           <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setError(null) }} aria-label="Categoría del recordatorio" className="rounded-xl border p-2 text-sm">
             <option value="">Sin categoría</option>
             {data.categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
             ))}
           </select>
         </div>
@@ -320,11 +325,14 @@ export default function Reminders({ data, onRefresh }: Props) {
         <input value={note} onChange={(e) => { setNote(e.target.value); setError(null) }} placeholder="Nota (opcional)" aria-label="Nota adicional" className="mb-2 w-full rounded-xl border p-2" />
         <div className="flex gap-2">
           <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            {busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear recordatorio'}
+            {busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear recordatorio 🔔'}
           </button>
-          <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>
+          {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}
         </div>
-      </section>)}
+        {error && <div role="alert" className="mt-2 text-sm text-rojosuave">⚠️ {error}</div>}
+        {message && <div role="status" className="mt-2 text-sm text-verde">✅ {message}</div>}
+        {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
+      </section>
 
       {data.recurring.length > 0 && (
         <section>
@@ -334,9 +342,9 @@ export default function Reminders({ data, onRefresh }: Props) {
             const has = reminders.some((r) => r.recurring_id === rec.id && !r.is_done)
             return (
               <div key={rec.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
-                <span>Día {rec.due_day} · {rec.title} · <strong>{formatMoney(rec.amount, currency)}</strong></span>
+                <span>📅 Día {rec.due_day} · {rec.title} · <strong>{formatMoney(rec.amount, currency)}</strong></span>
                 {has
-                  ? <span className="text-xs font-semibold text-verde">Ya tiene aviso</span>
+                  ? <span className="text-xs font-semibold text-verde">🔔 Ya tiene aviso</span>
                   : <button onClick={() => void createFromRecurring(rec.id)} className="rounded-xl bg-dorado px-3 py-1.5 text-xs font-bold text-tinta">+ Aviso mensual</button>}
               </div>
             )
@@ -346,7 +354,7 @@ export default function Reminders({ data, onRefresh }: Props) {
 
       <section>
         <h2 className="mb-2 font-bold">Próximos y vencidos</h2>
-        {urgent.length === 0 && upcoming.length === 0 && <p className="text-sm text-humo">Sin recordatorios pendientes. Crea el primero con el botón de arriba o desde el Chat.</p>}
+        {urgent.length === 0 && upcoming.length === 0 && <p className="text-sm text-humo">Sin recordatorios pendientes. Crea el primero arriba o desde el Chat.</p>}
         {urgent.map(card)}
         {upcoming.map(card)}
       </section>
@@ -354,57 +362,17 @@ export default function Reminders({ data, onRefresh }: Props) {
       {done.length > 0 && (
         <section>
           <div className="mb-2 flex items-center gap-3">
-            <Mascota pose="celebrando" alt="PIBBI celebrando un pago hecho" className="h-10 w-10 shrink-0" />
+            <Mascota pose="celebrando" dancing alt={`${mascotName} celebrando un pago hecho`} className="h-[120px] w-[120px] shrink-0" />
             <h2 className="font-bold">Ya pagados</h2>
           </div>
           {done.map((r) => (
             <div key={r.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm opacity-70  ">
-              <span>{r.title} · {formatDateEs(r.due_date)}{r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}</span>
+              <span>✅ {r.title} · {formatDateEs(r.due_date)}{r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}</span>
               <button onClick={() => void reactivate(r)} className="rounded-xl bg-elevado px-3 py-1.5 text-xs font-semibold ">Reactivar</button>
             </div>
           ))}
         </section>
       )}
-      {/* Notificaciones al final, no al principio: la lista es lo que
-          se viene a ver; los ajustes de aviso viven abajo, como en las
-          apps buenas. El permiso solo se pide con el botón, nunca al
-          abrir la app. */}
-      <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
-        <h2 className="font-bold">Notificaciones en este celular</h2>
-        <p className="mb-2 text-sm text-humo">
-          Con la app abierta o instalada te aviso a la hora del recordatorio. Para avisar aunque la app esté cerrada, activa también el push (gratis, con claves VAPID).
-        </p>
-        <p className="mb-2 text-sm">
-          Notificaciones: <strong>{perm === 'granted' ? 'activadas' : perm === 'denied' ? 'bloqueadas en el navegador' : perm === 'unsupported' ? 'no soportadas aquí' : 'sin activar'}</strong>
-          {pushSupported() && <> · Push: <strong>{pushOn ? 'activado' : 'apagado'}</strong></>}
-        </p>
-        {notificationsSupported() && perm !== 'granted' && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            Activar notificaciones
-          </button>
-        )}
-        {perm === 'granted' && pushSupported() && !pushOn && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            {pushBusy ? 'Activando…' : 'Activar push'}
-          </button>
-        )}
-        {perm === 'granted' && pushOn && (
-          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-elevado py-2 text-sm font-bold ">
-            Desactivar push
-          </button>
-        )}
-      </section>
-
-      {/* Confirmación dentro de la app (no el diálogo del navegador). */}
-      <Confirmar
-        abierto={avisoAEliminar !== null}
-        titulo="¿Eliminar este recordatorio?"
-        mensaje={avisoAEliminar ? `Se borrará el recordatorio “${avisoAEliminar.title}”.` : ''}
-        textoConfirmar="Eliminar"
-        peligro
-        onCancelar={() => setAvisoAEliminar(null)}
-        onConfirmar={() => { const r = avisoAEliminar; setAvisoAEliminar(null); if (r) void deleteReminder(r) }}
-      />
     </main>
   )
 }
