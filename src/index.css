@@ -2,14 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tema oscuro de PIBBI en toda la app: fondo azul marino, texto crema.
-   No hay modo claro: el tema es oscuro siempre, para que no quede mitad y mitad. */
-:root {
+/* Dos temas en toda la app (ver src/lib/tema.ts): noche (paleta A ·
+   Marino afinado, por defecto) y día (paleta C · Papel crema). El
+   interruptor cambia solo data-theme en <html>; los componentes usan
+   los mismos tokens en ambos temas. */
+/* Dos temas (ver src/lib/tema.ts): noche (paleta A · Marino afinado, por
+   defecto) y día (paleta C · Papel crema). Los tokens de Tailwind son
+   `rgb(var(--X-rgb) / <alpha-value>)`, así cambiar de tema es solo
+   cambiar data-theme en <html>. Sin rosa en la interfaz: el rosa es
+   solo de PIBBI; el acento principal es el dorado (dinero) y el foco
+   es dorado en noche y tinta en día. */
+:root, :root[data-theme='noche'] {
   color-scheme: dark;
-  /* Espejo de los tokens de Tailwind para el CSS plano (párpados y sombra de PIBBI). */
+  /* Paleta A · Marino afinado. */
+  --noche-rgb: 10 15 30;
+  --tarjeta-rgb: 35 46 82;
+  --elevado-rgb: 44 60 104;
+  --borde-rgb: 66 84 138;
+  --crema-rgb: 253 232 216;
+  --humo-rgb: 198 205 235;
+  --menta-rgb: 125 219 195;
+  --verde-rgb: 74 222 128;
+  --dorado-rgb: 245 197 66;
+  --doradotexto-rgb: 245 197 66;
+  --rojosuave-rgb: 255 138 128;
+  --tinta-rgb: 10 15 30;
+  --foco-rgb: 245 197 66;
+  /* PIBBI (sin tocar): párpados y sombra. */
   --rosaclaro: #F9A8B8;
   --rosaparado: #F49DB1;
   --sombra: rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme='dia'] {
+  color-scheme: light;
+  /* Paleta C · Papel crema. */
+  --noche-rgb: 247 241 227;
+  --tarjeta-rgb: 255 255 255;
+  --elevado-rgb: 253 250 241;
+  --borde-rgb: 211 197 162;
+  --crema-rgb: 27 35 64;
+  --humo-rgb: 91 99 127;
+  --menta-rgb: 15 118 110;
+  --verde-rgb: 21 115 71;
+  --dorado-rgb: 245 197 66;
+  --doradotexto-rgb: 122 95 8;
+  --rojosuave-rgb: 180 35 24;
+  --tinta-rgb: 27 35 64;
+  --foco-rgb: 27 35 64;
 }
 
 html, body {
@@ -33,13 +73,14 @@ select option {
 }
 
 ::selection {
-  @apply bg-rosafuerte text-noche;
+  @apply bg-dorado text-tinta;
 }
 
-/* Foco visible para navegación por teclado (Hallmark 26a): anillo rosa
-   claro, instantáneo, con contraste ≥3:1 sobre el fondo azul marino. */
+/* Foco visible para navegación por teclado (Hallmark 26a): anillo del
+   token `foco` (dorado en noche, tinta en día), con contraste ≥3:1
+   sobre el fondo en ambos temas. */
 :focus-visible {
-  @apply outline-none ring-2 ring-rosaclaro ring-offset-2 ring-offset-noche;
+  @apply outline-none ring-2 ring-foco ring-offset-2 ring-offset-noche;
 }
 
 /* PIBBI siempre vivo: flota, respira, pestañea y proyecta sombra, todo

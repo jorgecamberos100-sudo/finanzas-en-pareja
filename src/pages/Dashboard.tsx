@@ -89,7 +89,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
       </header>
 
       {data.transactions.length === 0 && (
-        <section className="flex items-start gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+        <section className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
           <Mascota className="h-20 w-20 shrink-0" />
           <div>
             <p className="font-bold">Aún no hay movimientos 🐷</p>
@@ -100,14 +100,14 @@ export default function Dashboard({ data, onRefresh }: Props) {
 
       {/* Hogar de 1 persona: invitar a la pareja es una opción, no un requisito. */}
       {!data.partner && data.household && (
-        <section className="rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+        <section className="rounded-2xl border border-foco/60 bg-tarjeta p-4">
           <p className="font-bold">💌 Invita a tu pareja (opcional)</p>
           <p className="mb-3 text-sm text-humo">Usas la app solo por ahora. Cuando quieras, tu pareja crea su cuenta y se une con este código.</p>
-          <div className="mb-3 rounded-2xl bg-[#F4728F1A] p-3 text-center">
-            <p className="text-2xl font-black tracking-widest text-rosaclaro">{data.household.invite_code}</p>
+          <div className="mb-3 rounded-2xl bg-doradotenue p-3 text-center">
+            <p className="text-2xl font-black tracking-widest text-doradotexto">{data.household.invite_code}</p>
             <p className="mt-1 break-all text-xs text-humo">{`${window.location.origin}/onboarding?codigo=${data.household.invite_code}`}</p>
           </div>
-          <button onClick={copyInvite} className="w-full rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche">
+          <button onClick={copyInvite} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta">
             {copied ? '¡Copiado! ✅' : 'Copiar código y enlace'}
           </button>
         </section>
@@ -117,8 +117,8 @@ export default function Dashboard({ data, onRefresh }: Props) {
         <PibbiDresser />
       </section>
 
-      <section className="rounded-2xl border border-rosafuerte/40 bg-tarjeta p-5">
-        <p className="text-sm text-rosaclaro">Patrimonio total</p>
+      <section className="rounded-2xl border border-foco/60 bg-tarjeta p-5">
+        <p className="text-sm text-doradotexto">Patrimonio total</p>
         <p className="text-3xl font-black text-crema">{formatMoney(patrimonio, currency)}</p>
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div><p className="text-humo">Ingresos del mes</p><p className="font-bold text-verde">+{formatMoney(ingresos, currency)}</p></div>
@@ -137,20 +137,20 @@ export default function Dashboard({ data, onRefresh }: Props) {
 
       {/* La deuda mutua solo existe cuando hay pareja en el hogar. */}
       {data.partner && (mutual ? (
-        <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
+        <section className="rounded-2xl border border-foco/60 bg-[#F5C54214] p-4  ">
           <p className="font-bold">⚖️ Deuda mutua</p>
           <p className="text-sm">{debtorName} le debe <strong>{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
-          <button onClick={liquidar} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-noche">Liquidar ahora</button>
+          <button onClick={liquidar} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta">Liquidar ahora</button>
           {liquidarError && <p role="alert" className="mt-2 text-sm text-rojosuave">{liquidarError}</p>}
         </section>
       ) : (
-        <section className="rounded-2xl border border-verde/30 bg-[#4ADE8014] p-4  ">
+        <section className="rounded-2xl border border-verde bg-[#4ADE8014] p-4  ">
           <p className="font-bold">✅ Están a mano</p><p className="text-sm text-humo ">No hay deuda mutua pendiente.</p>
         </section>
       ))}
 
       {dueReminders.length > 0 && (
-        <section className="rounded-2xl border border-dorado/30 bg-[#F5C54214] p-4  ">
+        <section className="rounded-2xl border border-foco/60 bg-[#F5C54214] p-4  ">
           <p className="font-bold">🔔 Recordatorios de pago</p>
           {dueReminders.map((r) => (
             <div key={r.id} className="mt-2 flex items-center justify-between gap-2 text-sm">
@@ -158,7 +158,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
                 {r.title} · {reminderStatus(r) === 'overdue' ? `vencido (${formatDateEs(r.due_date)})` : reminderStatus(r) === 'today' ? 'hoy' : 'mañana'}
                 {r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}
               </span>
-              <Link to="/recordatorios" className="shrink-0 rounded-xl bg-dorado px-3 py-1.5 font-bold text-noche">Ver</Link>
+              <Link to="/recordatorios" className="shrink-0 rounded-xl bg-dorado px-3 py-1.5 font-bold text-tinta">Ver</Link>
             </div>
           ))}
         </section>
@@ -172,7 +172,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
           return (
             <div key={g.id} className="mb-2 rounded-2xl border border-borde bg-tarjeta p-3  ">
               <div className="flex justify-between text-sm"><span>🎯 {g.name}</span><span>{pct.toFixed(0)}%</span></div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-borde "><div className="h-full bg-rosafuerte" style={{ width: `${pct}%` }} /></div>
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-borde "><div className="h-full bg-dorado" style={{ width: `${pct}%` }} /></div>
             </div>
           )
         })}
@@ -197,7 +197,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
             <div key={c.id} className="mb-2 text-sm">
               <div className="flex justify-between"><span>{c.icon} {c.name}</span><span>{formatMoney(spent, currency)} / {formatMoney(c.monthly_limit, currency)}</span></div>
               <div className="mt-1 h-2 overflow-hidden rounded-full bg-borde ">
-                <div className={`h-full ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-rosafuerte'}`} style={{ width: `${pct}%` }} />
+                <div className={`h-full ${pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-verde'}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           )

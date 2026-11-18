@@ -85,7 +85,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
           <p className="mb-2 text-sm text-humo">Movimientos importados o con nota. Tu pareja puede aprobarlos.</p>
           {pending.map((tx) => (
             <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
-              action={<button onClick={() => approve(tx.id)} className="rounded-lg bg-rosafuerte px-3 py-1 text-xs font-bold text-noche">Aprobar</button>} />
+              action={<button onClick={() => approve(tx.id)} className="rounded-lg bg-dorado px-3 py-1 text-xs font-bold text-tinta">Aprobar</button>} />
           ))}
         </section>
       )}
@@ -93,7 +93,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
       <section>
         <h2 className="mb-2 font-bold">Historial</h2>
         {approved.length === 0 && pending.length === 0 && (
-          <div className="flex items-start gap-3 rounded-2xl border border-rosafuerte/40 bg-tarjeta p-4">
+          <div className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
             <Mascota pose="ahorrando" alt="PIBBI sentado con una moneda" className="h-20 w-20 shrink-0" />
             <div>
               <p className="font-bold">Aún no hay movimientos 🐷</p>

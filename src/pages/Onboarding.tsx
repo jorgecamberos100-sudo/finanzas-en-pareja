@@ -3,6 +3,7 @@ import { supabase, setHouseholdId, getHouseholdId, findMyHouseholdId } from '../
 import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
+import ThemeToggle from '../components/ThemeToggle'
 
 interface Props { onDone: () => void }
 
@@ -151,9 +152,12 @@ export default function Onboarding({ onDone }: Props) {
 
   return (
     <div className="mx-auto max-w-lg p-5">
-      <p className="text-sm text-humo">Paso {step} de 5</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-humo">Paso {step} de 5</p>
+        <ThemeToggle className="rounded-full border border-borde bg-tarjeta p-2 text-crema" />
+      </div>
       <div className="mb-6 mt-1 h-2 overflow-hidden rounded-full bg-borde ">
-        <div className="h-full w-full origin-left bg-rosafuerte transition-transform" style={{ transform: `scaleX(${step / 5})` }} />
+        <div className="h-full w-full origin-left bg-foco transition-transform" style={{ transform: `scaleX(${step / 5})` }} />
       </div>
 
       {step === 1 && (
@@ -173,8 +177,8 @@ export default function Onboarding({ onDone }: Props) {
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
-              <button onClick={login} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Entrar</button>
-              <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-rosaclaro">¿No tienes cuenta? Crea una</button>
+              <button onClick={login} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Entrar</button>
+              <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿No tienes cuenta? Crea una</button>
             </>
           ) : (
             <>
@@ -194,8 +198,8 @@ export default function Onboarding({ onDone }: Props) {
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
-              <button onClick={step1} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Continuar</button>
-              <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-rosaclaro">¿Ya tienes cuenta? Inicia sesión</button>
+              <button onClick={step1} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Continuar</button>
+              <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿Ya tienes cuenta? Inicia sesión</button>
             </>
           )}
         </section>
@@ -207,10 +211,10 @@ export default function Onboarding({ onDone }: Props) {
           <p className="mb-4 text-humo">Puedes usarla solo por ahora e invitar a tu pareja después, o en pareja desde el inicio.</p>
 
           {/* Modo individual: hogar de 1 persona, sin código ni invitación obligatoria. */}
-          <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
+          <div className="mb-4 rounded-2xl border-2 border-foco p-4 ">
             <p className="text-lg font-bold">🙋 Solo yo por ahora</p>
             <p className="mb-3 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
-            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Usar solo por ahora</button>
+            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Usar solo por ahora</button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
@@ -220,11 +224,11 @@ export default function Onboarding({ onDone }: Props) {
           </div>
 
           {/* Ruta principal en pareja: el primero crea el hogar. No necesita ningún código. */}
-          <div className="mb-4 rounded-2xl border-2 border-rosafuerte p-4 ">
+          <div className="mb-4 rounded-2xl border-2 border-foco p-4 ">
             <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
             <p className="mb-3 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
             <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Crear hogar</button>
+            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Crear hogar</button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
@@ -239,10 +243,10 @@ export default function Onboarding({ onDone }: Props) {
             <p className="mb-3 text-sm text-humo">Solo si tu pareja ya creó el hogar y te pasó su código.</p>
             {joinExpanded ? (
               <>
-                {joinCode && <p className="mb-2 rounded-lg bg-rosatenue p-2 text-sm text-rosaclaro  ">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
+                {joinCode && <p className="mb-2 rounded-lg bg-doradotenue p-2 text-sm text-doradotexto  ">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
                 <div className="flex gap-2">
                   <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" className="flex-1 rounded-xl border p-3 uppercase" />
-                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-noche px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">Unirme</button>
+                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-tinta px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">Unirme</button>
                 </div>
               </>
             ) : (
@@ -256,11 +260,11 @@ export default function Onboarding({ onDone }: Props) {
         <section>
           <h1 className="text-2xl font-bold">{soloMode ? 'Invita a tu pareja (opcional)' : 'Invita a tu pareja'}</h1>
           <p className="mb-4 text-humo">{soloMode ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.' : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}</p>
-          <div className="mb-4 rounded-2xl bg-rosatenue p-4 text-center ">
-            <p className="text-3xl font-black tracking-widest text-rosaclaro ">{inviteCode}</p>
+          <div className="mb-4 rounded-2xl bg-doradotenue p-4 text-center ">
+            <p className="text-3xl font-black tracking-widest text-doradotexto ">{inviteCode}</p>
             <p className="mt-1 text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
           </div>
-          <button onClick={() => setStep(4)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">{soloMode ? 'Lo haré después' : 'Continuar (se une después)'}</button>
+          <button onClick={() => setStep(4)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">{soloMode ? 'Lo haré después' : 'Continuar (se une después)'}</button>
         </section>
       )}
 
@@ -272,7 +276,7 @@ export default function Onboarding({ onDone }: Props) {
             <PibbiDresser title="Prendas" />
           </div>
           <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Crear mis cuentas y terminar</button>
+          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Crear mis cuentas y terminar</button>
         </section>
       )}
 
@@ -281,7 +285,7 @@ export default function Onboarding({ onDone }: Props) {
           <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-32 w-32" />
           <h1 className="text-2xl font-bold">¡Listo! 🎉</h1>
           <p className="mb-4 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
-          <button onClick={onDone} className="w-full whitespace-nowrap rounded-xl bg-rosafuerte py-3 font-extrabold tracking-wide text-noche disabled:cursor-not-allowed disabled:opacity-50">Ir al inicio</button>
+          <button onClick={onDone} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Ir al inicio</button>
         </section>
       )}
 

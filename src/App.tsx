@@ -14,6 +14,7 @@ import Plan from './pages/Plan'
 import Chat from './pages/Chat'
 import Reminders from './pages/Reminders'
 import QuickAddModal from './components/QuickAddModal'
+import ThemeToggle from './components/ThemeToggle'
 
 export interface AppData {
   household: Household | null
@@ -51,7 +52,7 @@ function UpdateBanner() {
           <span className="flex-1 text-sm text-crema">✨ Nueva versión disponible</span>
           <button
             onClick={applyUpdate}
-            className="rounded-lg bg-rosafuerte px-3 py-1.5 text-sm font-extrabold tracking-wide text-noche"
+            className="rounded-lg bg-dorado px-3 py-1.5 text-sm font-extrabold tracking-wide text-tinta"
           >
             Actualizar ahora
           </button>
@@ -234,7 +235,7 @@ export default function App() {
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-rosafuerte text-2xl text-noche shadow-[0_8px_24px_rgba(244,114,143,0.45)] transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-dorado text-2xl text-tinta shadow-[0_8px_24px_rgba(245,197,66,0.45)] transition active:scale-95"
       >
         +
       </button>
@@ -242,12 +243,13 @@ export default function App() {
       <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2  ">
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center px-1 text-center text-[11px] leading-tight sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-rosaclaro ' : 'text-humo'}`}>
+            className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center px-1 text-center text-[11px] leading-tight sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-doradotexto ' : 'text-humo'}`}>
             <span className="text-xl">{t.icon}</span>
             <span className="sm:hidden">{t.short}</span>
             <span className="hidden sm:inline">{t.label}</span>
           </NavLink>
         ))}
+        <ThemeToggle className="flex min-w-0 flex-col items-center justify-center px-2 text-humo" />
       </nav>
 
       {quickAddOpen && (

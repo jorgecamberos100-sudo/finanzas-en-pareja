@@ -31,7 +31,8 @@
     "test:capture": "esbuild scripts/test-capture.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-capture.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-capture.mjs",
     "test:sw": "esbuild scripts/test-sw.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-sw.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-sw.mjs",
     "test:push": "node scripts/test-push.mjs",
-    "postinstall": "node scripts/generate-icons.mjs"
+    "postinstall": "node scripts/generate-icons.mjs",
+    "test:tema": "esbuild scripts/test-tema.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-tema.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-tema.mjs"
   },
   "type": "module",
   "version": "1.0.0"

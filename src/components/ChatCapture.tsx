@@ -519,7 +519,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                m.role === 'user' ? 'bg-rosafuerte text-noche' : 'bg-elevado text-crema  '
+                m.role === 'user' ? 'bg-dorado text-tinta' : 'bg-elevado text-crema  '
               }`}
             >
               {m.imageUrl && <img src={m.imageUrl} alt="Foto enviada para capturar" className="mb-2 max-h-48 rounded-xl object-cover" />}
@@ -536,10 +536,10 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         <article key={d.id} className="rounded-2xl border border-amber-500/40 bg-tarjeta p-3 shadow-sm ">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold">🔔 Recordatorio propuesto</h3>
-            <span className="rounded-full bg-[#F5C54226] px-2 py-0.5 text-xs font-semibold text-dorado">Sin guardar aún · no es un gasto</span>
+            <span className="rounded-full bg-[#F5C54226] px-2 py-0.5 text-xs font-semibold text-doradotexto">Sin guardar aún · no es un gasto</span>
           </div>
           {d.proposal.needs_review.length > 0 && (
-            <p className="mb-2 text-xs text-dorado ">
+            <p className="mb-2 text-xs text-doradotexto ">
               Revisar: {d.proposal.needs_review.map((r) => (r === 'date' ? 'fecha' : r === 'amount' ? 'monto' : r === 'category' ? 'categoría' : r)).join(', ')}
             </p>
           )}
@@ -612,7 +612,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               type="button"
               onClick={() => void confirmReminderDraft(d)}
               disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-noche disabled:opacity-50"
+              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50"
             >
               {savingId === d.id ? 'Guardando…' : 'Crear recordatorio 🔔'}
             </button>
@@ -628,13 +628,13 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       ))}
 
       {drafts.map((d) => (
-        <article key={d.id} className="rounded-2xl border border-rosafuerte/30 bg-tarjeta p-3 shadow-sm ">
+        <article key={d.id} className="rounded-2xl border border-foco/60 bg-tarjeta p-3 shadow-sm ">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold">Propuesta para revisar</h3>
-            <span className="rounded-full bg-[#F4728F26] px-2 py-0.5 text-xs font-semibold text-rosaclaro">Sin guardar aún</span>
+            <span className="rounded-full bg-doradotenue px-2 py-0.5 text-xs font-semibold text-doradotexto">Sin guardar aún</span>
           </div>
           {d.entry.needs_review.length > 0 && (
-            <p className="mb-2 text-xs text-dorado ">
+            <p className="mb-2 text-xs text-doradotexto ">
               Revisar: {d.entry.needs_review.map((r) => REVIEW_LABELS[r] ?? r).join(', ')}
             </p>
           )}
@@ -644,7 +644,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
                 key={t}
                 type="button"
                 onClick={() => updateDraft(d.id, { type: t, splitPct: t === 'transferencia' ? 100 : d.splitPct })}
-                className={`rounded-xl py-1.5 text-xs font-semibold capitalize ${d.type === t ? 'bg-rosafuerte text-noche' : 'bg-elevado text-humo '}`}
+                className={`rounded-xl py-1.5 text-xs font-semibold capitalize ${d.type === t ? 'bg-dorado text-tinta' : 'bg-elevado text-humo '}`}
               >
                 {t}
               </button>
@@ -738,7 +738,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               type="button"
               onClick={() => void confirmDraft(d)}
               disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-rosafuerte py-2 text-sm font-extrabold tracking-wide text-noche disabled:opacity-50"
+              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50"
             >
               {savingId === d.id ? 'Guardando…' : 'Confirmar y guardar'}
             </button>
@@ -808,7 +808,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           aria-label="Escribe un gasto, ingreso o transferencia"
           className="min-w-0 flex-1 rounded-xl border border-borde p-3 text-sm "
         />
-        <button type="submit" disabled={busy || !input.trim()} className="rounded-xl bg-rosafuerte px-4 py-3 text-sm font-extrabold tracking-wide text-noche disabled:opacity-50">
+        <button type="submit" disabled={busy || !input.trim()} className="rounded-xl bg-dorado px-4 py-3 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
           Enviar
         </button>
       </form>
