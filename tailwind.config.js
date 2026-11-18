@@ -5,12 +5,13 @@ export default {
     extend: {
       colors: {
         // Paleta del cerdito: fondo azul marino oscuro, rosa, dorado, menta.
-        noche: '#0F1530',
-        tarjeta: '#1A2145',
-        elevado: '#232B52',
-        borde: '#2A3358',
+        // Paleta A · Marino afinado: mismos acentos, superficies más separadas.
+        noche: '#0A0F1E',
+        tarjeta: '#232E52',
+        elevado: '#2C3C68',
+        borde: '#42548A',
         crema: '#FDE8D8',
-        humo: '#B9C0E0',
+        humo: '#C6CDEB',
         rosaclaro: '#F9A8B8',
         rosafuerte: '#F4728F',
         rosatenue: '#F4728F1A', // rosa fuerte al 10%: avisos y selección.
