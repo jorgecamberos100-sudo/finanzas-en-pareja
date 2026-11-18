@@ -28,6 +28,7 @@
     "typecheck": "tsc -b --noEmit",
     "test:reminders": "esbuild scripts/test-reminders.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-reminders.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-reminders.mjs",
     "test:pibbi": "esbuild scripts/test-pibbi.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-pibbi.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-pibbi.mjs",
+    "test:pibbi-respuestas": "esbuild scripts/test-pibbi-respuestas.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-pibbi-respuestas.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-pibbi-respuestas.mjs",
     "test:login": "esbuild scripts/test-login.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-login.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-login.mjs",
     "test:capture": "esbuild scripts/test-capture.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-capture.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-capture.mjs",
     "test:captura-local": "esbuild scripts/test-captura-local.ts --bundle --platform=node --format=esm --external:tesseract.js --outfile=node_modules/.cache/test-captura-local.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-captura-local.mjs",

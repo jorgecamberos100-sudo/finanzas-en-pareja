@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, getHouseholdId, setHouseholdId, clearHouseholdId, findMyHouseholdId } from './lib/supabase'
 import { useReminderNotifications } from './lib/reminders'
 import { cargarPlan } from './lib/planes-db'
@@ -9,12 +9,11 @@ import { PibbiProvider } from './lib/pibbi'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
 import Mascota from './components/Mascota'
 import {
-  Alerta, Boton, Esqueleto, IconoBrillo, IconoCampana, IconoChat, IconoInicio, IconoLista,
+  Alerta, Boton, Esqueleto, IconoBrillo, IconoCampana, IconoChat, IconoLista,
   IconoMas, IconoMeta, IconoSobre, IconoX, Logo, Spinner,
 } from './components/ui'
 import type { Account, Category, Goal, Household, HouseholdPlan, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
-import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
 import Presupuesto from './pages/Presupuesto'
 import Plan from './pages/Plan'
@@ -252,18 +251,18 @@ export default function App() {
   if (loading) return <PibbiProvider><UpdateBanner /><PantallaCarga /></PibbiProvider>
   if (!householdId || !data.household) return <PibbiProvider><UpdateBanner /><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
 
-  // Etiqueta corta para pantallas angostas (360 px): con 6 pestañas y
-  // px-3, la última ("Avisos") se salía 46 px de la pantalla y no se podía
-  // tocar. En móvil se reparte el ancho en partes iguales (flex-1) y se
-  // usan las etiquetas cortas; en ≥640 px, las completas.
+  // La home es el chat con PIBBI (como en Muse): 5 pestañas, sin
+  // "Inicio" aparte. En móvil se reparte el ancho en partes iguales
+  // (flex-1) y se usan las etiquetas cortas; en ≥640 px, las completas.
   const tabs = [
-    { to: '/', label: 'Inicio', short: 'Inicio', icono: IconoInicio },
+    { to: '/', label: 'PIBBI', short: 'PIBBI', icono: IconoChat },
     { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icono: IconoLista },
     { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icono: IconoSobre },
     { to: '/plan', label: 'Plan', short: 'Plan', icono: IconoMeta },
-    { to: '/chat', label: 'Chat', short: 'Chat', icono: IconoChat },
     { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icono: IconoCampana },
   ]
+  const location = useLocation()
+  const enChat = location.pathname === '/'
 
   return (
     <PibbiProvider>
@@ -278,15 +277,18 @@ export default function App() {
         </div>
       )}
       <Routes>
-        <Route path="/" element={<Dashboard data={data} onRefresh={loadAll} onSignOut={handleSignOut} />} />
+        <Route path="/" element={<Chat data={data} onSave={addTransaction} onRefresh={loadAll} onSignOut={handleSignOut} />} />
+        <Route path="/chat" element={<Navigate to="/" replace />} />
         <Route path="/movimientos" element={<Movimientos data={data} onRefresh={loadAll} />} />
         <Route path="/presupuesto" element={<Presupuesto data={data} onRefresh={loadAll} />} />
         <Route path="/plan" element={<Plan data={data} onRefresh={loadAll} />} />
-        <Route path="/chat" element={<Chat data={data} onSave={addTransaction} onRefresh={loadAll} />} />
         <Route path="/recordatorios" element={<Reminders data={data} onRefresh={loadAll} />} />
         <Route path="/onboarding" element={<Onboarding onDone={() => navigate('/')} />} />
       </Routes>
 
+      {/* En el chat la captura ya vive en la barra de entrada: el botón +
+          estorbaría sobre ella, así que solo aparece en las demás pestañas. */}
+      {!enChat && (
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
@@ -294,6 +296,7 @@ export default function App() {
       >
         <IconoMas className="h-7 w-7" />
       </button>
+      )}
 
       <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-lg border-t border-borde/60 bg-noche/90 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
         <div className="flex justify-around px-2">

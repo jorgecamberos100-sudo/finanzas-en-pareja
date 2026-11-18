@@ -277,7 +277,7 @@ export default function Onboarding({ onDone }: Props) {
     // (el mismo bug que tenía crear el hogar).
     const { error: joinError } = await supabase.from('household_members').insert({ household_id: householdId, user_id: user.id, role: 'miembro' })
     if (joinError) {
-      // Si ya era miembro de este hogar, proceder directamente al Dashboard
+      // Si ya era miembro de este hogar, proceder directamente a la home (chat con PIBBI)
       if (joinError.code === '23505' || joinError.message.includes('unique') || joinError.message.includes('duplicate')) {
         setHouseholdId(householdId)
         setBusy(false)

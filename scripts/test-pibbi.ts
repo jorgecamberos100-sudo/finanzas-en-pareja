@@ -108,15 +108,13 @@ for (const [pose, cfg] of Object.entries(PIBBI_POSES)) {
 // ventana pierde su encabezado o usa una pose que no existe, el test falla.
 const root = process.cwd()
 const PAGES: Array<{ page: PibbiPage; file: string; pose: string }> = [
-  { page: 'dashboard', file: 'src/pages/Dashboard.tsx', pose: 'saludando' },
   { page: 'movimientos', file: 'src/pages/Movimientos.tsx', pose: 'calculadora' },
   { page: 'presupuesto', file: 'src/pages/Presupuesto.tsx', pose: 'contar' },
   { page: 'plan', file: 'src/pages/Plan.tsx', pose: 'progreso' },
-  { page: 'chat', file: 'src/pages/Chat.tsx', pose: 'avatarCircular' },
   { page: 'recordatorios', file: 'src/pages/Reminders.tsx', pose: 'perfilLapiz' },
   { page: 'onboarding', file: 'src/pages/Onboarding.tsx', pose: 'saludando' },
 ]
-check('el mapa cubre las 7 ventanas', Object.keys(PAGE_PIBBI_POSES).sort(), PAGES.map((p) => p.page).sort())
+check('el mapa cubre las 5 ventanas', Object.keys(PAGE_PIBBI_POSES).sort(), PAGES.map((p) => p.page).sort())
 for (const { page, pose } of PAGES) {
   check(`pose de ${page} es ${pose}`, PAGE_PIBBI_POSES[page], pose)
   check(`pose de ${page} existe en PIBBI_POSES`, pose in PIBBI_POSES, true)
@@ -131,6 +129,14 @@ const headerSrc = readFileSync(join(root, 'src/components/PibbiHeader.tsx'), 'ut
 check('PibbiHeader renderiza Mascota', headerSrc.includes('<Mascota'), true)
 check('PibbiHeader usa PIBBI pequeño h-12', headerSrc.includes('h-12 w-12'), true)
 check('PibbiHeader no tapa botones a 360 px (flex-wrap)', headerSrc.includes('flex-wrap'), true)
+
+// 6b. La home es el chat con PIBBI (18 nov 2026): ya no usa PibbiHeader,
+// tiene su propio encabezado fijo con PIBBI en círculo, como en Muse.
+const chat = readFileSync(join(root, 'src/pages/Chat.tsx'), 'utf8')
+check('Chat: encabezado propio con PIBBI en círculo', chat.includes('<Mascota pose="frente" marco="circulo"'), true)
+check('Chat: el encabezado nombra a PIBBI', chat.includes('PIBBI'), true)
+check('Chat: no usa PibbiHeader (encabezado propio)', !chat.includes('PibbiHeader'), true)
+check('Chat: usa el chat de captura', chat.includes('<ChatCapture'), true)
 
 console.log(`\n${pass} pasaron, ${fail} fallaron`)
 if (fail > 0) process.exit(1)

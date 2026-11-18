@@ -31,6 +31,13 @@ interface Props {
   data: AppData
   onSave: (tx: Omit<Transaction, 'id' | 'created_at' | 'household_id' | 'dedupe_hash'> & { dedupe_hash?: string | null }) => Promise<void>
   onRefresh: () => void
+  /** Burbujas con las que PIBBI abre la conversación (home). Sin esto, el saludo de siempre. */
+  saludo?: string[]
+  /** Respuestas con datos reales (saldo, gasto, deuda, sobres, metas, avisos). Si contesta, el texto no va a captura. */
+  responderLocal?: (texto: string) => string | null
+  /** Atajos en píldora sobre la barra de entrada: preguntan o navegan. */
+  sugerencias?: Array<{ etiqueta: string; enviar?: string; ir?: string }>
+  onIr?: (ruta: string) => void
 }
 
 interface ChatMessage {
@@ -111,14 +118,18 @@ const REVIEW_LABELS: Record<string, string> = {
  * reconocimiento es-MX del navegador. La IA de servidor es una mejora
  * opcional; si falla, se cae a la vía local sin errores técnicos.
  */
-export default function ChatCapture({ data, onSave, onRefresh }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'bienvenida',
-      role: 'assistant',
-      text: 'Escríbeme un gasto, mándame la foto de un ticket o de tu libreta, o dicta una nota de voz. Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo. La foto y la voz se procesan gratis en tu teléfono. Y si quieres un aviso, dime “recuérdame pagar la renta el 1ro”.',
-    },
-  ])
+export default function ChatCapture({ data, onSave, onRefresh, saludo, responderLocal, sugerencias, onIr }: Props) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    saludo && saludo.length > 0
+      ? saludo.map((texto, i) => ({ id: `saludo-${i}`, role: 'assistant' as const, text: texto }))
+      : [
+          {
+            id: 'bienvenida',
+            role: 'assistant',
+            text: 'Escríbeme un gasto, mándame la foto de un ticket o de tu libreta, o dicta una nota de voz. Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo. La foto y la voz se procesan gratis en tu teléfono. Y si quieres un aviso, dime “recuérdame pagar la renta el 1ro”.',
+          },
+        ],
+  )
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [reminderDrafts, setReminderDrafts] = useState<ReminderDraft[]>([])
   const [input, setInput] = useState('')
@@ -276,6 +287,17 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     setError(null)
     pushMessage('user', trimmed)
     setInput('')
+    // PIBBI contesta primero con los datos reales (saldo, gasto, deuda,
+    // sobres, metas, avisos): una pregunta no es un movimiento y no va
+    // a captura. Si no sabe contestar, el texto sigue su camino normal.
+    if (responderLocal) {
+      const respuesta = responderLocal(trimmed)
+      if (respuesta) {
+        pushMessage('assistant', respuesta)
+        setBusy(false)
+        return
+      }
+    }
     // Intención de recordatorio: "recuérdame pagar..." no es un movimiento.
     // - strong (recuérdame/avísame): solo recordatorio, con el parser local.
     // - weak (habla de pagar a futuro sin el verbo): ambiguo -> propón ambas
@@ -851,6 +873,30 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         </p>
       )}
 
+      {/*
+        Barra de entrada fija abajo (como en Muse): los atajos en píldora,
+        la foto, la voz y el envío se quedan visibles mientras se lee la
+        conversación. El fondo con blur tapa los mensajes al pasar por debajo.
+      */}
+      <div className="sticky bottom-[5.25rem] z-30 -mx-4 border-t border-borde/60 bg-noche/90 px-4 pb-1 pt-2 backdrop-blur-xl">
+      {sugerencias && sugerencias.length > 0 && (
+        <div className="mb-2 flex gap-2 overflow-x-auto" role="group" aria-label="Sugerencias">
+          {sugerencias.map((s) => (
+            <button
+              key={s.etiqueta}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (s.ir) onIr?.(s.ir)
+                else if (s.enviar) void handleText(s.enviar)
+              }}
+              className="shrink-0 rounded-full border border-borde bg-elevado px-3 py-1.5 text-xs font-semibold text-crema transition active:scale-95 disabled:opacity-45"
+            >
+              {s.etiqueta}
+            </button>
+          ))}
+        </div>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -904,9 +950,10 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           <IconoEnviar className="h-4 w-4" />
         </Boton>
       </form>
-      <p className="text-center text-xs text-humo">
+      <p className="pt-1 text-center text-xs text-humo">
         La foto y la voz se procesan gratis en tu teléfono. La captura manual con el botón + sigue disponible. El chat nunca guarda sin tu confirmación.
       </p>
+      </div>
       {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
       <div ref={messagesEndRef} />
     </div>
