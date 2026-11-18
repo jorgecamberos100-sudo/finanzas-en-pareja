@@ -21,7 +21,11 @@ body {
 }
 
 input, select, textarea {
-  @apply border-borde bg-tarjeta text-crema;
+  @apply border-borde bg-tarjeta text-crema transition-colors;
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+  @apply outline-none ring-2 ring-rosafuerte ring-offset-2 ring-offset-noche;
 }
 
 input::placeholder, textarea::placeholder {

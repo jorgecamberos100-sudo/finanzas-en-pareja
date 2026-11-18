@@ -15,8 +15,6 @@ App de finanzas para una pareja (o modo individual), React + Vite + TypeScript +
 - Recordatorios con notificaciones push (web push, VAPID). **Sin alarma** (solo notificaciones).
 - Mascota PIBBI: cerdito rosado 3D (`src/components/Mascota.tsx`, `src/lib/mascota/`), animación fluida (flotación senoidal, respiración, parpadeo). Prendas por usuario (tabla `pibbi_customization`).
 - Service worker Workbox (`src/sw.ts`): skipWaiting + clientsClaim, navegación NetworkFirst, banner de nueva versión. No lo rompas.
-- Migraciones SQL en `supabase/migrations/` (001 init, 002 reminders, 003 pibbi).
-
-## Comandos
-- `npm run typecheck` · `npm run build` · `npm run test:pibbi` · `npm run test:reminders` · `npm run test:login` · `npm run test:capture` · `npm run test:sw`
+- Migraciones SQL en `supabase/migrations/` (001 init, 002 reminders, 003 pibbi, 004 join_por_codigo_y_realtime — ya aplicada en producción; NO editar 001–004).
+- Comandos: `npm run typecheck` · `npm run build` · `npm run test:pibbi` · `npm run test:reminders` · `npm run test:login` · `npm run test:capture` · `npm run test:sw` · `npm run test:push`
 - Todo debe quedar en verde antes de terminar.

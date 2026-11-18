@@ -1,25 +1,42 @@
-/** Formato de moneda es-MX, MXN por defecto. */
+const moneyFormatters = new Map<string, Intl.NumberFormat>()
+const shortMoneyFormatters = new Map<string, Intl.NumberFormat>()
+let esDateFormat: Intl.DateTimeFormat | null = null
+
+/** Formato de moneda es-MX, MXN por defecto (con caché de formateadores para rendimiento). */
 export function formatMoney(amount: number, currency = 'MXN'): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
+  let f = moneyFormatters.get(currency)
+  if (!f) {
+    f = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+    moneyFormatters.set(currency, f)
+  }
+  return f.format(amount)
 }
 
 export function formatMoneyShort(amount: number, currency = 'MXN'): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency,
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(amount)
+  let f = shortMoneyFormatters.get(currency)
+  if (!f) {
+    f = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    })
+    shortMoneyFormatters.set(currency, f)
+  }
+  return f.format(amount)
 }
 
 export function formatDateEs(iso: string): string {
+  if (!esDateFormat) {
+    esDateFormat = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso)
-  return new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }).format(d)
+  return esDateFormat.format(d)
 }
 
 /** Zona horaria del dispositivo que captura (ej. "America/Tijuana"). */
@@ -37,10 +54,17 @@ export function deviceTimeZone(): string {
  * ya era mañana en UTC y la fecha quedaba un día corrida.
  * Nunca se hardcodea una zona: en Tijuana es America/Tijuana.
  */
+const todayFormatters = new Map<string, Intl.DateTimeFormat>()
+
 export function todayIso(timezone?: string | null): string {
   const tz = timezone ?? deviceTimeZone()
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+    let fmt = todayFormatters.get(tz)
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' })
+      todayFormatters.set(tz, fmt)
+    }
+    return fmt.format(new Date())
   } catch {
     return new Date().toISOString().slice(0, 10)
   }

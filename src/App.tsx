@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Route, Routes, useNavigate } from 'react-router-dom'
-import { supabase, getHouseholdId, setHouseholdId, findMyHouseholdId } from './lib/supabase'
+import { supabase, getHouseholdId, setHouseholdId, clearHouseholdId, findMyHouseholdId } from './lib/supabase'
 import { useReminderNotifications } from './lib/reminders'
 import { onUpdateAvailable, applyUpdate } from './lib/sw-update'
 import { PibbiProvider } from './lib/pibbi'
@@ -84,26 +84,30 @@ export default function App() {
 
   /**
    * Carga todo el hogar. El try/finally garantiza que "Cargando…" siempre
-   * se apaga: antes, si una query de Promise.all fallaba (red caída),
-   * setLoading(false) nunca corría y la app quedaba atorada en "Cargando...".
+   * se apaga: si una query de Promise.all falla (red caída),
+   * setLoading(false) corre y muestra el mensaje amigable de error.
    */
   async function loadAll() {
     try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData.session?.user
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
       // Si el localStorage está vacío (otro celular, datos borrados, app
       // reinstalada) pero hay sesión, recuperar el hogar desde la BD en vez
       // de mandar al usuario a registrarse de nuevo como si fuera nuevo.
-      let hid: string | null = householdId
+      let hid: string | null = getHouseholdId()
       if (!hid) {
-        const { data: s } = await supabase.auth.getSession()
-        const u = s.session?.user
-        if (!u) return
-        hid = await findMyHouseholdId(u.id)
+        hid = await findMyHouseholdId(user.id)
         if (hid) setHouseholdId(hid)
       }
-      if (!hid) return
-      const { data: session } = await supabase.auth.getSession()
-      const user = session.session?.user
-      if (!user) return
+      if (!hid) {
+        setLoading(false)
+        return
+      }
 
       const [hh, members, accounts, categories, txs, goals, recurring, reminders, settlements] = await Promise.all([
         supabase.from('households').select('*').eq('id', hid).single(),
@@ -145,9 +149,32 @@ export default function App() {
     }
   }
 
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    clearHouseholdId()
+    setData(EMPTY)
+    navigate('/')
+  }
+
   // Notificaciones locales: con el permiso de notificaciones, la app revisa cada
   // 30 s si hay un recordatorio que deba sonar en este celular.
   useReminderNotifications(data.reminders)
+
+  // Escuchar cambios de sesión de Supabase (login, logout, refresh de token)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        clearHouseholdId()
+        setData(EMPTY)
+        setLoading(false)
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        void loadAll()
+      }
+    })
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
 
   // Carga inicial + Realtime: todo cambio se refleja al instante en ambos teléfonos.
   useEffect(() => {
@@ -222,7 +249,7 @@ export default function App() {
         </div>
       )}
       <Routes>
-        <Route path="/" element={<Dashboard data={data} onRefresh={loadAll} />} />
+        <Route path="/" element={<Dashboard data={data} onRefresh={loadAll} onSignOut={handleSignOut} />} />
         <Route path="/movimientos" element={<Movimientos data={data} onRefresh={loadAll} />} />
         <Route path="/presupuesto" element={<Presupuesto data={data} onRefresh={loadAll} />} />
         <Route path="/plan" element={<Plan data={data} onRefresh={loadAll} />} />
@@ -239,11 +266,11 @@ export default function App() {
         +
       </button>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2  ">
+      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2  ">
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
             className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center px-1 text-center text-[11px] leading-tight sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-rosaclaro ' : 'text-humo'}`}>
-            <span className="text-xl">{t.icon}</span>
+            <span className="text-xl" aria-hidden="true">{t.icon}</span>
             <span className="sm:hidden">{t.short}</span>
             <span className="hidden sm:inline">{t.label}</span>
           </NavLink>

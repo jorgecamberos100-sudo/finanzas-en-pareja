@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import type { Transaction, TxType, Visibility } from '../types'
-import { parseAmount, todayIso } from '../lib/format'
+import { formatMoney, parseAmount, todayIso } from '../lib/format'
 import { splitPctFor, type SplitMode } from '../lib/split'
 import { supabase } from '../lib/supabase'
 
@@ -30,6 +30,17 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Cerrar con Escape para accesibilidad de teclado
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  const currency = data.household?.currency ?? 'MXN'
+  const isPaidByMe = paidBy === data.me?.id
   const amount = parseAmount(amountRaw)
   const categories = useMemo(
     () => data.categories.filter((c) => (type === 'ingreso' ? c.group === 'Ingresos' : c.group !== 'Ingresos')),
@@ -74,30 +85,36 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quick-add-title"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+      onClick={onClose}
+    >
       <div className="w-full max-w-lg rounded-t-3xl bg-tarjeta p-5  sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Nuevo movimiento</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="rounded-full bg-elevado px-3 py-1 ">✕</button>
+          <h2 id="quick-add-title" className="text-lg font-bold">Nuevo movimiento</h2>
+          <button onClick={onClose} aria-label="Cerrar modal" className="rounded-full bg-elevado px-3 py-1 ">✕</button>
         </div>
 
         <div className="mb-3 grid grid-cols-3 gap-2">
           {(['gasto', 'ingreso', 'transferencia'] as TxType[]).map((t) => (
-            <button key={t} onClick={() => setType(t)}
+            <button key={t} onClick={() => { setType(t); setError(null) }}
               className={`rounded-xl py-2 text-sm font-semibold capitalize ${type === t ? (t === 'gasto' ? 'bg-[#FF8A8026] text-rojosuave' : t === 'ingreso' ? 'bg-[#4ADE8026] text-verde' : 'bg-[#7DDBC326] text-menta') : 'bg-elevado text-humo '}`}>
               {t}
             </button>
           ))}
         </div>
 
-        <label className="mb-1 block text-sm text-humo">Monto ({data.household?.currency ?? 'MXN'})</label>
-        <input autoFocus inputMode="decimal" value={amountRaw} onChange={(e) => setAmountRaw(e.target.value)}
+        <label className="mb-1 block text-sm text-humo">Monto ({currency})</label>
+        <input autoFocus inputMode="decimal" value={amountRaw} onChange={(e) => { setAmountRaw(e.target.value); setError(null) }}
           placeholder="0.00" className="mb-3 w-full rounded-xl border border-borde p-3 text-2xl font-bold " />
 
         {type !== 'transferencia' && (
           <>
             <label className="mb-1 block text-sm text-humo">Categoría</label>
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="mb-3 w-full rounded-xl border border-borde p-3 ">
+            <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setError(null) }} className="mb-3 w-full rounded-xl border border-borde p-3 ">
               <option value="">Elige una categoría…</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
             </select>
@@ -107,13 +124,13 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
         <div className="mb-3 grid grid-cols-2 gap-2">
           <div>
             <label className="mb-1 block text-sm text-humo">Cuenta</label>
-            <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="w-full rounded-xl border border-borde p-3 ">
+            <select value={accountId} onChange={(e) => { setAccountId(e.target.value); setError(null) }} className="w-full rounded-xl border border-borde p-3 ">
               {data.accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
           <div>
             <label className="mb-1 block text-sm text-humo">Quién pagó</label>
-            <select value={paidBy} onChange={(e) => setPaidBy(e.target.value)} className="w-full rounded-xl border border-borde p-3 ">
+            <select value={paidBy} onChange={(e) => { setPaidBy(e.target.value); setError(null) }} className="w-full rounded-xl border border-borde p-3 ">
               {[data.me, data.partner].filter(Boolean).map((u) => <option key={u!.id} value={u!.id}>{u!.name}</option>)}
             </select>
           </div>
@@ -126,17 +143,23 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
               {(['50/50', 'personalizado', 'absorbe_todo'] as SplitMode[]).map((m) => (
                 <button key={m} onClick={() => setSplitMode(m)}
                   className={`rounded-xl py-2 text-xs font-semibold ${splitMode === m ? 'bg-rosafuerte text-noche' : 'bg-elevado text-humo '}`}>
-                  {m === '50/50' ? '50 / 50' : m === 'personalizado' ? 'Personalizado' : 'Lo absorbo todo'}
+                  {m === '50/50' ? '50 / 50' : m === 'personalizado' ? 'Personalizado' : 'Lo absorbe todo'}
                 </button>
               ))}
             </div>
             {splitMode === 'personalizado' && (
               <div className="mt-2 flex items-center gap-2 text-sm">
-                <input type="range" min={0} max={100} value={customPct} onChange={(e) => setCustomPct(Number(e.target.value))} aria-label="Porcentaje que pago yo" className="flex-1" />
-                <span>Yo pago {customPct}%</span>
+                <input type="range" min={0} max={100} value={customPct} onChange={(e) => setCustomPct(Number(e.target.value))} aria-label="Porcentaje que absorbe quien pagó" className="flex-1" />
+                <span>{isPaidByMe ? 'Yo absorbo' : (data.partner?.name ?? 'Tu pareja') + ' absorbe'} {customPct}%</span>
               </div>
             )}
-            {otherShare > 0 && <p className="mt-1 text-sm text-humo">Tu pareja te debe ${otherShare.toFixed(2)} por este gasto.</p>}
+            {otherShare > 0 && (
+              <p className="mt-1 text-sm text-humo">
+                {isPaidByMe
+                  ? `Tu pareja te debe ${formatMoney(otherShare, currency)} por este gasto.`
+                  : `Le debes a tu pareja ${formatMoney(otherShare, currency)} por este gasto.`}
+              </p>
+            )}
           </div>
         )}
 

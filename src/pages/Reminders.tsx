@@ -47,6 +47,7 @@ export default function Reminders({ data, onRefresh }: Props) {
   const [categoryId, setCategoryId] = useState('')
   const [note, setNote] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   // PIBBI reacciona al crear un aviso y al marcarlo como pagado.
@@ -77,6 +78,8 @@ export default function Reminders({ data, onRefresh }: Props) {
     setCategoryId('')
     setNote('')
     setEditingId(null)
+    setError(null)
+    setMessage(null)
   }
 
   function startEdit(r: Reminder) {
@@ -88,16 +91,19 @@ export default function Reminders({ data, onRefresh }: Props) {
     setCategoryId(r.category_id ?? '')
     setNote(r.note ?? '')
     setEditingId(r.id)
+    setError(null)
+    setMessage(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function saveReminder() {
-    if (!data.household || !data.me) return
-    if (!title.trim()) { setMessage('Escribe el título del recordatorio (ej. Renta).'); return }
-    if (!dueDate) { setMessage('Elige la fecha en que vence.'); return }
+    if (!data.household || !data.me || busy) return
+    if (!title.trim()) { setError('Escribe el título del recordatorio (ej. Renta).'); return }
+    if (!dueDate) { setError('Elige la fecha en que vence.'); return }
     const amountNum = amount.trim() ? parseAmount(amount) : null
-    if (amount.trim() && (!amountNum || amountNum <= 0)) { setMessage('El monto debe ser mayor a $0.'); return }
+    if (amount.trim() && (!amountNum || amountNum <= 0)) { setError('El monto debe ser mayor a $0.'); return }
     setBusy(true)
+    setError(null)
     setMessage(null)
     const payload = {
       household_id: data.household.id,
@@ -111,11 +117,11 @@ export default function Reminders({ data, onRefresh }: Props) {
       note: note.trim() || null,
       timezone: deviceTimeZone(),
     }
-    const { error } = editingId
+    const { error: err } = editingId
       ? await supabase.from('reminders').update(payload).eq('id', editingId)
       : await supabase.from('reminders').insert(payload)
     setBusy(false)
-    if (error) { setMessage(error.message); return }
+    if (err) { setError(`No se pudo guardar el recordatorio: ${err.message}`); return }
     setMessage(editingId ? 'Recordatorio actualizado 🔔' : 'Recordatorio creado 🔔 Te avisaré ese día.')
     if (!editingId) setReaction('apuntando')
     resetForm()
@@ -123,28 +129,45 @@ export default function Reminders({ data, onRefresh }: Props) {
   }
 
   async function markDone(r: Reminder) {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    setMessage(null)
     // Recurrente: no se "termina", avanza a la siguiente fecha.
     const next = r.recurrence !== 'once' ? nextDueDate(r.due_date, r.recurrence) : null
-    const { error } = await supabase
+    const { error: err } = await supabase
       .from('reminders')
       .update(next ? { due_date: next, done_at: new Date().toISOString() } : { is_done: true, done_at: new Date().toISOString() })
       .eq('id', r.id)
-    if (error) { setMessage(error.message); return }
+    setBusy(false)
+    if (err) { setError(`No se pudo marcar como pagado: ${err.message}`); return }
     setMessage(next ? `Pagado. El siguiente quedó para el ${formatDateEs(next)}.` : 'Marcado como pagado ✅')
     setReaction('celebrando')
     onRefresh()
   }
 
   async function reactivate(r: Reminder) {
-    const { error } = await supabase.from('reminders').update({ is_done: false, done_at: null }).eq('id', r.id)
-    if (error) { setMessage(error.message); return }
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    setMessage(null)
+    const { error: err } = await supabase.from('reminders').update({ is_done: false, done_at: null }).eq('id', r.id)
+    setBusy(false)
+    if (err) { setError(`No se pudo reactivar: ${err.message}`); return }
+    setMessage('Recordatorio reactivado 🔔')
     onRefresh()
   }
 
   async function deleteReminder(r: Reminder) {
+    if (busy) return
     if (!confirm(`¿Eliminar el recordatorio “${r.title}”?`)) return
-    const { error } = await supabase.from('reminders').delete().eq('id', r.id)
-    if (error) { setMessage(error.message); return }
+    setBusy(true)
+    setError(null)
+    setMessage(null)
+    const { error: err } = await supabase.from('reminders').delete().eq('id', r.id)
+    setBusy(false)
+    if (err) { setError(`No se pudo eliminar: ${err.message}`); return }
+    setMessage(`Recordatorio “${r.title}” eliminado.`)
     onRefresh()
   }
 
@@ -270,10 +293,10 @@ export default function Reminders({ data, onRefresh }: Props) {
 
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
         <h2 className="mb-2 font-bold">{editingId ? 'Editar recordatorio' : 'Nuevo recordatorio'}</h2>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (ej. Renta, Luz, Netflix)" className="mb-2 w-full rounded-xl border p-2" />
+        <input value={title} onChange={(e) => { setTitle(e.target.value); setError(null) }} placeholder="Título (ej. Renta, Luz, Netflix)" aria-label="Título del recordatorio" className="mb-2 w-full rounded-xl border p-2" />
         <div className="mb-2 grid grid-cols-2 gap-2">
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="Monto (opcional)" className="rounded-xl border p-2" />
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="rounded-xl border p-2 text-sm">
+          <input value={amount} onChange={(e) => { setAmount(e.target.value); setError(null) }} inputMode="decimal" placeholder="Monto (opcional)" aria-label="Monto del recordatorio" className="rounded-xl border p-2" />
+          <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setError(null) }} aria-label="Categoría del recordatorio" className="rounded-xl border p-2 text-sm">
             <option value="">Sin categoría</option>
             {data.categories.map((c) => (
               <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
@@ -282,28 +305,29 @@ export default function Reminders({ data, onRefresh }: Props) {
         </div>
         <div className="mb-2 grid grid-cols-2 gap-2">
           <div>
-            <label className="mb-1 block text-xs text-humo">Fecha de vencimiento</label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full rounded-xl border p-2" />
+            <label htmlFor="reminder-due-date" className="mb-1 block text-xs text-humo">Fecha de vencimiento</label>
+            <input id="reminder-due-date" type="date" value={dueDate} onChange={(e) => { setDueDate(e.target.value); setError(null) }} className="w-full rounded-xl border p-2" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-humo">Hora del aviso</label>
-            <input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} className="w-full rounded-xl border p-2" />
+            <label htmlFor="reminder-due-time" className="mb-1 block text-xs text-humo">Hora del aviso</label>
+            <input id="reminder-due-time" type="time" value={dueTime} onChange={(e) => { setDueTime(e.target.value); setError(null) }} className="w-full rounded-xl border p-2" />
           </div>
         </div>
-        <label className="mb-1 block text-xs text-humo">Se repite</label>
-        <select value={recurrence} onChange={(e) => setRecurrence(e.target.value as ReminderRecurrence)} className="mb-2 w-full rounded-xl border p-2 text-sm">
+        <label htmlFor="reminder-recurrence" className="mb-1 block text-xs text-humo">Se repite</label>
+        <select id="reminder-recurrence" value={recurrence} onChange={(e) => { setRecurrence(e.target.value as ReminderRecurrence); setError(null) }} className="mb-2 w-full rounded-xl border p-2 text-sm">
           {(Object.keys(RECURRENCE_LABELS) as ReminderRecurrence[]).map((k) => (
             <option key={k} value={k}>{RECURRENCE_LABELS[k]}</option>
           ))}
         </select>
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Nota (opcional)" className="mb-2 w-full rounded-xl border p-2" />
+        <input value={note} onChange={(e) => { setNote(e.target.value); setError(null) }} placeholder="Nota (opcional)" aria-label="Nota adicional" className="mb-2 w-full rounded-xl border p-2" />
         <div className="flex gap-2">
           <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-rosafuerte py-2 font-extrabold tracking-wide text-noche disabled:opacity-50">
-            {editingId ? 'Guardar cambios' : 'Crear recordatorio 🔔'}
+            {busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear recordatorio 🔔'}
           </button>
           {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}
         </div>
-        {message && <p className="mt-2 text-sm text-verde ">{message}</p>}
+        {error && <div role="alert" className="mt-2 text-sm text-rojosuave">⚠️ {error}</div>}
+        {message && <div role="status" className="mt-2 text-sm text-verde">✅ {message}</div>}
         {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
       </section>
 
