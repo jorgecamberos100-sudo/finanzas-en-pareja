@@ -126,10 +126,17 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
     saludo && saludo.length > 0
       ? saludo.map((texto, i) => ({ id: `saludo-${i}`, role: 'assistant' as const, text: texto }))
       : [
+          // Una idea por burbuja, como en Muse: la acción primero y la
+          // tranquilidad después, en vez de un muro de texto.
           {
-            id: 'bienvenida',
+            id: 'bienvenida-1',
             role: 'assistant',
-            text: 'Escríbeme un gasto, mándame la foto de un ticket o de tu libreta, o dicta una nota de voz. Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo. La foto y la voz se procesan gratis en tu teléfono. Y si quieres un aviso, dime “recuérdame pagar la renta el 1ro”.',
+            text: 'Escríbeme un gasto, mándame la foto de un ticket o dicta una nota de voz.',
+          },
+          {
+            id: 'bienvenida-2',
+            role: 'assistant',
+            text: 'Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo.',
           },
         ],
   )
@@ -623,7 +630,7 @@ export default function ChatCapture({ data, onSave, onRefresh, saludo, responder
   // Las sugerencias son la pregunta inicial de PIBBI, como las cajas de
   // opciones de Muse: se muestran solo antes del primer mensaje del
   // usuario y luego desaparecen (lo tocado queda en la historia).
-  const mensajesIniciales = saludo && saludo.length > 0 ? saludo.length : 1
+  const mensajesIniciales = saludo && saludo.length > 0 ? saludo.length : 2
   const sinConversar = messages.length <= mensajesIniciales
 
   return (

@@ -19,7 +19,7 @@ import {
   unsubscribePush,
 } from '../lib/reminders'
 import Mascota from '../components/Mascota'
-import { IconoBasura } from '../components/ui'
+import { Confirmar, IconoBasura } from '../components/ui'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
@@ -71,6 +71,10 @@ export default function Reminders({ data, onRefresh }: Props) {
   const urgent = pending.filter((r) => reminderStatus(r) === 'overdue' || reminderStatus(r) === 'today' || reminderStatus(r) === 'tomorrow')
   const upcoming = pending.filter((r) => reminderStatus(r) === 'upcoming')
   const done = sorted.filter((r) => r.is_done).slice(0, 10)
+  // La lista manda: el formulario de creación vive plegado detrás de un
+  // botón y solo se abre solo cuando no hay pendientes.
+  const [formAbierto, setFormAbierto] = useState(pending.length === 0)
+  const [avisoAEliminar, setAvisoAEliminar] = useState<Reminder | null>(null)
 
   function resetForm() {
     setTitle('')
@@ -83,6 +87,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     setEditingId(null)
     setError(null)
     setMessage(null)
+    setFormAbierto(false)
   }
 
   function startEdit(r: Reminder) {
@@ -96,6 +101,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     setEditingId(r.id)
     setError(null)
     setMessage(null)
+    setFormAbierto(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -125,9 +131,10 @@ export default function Reminders({ data, onRefresh }: Props) {
       : await supabase.from('reminders').insert(payload)
     setBusy(false)
     if (err) { setError(`No se pudo guardar el recordatorio: ${err.message}`); return }
-    setMessage(editingId ? 'Recordatorio actualizado' : 'Recordatorio creado. Te avisaré ese día.')
-    if (!editingId) setReaction('apuntando')
+    const eraEdicion = Boolean(editingId)
     resetForm()
+    setMessage(eraEdicion ? 'Recordatorio actualizado' : 'Recordatorio creado. Te avisaré ese día.')
+    if (!eraEdicion) setReaction('apuntando')
     onRefresh()
   }
 
@@ -163,7 +170,6 @@ export default function Reminders({ data, onRefresh }: Props) {
 
   async function deleteReminder(r: Reminder) {
     if (busy) return
-    if (!confirm(`¿Eliminar el recordatorio “${r.title}”?`)) return
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -249,7 +255,7 @@ export default function Reminders({ data, onRefresh }: Props) {
               {r.recurrence === 'once' ? 'Marcar pagado' : 'Pagado · siguiente'}
             </button>
             <button onClick={() => startEdit(r)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Editar</button>
-            <button onClick={() => void deleteReminder(r)} aria-label={`Eliminar ${r.title}`} className="rounded-full bg-elevado p-2 text-sm"><IconoBasura className="h-4 w-4" /></button>
+            <button onClick={() => setAvisoAEliminar(r)} aria-label={`Eliminar ${r.title}`} className="rounded-full bg-elevado p-2 text-sm"><IconoBasura className="h-4 w-4" /></button>
           </div>
         )}
         {r.is_done && (
@@ -264,35 +270,25 @@ export default function Reminders({ data, onRefresh }: Props) {
       <PibbiHeader
         pose={PAGE_PIBBI_POSES.recordatorios}
         title="Recordatorios"
-        subtitle="Avisos de pagos futuros para los dos. También puedes escribir en el Chat “recuérdame pagar la renta el 1ro” y se crea aquí."
+        subtitle="Avisos de pagos futuros para los dos."
+        className="-mx-4 -mt-4 px-4 pb-3 pt-3"
       />
 
-      <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
-        <h2 className="font-bold">Notificaciones en este celular</h2>
-        <p className="mb-2 text-sm text-humo">
-          Con la app abierta o instalada te aviso a la hora del recordatorio. Para avisar aunque la app esté cerrada, activa también el push (gratis, con claves VAPID).
-        </p>
-        <p className="mb-2 text-sm">
-          Notificaciones: <strong>{perm === 'granted' ? 'activadas' : perm === 'denied' ? 'bloqueadas en el navegador' : perm === 'unsupported' ? 'no soportadas aquí' : 'sin activar'}</strong>
-          {pushSupported() && <> · Push: <strong>{pushOn ? 'activado' : 'apagado'}</strong></>}
-        </p>
-        {notificationsSupported() && perm !== 'granted' && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            Activar notificaciones
-          </button>
-        )}
-        {perm === 'granted' && pushSupported() && !pushOn && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            {pushBusy ? 'Activando…' : 'Activar push'}
-          </button>
-        )}
-        {perm === 'granted' && pushOn && (
-          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-elevado py-2 text-sm font-bold ">
-            Desactivar push
-          </button>
-        )}
-      </section>
+      {/* Avisos de error/éxito y la reacción de PIBBI viven fuera del
+          formulario para que se vean también cuando está plegado. */}
+      {error && <div role="alert" className="rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">{error}</div>}
+      {message && <div role="status" className="rounded-2xl bg-verde/10 p-3 text-sm text-verde">{message}</div>}
+      {reaction && <div><PibbiReaction contexto={reaction} /></div>}
 
+      {/* La lista manda: el formulario vive plegado detrás de este botón
+          y solo se abre solo cuando no hay pendientes. */}
+      {!formAbierto && (
+        <button onClick={() => setFormAbierto(true)} className="w-full rounded-full bg-dorado py-3 font-extrabold tracking-wide text-tinta">
+          + Nuevo recordatorio
+        </button>
+      )}
+
+      {formAbierto && (
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
         <h2 className="mb-2 font-bold">{editingId ? 'Editar recordatorio' : 'Nuevo recordatorio'}</h2>
         <input value={title} onChange={(e) => { setTitle(e.target.value); setError(null) }} placeholder="Título (ej. Renta, Luz, Netflix)" aria-label="Título del recordatorio" className="mb-2 w-full rounded-xl border p-2" />
@@ -326,12 +322,9 @@ export default function Reminders({ data, onRefresh }: Props) {
           <button onClick={() => void saveReminder()} disabled={busy} className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
             {busy ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear recordatorio'}
           </button>
-          {editingId && <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>}
+          <button onClick={resetForm} className="rounded-xl bg-elevado px-3 py-2 font-semibold ">Cancelar</button>
         </div>
-        {error && <div role="alert" className="mt-2 text-sm text-rojosuave">{error}</div>}
-        {message && <div role="status" className="mt-2 text-sm text-verde">{message}</div>}
-        {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
-      </section>
+      </section>)}
 
       {data.recurring.length > 0 && (
         <section>
@@ -353,7 +346,7 @@ export default function Reminders({ data, onRefresh }: Props) {
 
       <section>
         <h2 className="mb-2 font-bold">Próximos y vencidos</h2>
-        {urgent.length === 0 && upcoming.length === 0 && <p className="text-sm text-humo">Sin recordatorios pendientes. Crea el primero arriba o desde el Chat.</p>}
+        {urgent.length === 0 && upcoming.length === 0 && <p className="text-sm text-humo">Sin recordatorios pendientes. Crea el primero con el botón de arriba o desde el Chat.</p>}
         {urgent.map(card)}
         {upcoming.map(card)}
       </section>
@@ -372,6 +365,46 @@ export default function Reminders({ data, onRefresh }: Props) {
           ))}
         </section>
       )}
+      {/* Notificaciones al final, no al principio: la lista es lo que
+          se viene a ver; los ajustes de aviso viven abajo, como en las
+          apps buenas. El permiso solo se pide con el botón, nunca al
+          abrir la app. */}
+      <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
+        <h2 className="font-bold">Notificaciones en este celular</h2>
+        <p className="mb-2 text-sm text-humo">
+          Con la app abierta o instalada te aviso a la hora del recordatorio. Para avisar aunque la app esté cerrada, activa también el push (gratis, con claves VAPID).
+        </p>
+        <p className="mb-2 text-sm">
+          Notificaciones: <strong>{perm === 'granted' ? 'activadas' : perm === 'denied' ? 'bloqueadas en el navegador' : perm === 'unsupported' ? 'no soportadas aquí' : 'sin activar'}</strong>
+          {pushSupported() && <> · Push: <strong>{pushOn ? 'activado' : 'apagado'}</strong></>}
+        </p>
+        {notificationsSupported() && perm !== 'granted' && (
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
+            Activar notificaciones
+          </button>
+        )}
+        {perm === 'granted' && pushSupported() && !pushOn && (
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
+            {pushBusy ? 'Activando…' : 'Activar push'}
+          </button>
+        )}
+        {perm === 'granted' && pushOn && (
+          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-elevado py-2 text-sm font-bold ">
+            Desactivar push
+          </button>
+        )}
+      </section>
+
+      {/* Confirmación dentro de la app (no el diálogo del navegador). */}
+      <Confirmar
+        abierto={avisoAEliminar !== null}
+        titulo="¿Eliminar este recordatorio?"
+        mensaje={avisoAEliminar ? `Se borrará el recordatorio “${avisoAEliminar.title}”.` : ''}
+        textoConfirmar="Eliminar"
+        peligro
+        onCancelar={() => setAvisoAEliminar(null)}
+        onConfirmar={() => { const r = avisoAEliminar; setAvisoAEliminar(null); if (r) void deleteReminder(r) }}
+      />
     </main>
   )
 }

@@ -368,6 +368,12 @@ export default function Onboarding({ onDone }: Props) {
                 <>
                   <h2 className="font-display text-xl font-bold">Crea tu cuenta</h2>
                   <p className="mb-4 mt-1 text-sm text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
+                  {/* Google primero: es el camino rápido (sin contraseña) y
+                      va antes del formulario, como en las apps buenas. */}
+                  <GoogleSignInButton disabled={busy} onError={setError} />
+                  <div className="my-4 flex items-center gap-3 text-sm text-humo">
+                    <span className="h-px flex-1 bg-borde" /><span>o continúa con correo</span><span className="h-px flex-1 bg-borde" />
+                  </div>
                   <div className="space-y-3.5">
                     <Campo etiqueta="Tu nombre" icono={<IconoUsuario className="h-4 w-4 text-humo" />} value={name}
                       onChange={(e) => { setName(e.target.value); limpiarErrorCampo('nombre') }}
@@ -385,7 +391,6 @@ export default function Onboarding({ onDone }: Props) {
                       Continuar <IconoFlechaDer className="h-4 w-4" />
                     </Boton>
                   </div>
-                  <GoogleSignInButton disabled={busy} onError={setError} />
                   <Boton variante="fantasma" className="mt-2 w-full" onClick={() => { setVista('login'); setError(null); setErrores({}); setAviso(null) }}>
                     ¿Ya tienes cuenta? Inicia sesión
                   </Boton>
@@ -395,8 +400,13 @@ export default function Onboarding({ onDone }: Props) {
               {vista === 'login' && (
                 <>
                   <h2 className="font-display text-xl font-bold">Inicia sesión</h2>
-                  <p className="mb-4 mt-1 text-sm text-humo">Entra con el correo y la contraseña con los que creaste tu cuenta.</p>
+                  <p className="mb-4 mt-1 text-sm text-humo">Entra con Google o con tu correo y contraseña.</p>
                   {aviso && <div className="mb-4"><Alerta tono="info">{aviso}</Alerta></div>}
+                  {/* Google primero, como en el registro. */}
+                  <GoogleSignInButton disabled={busy} onError={setError} />
+                  <div className="my-4 flex items-center gap-3 text-sm text-humo">
+                    <span className="h-px flex-1 bg-borde" /><span>o continúa con correo</span><span className="h-px flex-1 bg-borde" />
+                  </div>
                   <div className="space-y-3.5">
                     <Campo etiqueta="Correo electrónico" icono={<IconoCorreo className="h-4 w-4 text-humo" />} type="email" value={email}
                       onChange={(e) => { setEmail(e.target.value); limpiarErrorCampo('correo') }}
@@ -414,7 +424,6 @@ export default function Onboarding({ onDone }: Props) {
                       Entrar <IconoFlechaDer className="h-4 w-4" />
                     </Boton>
                   </div>
-                  <GoogleSignInButton disabled={busy} onError={setError} />
                   <Boton variante="fantasma" className="mt-2 w-full" onClick={() => { setVista('registro'); setError(null); setErrores({}); setAviso(null) }}>
                     ¿No tienes cuenta? Crea una
                   </Boton>
@@ -482,7 +491,7 @@ export default function Onboarding({ onDone }: Props) {
             />
             <Tarjeta className="mb-4 border-2 border-foco p-4">
               <p className="flex items-center gap-2 font-display text-lg font-bold"><IconoUsuario className="h-5 w-5 text-doradotexto" /> Solo yo por ahora</p>
-              <p className="mb-3 mt-1 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
+              <p className="mb-3 mt-1 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde el menú (···) de la app.</p>
               <Boton onClick={() => void createHousehold(true)} cargando={busy} className="w-full">Usar solo por ahora</Boton>
             </Tarjeta>
 
@@ -552,13 +561,20 @@ export default function Onboarding({ onDone }: Props) {
 
         {vista === 'registro' && step === 4 && (
           <section>
-            <h1 className="font-display text-2xl font-bold">Viste a PIBBI</h1>
-            <p className="mb-4 mt-1 text-humo">Elige la prenda de tu PIBBI. Puedes cambiarla cuando quieras desde Inicio. Este paso es opcional.</p>
-            <Tarjeta className="mb-4 p-4">
-              <PibbiDresser title="Prendas" />
-            </Tarjeta>
-            <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
+            {/* Primero lo útil, luego lo divertido: antes la ropa de PIBBI
+                iba antes de crear las cuentas. La acción principal
+                (crear cuentas y categorías) va primero; vestir a PIBBI
+                es opcional y queda abajo. */}
+            <h1 className="font-display text-2xl font-bold">Tus cuentas y categorías</h1>
+            <p className="mb-4 mt-1 text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
             <Boton onClick={() => void seedAccountsAndCategories()} cargando={busy} className="w-full">Crear mis cuentas y terminar</Boton>
+            <div className="mt-6">
+              <h2 className="mb-2 font-bold">Viste a PIBBI (opcional)</h2>
+              <p className="mb-3 text-sm text-humo">Elige la prenda de tu PIBBI. Puedes cambiarla cuando quieras desde el menú (···) de la app.</p>
+              <Tarjeta className="p-4">
+                <PibbiDresser title="Prendas" />
+              </Tarjeta>
+            </div>
           </section>
         )}
 
@@ -566,8 +582,8 @@ export default function Onboarding({ onDone }: Props) {
           <section className="text-center">
             <Mascota pose="celebrando" marco="circulo" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-5 h-24 w-24" />
             <h1 className="font-display text-2xl font-extrabold">¡Listo!</h1>
-            <p className="mb-5 mt-1 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
-            <Boton onClick={onDone} className="w-full">Ir al inicio <IconoFlechaDer className="h-4 w-4" /></Boton>
+            <p className="mb-5 mt-1 text-humo">Tu hogar está creado. Escríbele a PIBBI tu primer gasto, mándale la foto de un ticket o dicta una nota de voz.</p>
+            <Boton onClick={onDone} className="w-full">Ir al chat con PIBBI <IconoFlechaDer className="h-4 w-4" /></Boton>
           </section>
         )}
       </div>

@@ -8,7 +8,7 @@ import Paywall from '../components/Paywall'
 import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
-import { ChipCategoria, IconoAlerta, IconoBasura, IconoBuscar, IconoReloj } from '../components/ui'
+import { ChipCategoria, Confirmar, IconoAlerta, IconoBasura, IconoBuscar, IconoCheck, IconoReloj } from '../components/ui'
 
 interface Props { data: AppData; onRefresh: () => void }
 
@@ -21,6 +21,8 @@ export default function Movimientos({ data, onRefresh }: Props) {
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
+  const [txMensaje, setTxMensaje] = useState<string | null>(null)
+  const [txAEliminar, setTxAEliminar] = useState<{ id: string; merchant: string | null; amount: number } | null>(null)
   // Motivo del paywall (null = cerrado).
   const [paywall, setPaywall] = useState<string | null>(null)
 
@@ -78,26 +80,29 @@ export default function Movimientos({ data, onRefresh }: Props) {
     if (approvingId) return
     setApprovingId(id)
     setTxError(null)
+    setTxMensaje(null)
     const { error } = await supabase.from('transactions').update({ review_status: 'aprobado' }).eq('id', id)
     setApprovingId(null)
     if (error) {
       setTxError(`No se pudo aprobar: ${error.message}`)
       return
     }
+    setTxMensaje('Movimiento aprobado.')
     onRefresh()
   }
 
-  async function deleteTx(id: string, merchant: string | null, amount: number) {
+  async function deleteTx(id: string) {
     if (deletingId) return
-    if (!confirm(`¿Eliminar este movimiento${merchant ? ` de "${merchant}"` : ''} por ${formatMoney(amount, currency)}?`)) return
     setDeletingId(id)
     setTxError(null)
+    setTxMensaje(null)
     const { error } = await supabase.from('transactions').delete().eq('id', id)
     setDeletingId(null)
     if (error) {
       setTxError(`No se pudo eliminar el movimiento: ${error.message}`)
       return
     }
+    setTxMensaje('Movimiento eliminado.')
     onRefresh()
   }
 
@@ -124,7 +129,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
 
   return (
     <main className="space-y-5 p-5">
-      <PibbiHeader pose={PAGE_PIBBI_POSES.movimientos} title="Movimientos">
+      <PibbiHeader pose={PAGE_PIBBI_POSES.movimientos} title="Movimientos" className="-mx-5 -mt-5 px-5 pb-3 pt-3">
         <button onClick={() => setShowImport((v) => !v)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Importar CSV</button>
         <button onClick={exportCsv} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Exportar CSV</button>
       </PibbiHeader>
@@ -132,6 +137,11 @@ export default function Movimientos({ data, onRefresh }: Props) {
       {txError && (
         <div role="alert" className="flex items-start gap-2 rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
           <IconoAlerta className="mt-0.5 h-4 w-4 shrink-0" />{txError}
+        </div>
+      )}
+      {txMensaje && (
+        <div role="status" className="flex items-start gap-2 rounded-2xl bg-verde/10 p-3 text-sm text-verde">
+          <IconoCheck className="mt-0.5 h-4 w-4 shrink-0" />{txMensaje}
         </div>
       )}
 
@@ -182,7 +192,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
           {pending.map((tx) => (
             <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
               isDeleting={deletingId === tx.id}
-              onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)}
+              onDelete={() => setTxAEliminar({ id: tx.id, merchant: tx.merchant, amount: tx.amount })}
               action={<button onClick={() => approve(tx.id)} disabled={approvingId === tx.id} className="rounded-lg bg-dorado px-3 py-1 text-xs font-bold text-tinta disabled:opacity-50">{approvingId === tx.id ? '…' : 'Aprobar'}</button>} />
           ))}
         </section>
@@ -202,7 +212,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
               <Mascota pose="ahorrando" alt="PIBBI sentado con una moneda" className="h-16 w-16 shrink-0" />
               <div>
                 <p className="font-bold">Aún no hay movimientos</p>
-                <p className="text-sm text-humo">Toca “+” para registrar el primero, o mándale a PIBBI la foto de un ticket en el Chat.</p>
+                <p className="text-sm text-humo">Escríbele a PIBBI en el Chat o mándale la foto de un ticket.</p>
               </div>
             </div>
           )
@@ -210,7 +220,7 @@ export default function Movimientos({ data, onRefresh }: Props) {
         {recientes.map((tx) => (
           <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
             isDeleting={deletingId === tx.id}
-            onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)} />
+            onDelete={() => setTxAEliminar({ id: tx.id, merchant: tx.merchant, amount: tx.amount })} />
         ))}
         {antiguos.length > 0 && (
           <div className="rounded-2xl border border-foco/60 bg-doradotenue p-4">
@@ -229,6 +239,17 @@ export default function Movimientos({ data, onRefresh }: Props) {
       </section>
 
       {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
+
+      {/* Confirmación dentro de la app (no el diálogo del navegador). */}
+      <Confirmar
+        abierto={txAEliminar !== null}
+        titulo="¿Eliminar este movimiento?"
+        mensaje={txAEliminar ? `Se borrará el movimiento${txAEliminar.merchant ? ` de “${txAEliminar.merchant}”` : ''} por ${formatMoney(txAEliminar.amount, currency)}.` : ''}
+        textoConfirmar="Eliminar"
+        peligro
+        onCancelar={() => setTxAEliminar(null)}
+        onConfirmar={() => { const t = txAEliminar; setTxAEliminar(null); if (t) void deleteTx(t.id) }}
+      />
     </main>
   )
 }

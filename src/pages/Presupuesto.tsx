@@ -121,6 +121,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       <PibbiHeader
         pose={PAGE_PIBBI_POSES.presupuesto}
         title="Presupuesto"
+        className="-mx-5 -mt-5 px-5 pb-3 pt-3"
         subtitle={<>Plan {defPlan(data.plan).nombre} · {budgeted.length} de {Number.isFinite(defPlan(data.plan).sobresMax) ? defPlan(data.plan).sobresMax : '∞'} sobres</>}
       />
 
@@ -187,7 +188,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
           onEditLimit={startEditLimit}
         />
       ))}
-      {budgeted.length === 0 && <p className="text-sm text-humo">Sin sobres todavía. Termina el onboarding para crear las categorías.</p>}
+      {budgeted.length === 0 && <p className="text-sm text-humo">Todavía no tienes sobres. Asigna presupuesto a una categoría de abajo.</p>}
 
       {unbudgeted.length > 0 && (
         <section className="rounded-2xl border border-borde bg-tarjeta p-4">

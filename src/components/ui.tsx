@@ -6,7 +6,7 @@
  * - Tarjetas con sombra por tema, esqueletos de carga y logo con PIBBI.
  * Todo usa los tokens del tema (noche/día): funciona igual en ambos.
  */
-import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
+import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
 import Mascota from './Mascota'
 
 // ---------- Iconos SVG ----------
@@ -132,6 +132,39 @@ export function Boton({ variante = 'primario', tamano = 'md', cargando = false, 
       {cargando && <Spinner className="h-4 w-4" />}
       {children}
     </button>
+  )
+}
+
+// ---------- Confirmación dentro de la app (nunca confirm() del navegador) ----------
+// Las apps buenas confirman dentro de la app, con su propio diseño: el
+// diálogo nativo del navegador es lo que hace sentir "página web".
+export function Confirmar({ abierto, titulo, mensaje, textoConfirmar = 'Confirmar', textoCancelar = 'Cancelar', peligro = false, onConfirmar, onCancelar }: {
+  abierto: boolean; titulo: string; mensaje: string; textoConfirmar?: string; textoCancelar?: string; peligro?: boolean; onConfirmar: () => void; onCancelar: () => void
+}) {
+  useEffect(() => {
+    if (!abierto) return
+    function onKeyDown(e: KeyboardEvent) { if (e.key === 'Escape') onCancelar() }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [abierto, onCancelar])
+  if (!abierto) return null
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={titulo}
+      onClick={onCancelar}
+    >
+      <div className="w-full max-w-sm rounded-t-3xl bg-tarjeta p-5 shadow-elevado sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold">{titulo}</h2>
+        <p className="mt-1 text-sm text-humo">{mensaje}</p>
+        <div className="mt-4 flex gap-2">
+          <Boton variante="secundario" className="flex-1" onClick={onCancelar}>{textoCancelar}</Boton>
+          <Boton variante={peligro ? 'peligro' : 'primario'} className="flex-1" onClick={onConfirmar}>{textoConfirmar}</Boton>
+        </div>
+      </div>
+    </div>
   )
 }
 

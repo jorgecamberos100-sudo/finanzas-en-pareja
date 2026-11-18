@@ -11,7 +11,7 @@ import ChatCapture from '../components/ChatCapture'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
 import ThemeToggle from '../components/ThemeToggle'
-import { Alerta, Boton, IconoBalanza, IconoCheck, IconoCopiar, IconoMenu, IconoPuntos, IconoRopa, IconoSalir, IconoX, Tarjeta } from '../components/ui'
+import { Alerta, Boton, Confirmar, IconoBalanza, IconoCorazon, IconoPuntos, IconoRopa, IconoSalir, Tarjeta } from '../components/ui'
 
 interface Props {
   data: AppData
@@ -30,11 +30,14 @@ interface Props {
 export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
   const navigate = useNavigate()
   const [vestidor, setVestidor] = useState(false)
-  // Menú "···" estilo Muse: vestir, tema y salir viven ahí, no
-  // amontonados en el encabezado. El encabezado queda mínimo: dos
-  // botones redondos, como en Muse (menú a la izquierda, "···" a la
-  // derecha), sin avatar chiquito ni píldora de Salir.
+  // Menú "···" estilo Muse: es el Perfil y ajustes de la app. El
+  // encabezado queda mínimo: un solo botón "···" a la derecha (antes
+  // había dos botones que abrían el mismo menú). La invitación a la
+  // pareja vive aquí, en su sección, no en el chat.
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const [invitarAbierto, setInvitarAbierto] = useState(false)
+  const [confirmarSalir, setConfirmarSalir] = useState(false)
+  const [confirmarLiquidar, setConfirmarLiquidar] = useState(false)
   // PIBBI "trabajando": el héroe muestra "escribiendo…" mientras el
   // chat le pasa el estado (ver onEscribiendo en ChatCapture).
   const [escribiendo, setEscribiendo] = useState(false)
@@ -42,16 +45,6 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
   const [copyFailed, setCopyFailed] = useState(false)
   const [liquidando, setLiquidando] = useState(false)
   const [liquidarError, setLiquidarError] = useState<string | null>(null)
-  // La invitación no es una tarjeta gigante en el chat: es una tira
-  // compacta que se puede cerrar y no vuelve (se guarda por código).
-  const inviteCode = data.household?.invite_code ?? ''
-  const [invitarOculto, setInvitarOculto] = useState(() => {
-    try { return inviteCode ? localStorage.getItem(`fp-invitar-${inviteCode}`) === '1' : false } catch { return false }
-  })
-  function ocultarInvitar() {
-    setInvitarOculto(true)
-    try { if (inviteCode) localStorage.setItem(`fp-invitar-${inviteCode}`, '1') } catch { /* sin almacenamiento */ }
-  }
 
   const currency = data.household?.currency ?? 'MXN'
   const ctx = useMemo(
@@ -84,7 +77,6 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
 
   async function liquidar() {
     if (!mutual || !data.me || !data.household || liquidando) return
-    if (!confirm(`¿Confirmas que ${debtorName} le pagó ${formatMoney(mutual.amount, currency)} a ${creditorName}? Se registrará la liquidación.`)) return
     setLiquidando(true)
     setLiquidarError(null)
     // La liquidación es una transferencia entre personas: se registra como
@@ -123,37 +115,57 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
 
   return (
     <main className="flex min-h-[calc(100dvh-7rem)] flex-col">
-      {/* Encabezado mínimo estilo Muse: dos botones redondos (menú a la
-          izquierda, "···" a la derecha) y nada más. Vestir, tema y salir
-          viven en el menú; el avatar grande y centrado es el héroe de
-          abajo, no un circulito a la izquierda. */}
-      <header className="sticky top-0 z-30 border-b border-borde/60 bg-noche/90 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-4 py-2">
+      {/* Encabezado mínimo estilo Muse: un solo botón "···" a la
+          derecha, y el héroe de PIBBI DENTRO del encabezado fijo:
+          como en Muse, el avatar queda fijo solapando la parte
+          superior y NO se desplaza con la conversación al hacer
+          scroll. Antes el héroe se iba al bajar y PIBBI desaparecía. */}
+      <header className="sticky top-0 z-50 border-b border-borde/60 bg-noche/90 backdrop-blur-xl">
+        <div className="flex items-center justify-end px-4 py-2">
           <button
             type="button"
             onClick={() => setMenuAbierto((v) => !v)}
-            aria-label="Menú"
-            aria-expanded={menuAbierto}
-            className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95"
-          >
-            <IconoMenu className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMenuAbierto((v) => !v)}
-            aria-label="Más opciones"
+            aria-label="Perfil y ajustes"
             aria-expanded={menuAbierto}
             className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95"
           >
             <IconoPuntos className="h-5 w-5" />
           </button>
         </div>
-      </header>
 
-      {menuAbierto && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setMenuAbierto(false)} aria-hidden="true" />
-          <div className="fixed inset-x-4 top-16 z-50 mx-auto max-w-lg rounded-[28px] border border-borde bg-tarjeta p-2 shadow-elevado" role="menu">
+        {/* Héroe estilo Muse: PIBBI grande y centrado arriba del chat,
+            con su nombre y su estado en una píldora debajo. Círculo
+            h-24 (96 px CSS; el de Muse mide ~85 px en un Galaxy, este
+            es su equivalente con la imagen HD, nítida). Al vivir en el
+            encabezado fijo, PIBBI siempre está en pantalla. */}
+        <div className="flex flex-col items-center px-4 pb-3 pt-1 text-center">
+          <Mascota pose="frente" marco="circulo" className="h-24 w-24" />
+          <div className="mt-3 rounded-full border border-borde bg-elevado px-4 py-2 shadow-tarjeta">
+            <p className="font-bold leading-tight">PIBBI</p>
+            <p className="flex items-center justify-center gap-1.5 text-xs text-humo">
+              <span className={`h-1.5 w-1.5 rounded-full ${escribiendo ? 'bg-doradotexto' : 'bg-verde'}`} aria-hidden="true" />
+              {escribiendo ? 'escribiendo…' : 'En línea'}
+            </p>
+          </div>
+        </div>
+
+        {/* El panel del menu vive dentro del encabezado fijo y se ancla
+            justo debajo de el (top-full): antes abria en top-16 y con
+            el heroe fijo tapaba a PIBBI. */}
+        {menuAbierto && (
+          <div className="absolute inset-x-4 top-full z-50 mx-auto mt-2 max-w-lg rounded-[28px] border border-borde bg-tarjeta p-2 shadow-elevado" role="menu" aria-label="Perfil y ajustes">
+            {/* Perfil: quién eres, como en WhatsApp. */}
+            <div className="flex items-center gap-3 px-3 py-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dorado text-lg font-extrabold text-white" aria-hidden="true">
+                {(data.me?.name ?? 'Y').trim().charAt(0).toUpperCase() || 'Y'}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-bold text-crema">{data.me?.name ?? 'Yo'}{data.partner ? ` y ${nombreParaSaludo(data.partner.name)}` : ''}</p>
+                <p className="truncate text-xs text-humo">{data.me?.email ?? ''}</p>
+              </div>
+            </div>
+
+            <p className="px-3 pb-1 pt-2 text-xs font-bold text-humo">PIBBI</p>
             <button
               type="button"
               role="menuitem"
@@ -162,39 +174,60 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
             >
               <IconoRopa className="h-5 w-5 text-doradotexto" /> Vestir a PIBBI
             </button>
+
+            {/* La invitación vive aquí, en su sección, no al principio
+                del chat: solo se ve cuando no hay pareja. El enlace
+                nunca se muestra (se partía a mitad de palabra): solo el
+                código y el botón de copiar. */}
+            {!data.partner && data.household && (
+              <>
+                <p className="px-3 pb-1 pt-2 text-xs font-bold text-humo">Hogar</p>
+                <button
+                  type="button"
+                  role="menuitem"
+                  aria-expanded={invitarAbierto}
+                  onClick={() => setInvitarAbierto((v) => !v)}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left font-semibold text-crema transition active:scale-[0.98]"
+                >
+                  <IconoCorazon className="h-5 w-5 text-doradotexto" /> Invitar a tu pareja
+                </button>
+                {invitarAbierto && (
+                  <div className="mx-1 mb-1 rounded-2xl bg-elevado p-3 text-center">
+                    <p className="text-xs text-humo">Tu pareja crea su cuenta y se une con este código.</p>
+                    <p className="mt-1 font-display text-2xl font-extrabold tracking-[0.3em] text-doradotexto">{data.household.invite_code}</p>
+                    <Boton variante="secundario" tamano="sm" className="mt-2 w-full" onClick={() => void copyInvite()}>
+                      {copied ? '¡Copiado!' : 'Copiar código y enlace'}
+                    </Boton>
+                    {copyFailed && <p role="alert" className="mt-2 text-xs text-doradotexto">No se pudo copiar: el código es {data.household.invite_code}, cópialo a mano.</p>}
+                  </div>
+                )}
+              </>
+            )}
+
+            <p className="px-3 pb-1 pt-2 text-xs font-bold text-humo">App</p>
             <div className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 font-semibold text-crema">
               <span className="flex-1">Cambiar tema</span>
               <ThemeToggle className="rounded-full border border-borde bg-elevado p-2.5 text-crema transition active:scale-95" />
             </div>
+
+            <p className="px-3 pb-1 pt-2 text-xs font-bold text-humo">Sesión</p>
             {onSignOut && (
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => { setMenuAbierto(false); if (confirm('¿Cerrar sesión en este dispositivo?')) onSignOut() }}
+                onClick={() => { setMenuAbierto(false); setConfirmarSalir(true) }}
                 className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left font-semibold text-rojosuave transition active:scale-[0.98]"
               >
                 <IconoSalir className="h-5 w-5" /> Cerrar sesión
               </button>
             )}
           </div>
-        </>
-      )}
+        )}
+      </header>
 
-      {/* Héroe estilo Muse: PIBBI grande y centrado arriba del chat, con
-          su nombre y su estado en una píldora debajo. Círculo h-24
-          (96 px CSS; el de Muse mide ~85 px en un Galaxy, este es su
-          equivalente con la imagen HD, nítida). Se desplaza con la
-          conversación, como el avatar de Muse. */}
-      <div className="flex flex-col items-center px-4 pb-1 pt-4 text-center">
-        <Mascota pose="frente" marco="circulo" className="h-24 w-24" />
-        <div className="mt-3 rounded-full border border-borde bg-elevado px-4 py-2 shadow-tarjeta">
-          <p className="font-bold leading-tight">PIBBI</p>
-          <p className="flex items-center justify-center gap-1.5 text-xs text-humo">
-            <span className={`h-1.5 w-1.5 rounded-full ${escribiendo ? 'bg-doradotexto' : 'bg-verde'}`} aria-hidden="true" />
-            {escribiendo ? 'escribiendo…' : 'En línea'}
-          </p>
-        </div>
-      </div>
+      {menuAbierto && (
+        <div className="fixed inset-0 z-40" onClick={() => setMenuAbierto(false)} aria-hidden="true" />
+      )}
 
       {vestidor && (
         <div className="px-4 pt-3">
@@ -204,50 +237,18 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
         </div>
       )}
 
-      {/* Deuda mutua: una sola acción clara, no una pila de tarjetas. */}
+      {/* Deuda mutua: una sola acción clara, no una pila de tarjetas.
+          Es la única tarjeta sobre el chat y se queda porque es una
+          acción (liquidar), no un anuncio: la invitación ya no vive
+          aquí, vive en el menú de perfil. */}
       {data.partner && mutual && (
         <div className="px-4 pt-3">
           <Tarjeta className="border-foco/60 bg-doradotenue p-4">
             <p className="flex items-center gap-2 font-bold"><IconoBalanza className="h-5 w-5 text-doradotexto" /> Deuda mutua</p>
             <p className="mt-1 text-sm">{debtorName} le debe <strong className="nums">{formatMoney(mutual.amount, currency)}</strong> a {creditorName}.</p>
-            <Boton onClick={liquidar} cargando={liquidando} className="mt-3 w-full">Liquidar ahora</Boton>
+            <Boton onClick={() => setConfirmarLiquidar(true)} className="mt-3 w-full">Liquidar ahora</Boton>
             {liquidarError && <div className="mt-2"><Alerta>{liquidarError}</Alerta></div>}
           </Tarjeta>
-        </div>
-      )}
-
-      {/* Hogar de 1 persona: invitar a la pareja es una tira compacta y
-          descartable, no una tarjeta gigante tapando el chat. La URL
-          nunca se muestra (se partía a mitad de palabra): solo el código
-          y el botón de copiar; el enlace va dentro del texto copiado. */}
-      {!data.partner && data.household && !invitarOculto && (
-        <div className="px-4 pt-3">
-          <div className="flex items-center gap-2 rounded-full border border-borde bg-tarjeta py-1.5 pl-3 pr-1.5 shadow-tarjeta">
-            <p className="min-w-0 flex-1 truncate text-xs">
-              <span className="font-bold text-crema">Invita a tu pareja</span>
-              <span className="text-humo"> · código </span>
-              <span className="font-bold tracking-[0.2em] text-doradotexto">{data.household.invite_code}</span>
-            </p>
-            <button
-              type="button"
-              onClick={copyInvite}
-              aria-label="Copiar código y enlace de invitación"
-              title="Copiar código y enlace"
-              className="shrink-0 rounded-full bg-elevado p-2 text-crema transition active:scale-90"
-            >
-              {copied ? <IconoCheck className="h-4 w-4" /> : <IconoCopiar className="h-4 w-4" />}
-            </button>
-            <button
-              type="button"
-              onClick={ocultarInvitar}
-              aria-label="Ocultar invitación"
-              title="Ocultar"
-              className="shrink-0 rounded-full bg-elevado p-2 text-humo transition active:scale-90"
-            >
-              <IconoX className="h-4 w-4" />
-            </button>
-          </div>
-          {copyFailed && <p role="alert" className="mt-1.5 text-center text-xs text-doradotexto">No se pudo copiar: el código es {data.household.invite_code}, cópialo a mano.</p>}
         </div>
       )}
 
@@ -261,6 +262,26 @@ export default function Chat({ data, onSave, onRefresh, onSignOut }: Props) {
         onIr={(ruta) => navigate(ruta)}
         onEscribiendo={setEscribiendo}
       />
+
+      <Confirmar
+        abierto={confirmarLiquidar}
+        titulo="Liquidar la deuda mutua"
+        mensaje={`¿Confirmas que ${debtorName} le pagó ${mutual ? formatMoney(mutual.amount, currency) : ''} a ${creditorName}? Se registrará la liquidación.`}
+        textoConfirmar="Sí, liquidar"
+        onConfirmar={() => { setConfirmarLiquidar(false); void liquidar() }}
+        onCancelar={() => setConfirmarLiquidar(false)}
+      />
+      {onSignOut && (
+        <Confirmar
+          abierto={confirmarSalir}
+          titulo="Cerrar sesión"
+          mensaje="¿Cerrar sesión en este dispositivo?"
+          textoConfirmar="Cerrar sesión"
+          peligro
+          onConfirmar={() => { setConfirmarSalir(false); onSignOut() }}
+          onCancelar={() => setConfirmarSalir(false)}
+        />
+      )}
     </main>
   )
 }

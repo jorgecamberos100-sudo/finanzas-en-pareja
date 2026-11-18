@@ -9,12 +9,13 @@ import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
 import type { Account, Goal } from '../types'
-import { IconoAlerta, IconoCheck, IconoLapiz } from '../components/ui'
+import { Confirmar, IconoAlerta, IconoCheck, IconoLapiz } from '../components/ui'
 
 interface Props { data: AppData; onRefresh: () => void }
 
 export default function Plan({ data, onRefresh }: Props) {
   const currency = data.household?.currency ?? 'MXN'
+  const [seccion, setSeccion] = useState<'metas' | 'cuentas' | 'revision'>('metas')
   const [goalName, setGoalName] = useState('')
   const [goalTarget, setGoalTarget] = useState('')
   const [goalDate, setGoalDate] = useState('')
@@ -28,6 +29,7 @@ export default function Plan({ data, onRefresh }: Props) {
   const [paywall, setPaywall] = useState<string | null>(null)
   // PIBBI reacciona al crear una meta, aportar y guardar la revisión.
   const [reaction, setReaction] = useState<ReactionContext | null>(null)
+  const [metaAEliminar, setMetaAEliminar] = useState<Goal | null>(null)
 
   const patrimonio = useMemo(() => data.accounts.reduce((acc, a) => acc + (a.type === 'deuda' || a.type === 'tarjeta' ? -a.balance : a.balance), 0), [data.accounts])
 
@@ -73,7 +75,6 @@ export default function Plan({ data, onRefresh }: Props) {
 
   async function deleteGoal(goal: Goal) {
     if (busy) return
-    if (!confirm(`¿Eliminar la meta “${goal.name}”?`)) return
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -117,7 +118,7 @@ export default function Plan({ data, onRefresh }: Props) {
 
   return (
     <main className="space-y-5 p-5">
-      <PibbiHeader pose={PAGE_PIBBI_POSES.plan} title="Plan" subtitle="Tus metas, tus cuentas y tu revisión." />
+      <PibbiHeader pose={PAGE_PIBBI_POSES.plan} title="Plan" subtitle="Tus metas, tus cuentas y tu revisión." className="-mx-5 -mt-5 px-5 pb-3 pt-3" />
 
       {error && (
         <div role="alert" className="flex items-start gap-2 rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
@@ -130,6 +131,26 @@ export default function Plan({ data, onRefresh }: Props) {
         </div>
       )}
 
+      {/* Una sección a la vez: antes las tres (metas, cuentas, revisión)
+          se apilaban en un scroll largo y nada se encontraba. El control
+          segmentado deja ver una sola; los avisos de error/éxito quedan
+          arriba del control para que siempre se vean. */}
+      <div role="tablist" aria-label="Secciones del plan" className="flex rounded-full border border-borde bg-elevado p-1">
+        {([['metas', 'Metas'], ['cuentas', 'Cuentas'], ['revision', 'Revisión']] as const).map(([clave, etiqueta]) => (
+          <button
+            key={clave}
+            type="button"
+            role="tab"
+            aria-selected={seccion === clave}
+            onClick={() => setSeccion(clave)}
+            className={`flex-1 rounded-full px-2 py-2 text-sm font-semibold ${seccion === clave ? 'bg-azul text-white shadow-tarjeta' : 'text-humo'}`}
+          >
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {seccion === 'metas' && (
       <section>
         <h2 className="mb-2 font-bold">{data.partner ? 'Metas compartidas' : 'Mis metas'}</h2>
         <p className="mb-2 text-xs text-humo">
@@ -137,7 +158,7 @@ export default function Plan({ data, onRefresh }: Props) {
         </p>
         {data.goals.map((g) => (
           <div key={g.id} className="mb-3">
-            <GoalCard goal={g} currency={currency} onContribute={contribute} onDelete={deleteGoal} />
+            <GoalCard goal={g} currency={currency} onContribute={contribute} onDelete={(goal) => setMetaAEliminar(goal)} />
           </div>
         ))}
         {data.goals.length === 0 && <p className="mb-3 text-sm text-humo">Sin metas todavía. Crea la primera abajo.</p>}
@@ -152,8 +173,9 @@ export default function Plan({ data, onRefresh }: Props) {
             {busy ? 'Creando…' : 'Crear meta'}
           </button>
         </div>
-      </section>
+      </section>)}
 
+      {seccion === 'cuentas' && (
       <section>
         <h2 className="mb-2 font-bold">Cuentas y patrimonio</h2>
         {editingAccount && (
@@ -205,19 +227,31 @@ export default function Plan({ data, onRefresh }: Props) {
           </div>
         ))}
         <p className="text-sm mt-3">Patrimonio (activos − deudas): <strong>{formatMoney(patrimonio, currency)}</strong></p>
-      </section>
+      </section>)}
 
+      {seccion === 'revision' && (
       <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
         <h2 className="font-bold">{data.partner ? 'Money date' : 'Mi revisión'}</h2>
-        <p className="mb-2 text-sm text-humo">{data.partner ? 'Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde Inicio).' : 'Tu revisión: resumen del período, notas y acuerdos.'}</p>
+        <p className="mb-2 text-sm text-humo">{data.partner ? 'Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde el chat con PIBBI).' : 'Tu revisión: resumen del período, notas y acuerdos.'}</p>
         <textarea value={moneyNotes} onChange={(e) => setMoneyNotes(e.target.value)} placeholder="Notas y acuerdos de hoy…" rows={3} className="mb-2 w-full rounded-xl border p-2" />
         <button onClick={saveMoneyDate} disabled={busy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
           {busy ? 'Guardando…' : 'Guardar money date'}
         </button>
         {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
-      </section>
+      </section>)}
 
       {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
+
+      {/* Confirmación dentro de la app (no el diálogo del navegador). */}
+      <Confirmar
+        abierto={metaAEliminar !== null}
+        titulo="¿Eliminar esta meta?"
+        mensaje={metaAEliminar ? `Se borrará la meta “${metaAEliminar.name}” y sus aportaciones.` : ''}
+        textoConfirmar="Eliminar"
+        peligro
+        onCancelar={() => setMetaAEliminar(null)}
+        onConfirmar={() => { const g = metaAEliminar; setMetaAEliminar(null); if (g) void deleteGoal(g) }}
+      />
     </main>
   )
 }
