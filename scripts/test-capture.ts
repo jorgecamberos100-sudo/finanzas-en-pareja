@@ -1,6 +1,7 @@
 // Pruebas del parser de captura (E) y de próximos vencimientos (G).
 // Lógica pura (sin Supabase ni DOM).
 import { extractAmounts, parseLineToEntry } from '../src/lib/capture.ts'
+import { parseAmount } from '../src/lib/format.ts'
 import { upcomingRecurring } from '../src/lib/recurring.ts'
 
 let pass = 0
@@ -16,6 +17,17 @@ function check(name: string, actual: unknown, expected: unknown) {
     console.log(`  ✗ ${name}\n    esperado: ${e}\n    real:     ${a}`)
   }
 }
+
+// Montos tecleados: separadores de miles y decimales (es-MX y mixto).
+check('monto "$1,500.50"', parseAmount('$1,500.50'), 1500.5)
+check('monto "1.500,50"', parseAmount('1.500,50'), 1500.5)
+check('monto "1500,50"', parseAmount('1500,50'), 1500.5)
+check('monto "1,500"', parseAmount('1,500'), 1500)
+check('monto "$89.50"', parseAmount('$89.50'), 89.5)
+check('monto "89,50"', parseAmount('89,50'), 89.5)
+check('monto "1.500"', parseAmount('1.500'), 1500)
+check('monto "200"', parseAmount('200'), 200)
+check('monto inválido "abc"', parseAmount('abc'), 0)
 
 // E. Las fechas no son montos (auditoría Qwen: "compré 2 cosas por 50 el
 // 12/11/2026" devolvía [2, 50, 12, 11, 2026] y la propuesta tomaba $2).

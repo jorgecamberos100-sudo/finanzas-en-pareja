@@ -50,10 +50,27 @@ export function monthKey(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
-/** Normaliza un monto tecleado ("1,250.50" / "1250,50") a número. */
+/** Normaliza un monto tecleado a número. Acepta "$1,500.50", "1.500,50",
+ *  "1500,50", "1,500", "$89.50" y "89,50": el último separador (coma o punto)
+ *  es el decimal y los demás son separadores de miles. */
 export function parseAmount(raw: string): number {
-  const cleaned = raw.replace(/[$\s]/g, '').replace(',', '.')
-  const n = Number(cleaned)
+  let s = raw.replace(/[$\s ]/g, '')
+  if (!s) return 0
+  const lastComma = s.lastIndexOf(',')
+  const lastDot = s.lastIndexOf('.')
+  if (lastComma !== -1 && lastDot !== -1) {
+    // Hay ambos: el último es el decimal, el otro son miles.
+    s = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '')
+  } else if (lastComma !== -1) {
+    const dec = s.slice(lastComma + 1)
+    // Una sola coma con 1-2 decimales = decimal; si no, son miles ("1,500").
+    s = s.indexOf(',') === lastComma && dec.length >= 1 && dec.length <= 2 ? s.replace(',', '.') : s.replace(/,/g, '')
+  } else if (lastDot !== -1) {
+    const dec = s.slice(lastDot + 1)
+    if (s.indexOf('.') === lastDot && dec.length === 3) s = s.replace('.', '') // "1.500" = 1500
+    else if (s.indexOf('.') !== lastDot) s = dec.length <= 2 ? s.slice(0, lastDot).replace(/\./g, '') + '.' + dec : s.replace(/\./g, '')
+  }
+  const n = Number(s)
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0
 }
 
@@ -82,5 +99,5 @@ export function dedupeHashSync(input: { date: string; amount: number; merchant: 
   }
   h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
   h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
-  return (h2 >>> 0).toString(16) + (h1 >>> 0).toString(16)
+  return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0')
 }

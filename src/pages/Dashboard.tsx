@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { AppData } from '../App'
 import { formatDateEs, formatMoney, monthKey, todayIso } from '../lib/format'
 import { computeMutualBalance, monthTotals } from '../lib/split'
@@ -157,7 +158,7 @@ export default function Dashboard({ data, onRefresh }: Props) {
                 {r.title} · {reminderStatus(r) === 'overdue' ? `vencido (${formatDateEs(r.due_date)})` : reminderStatus(r) === 'today' ? 'hoy' : 'mañana'}
                 {r.amount !== null ? ` · ${formatMoney(r.amount, currency)}` : ''}
               </span>
-              <a href="/recordatorios" className="shrink-0 rounded-xl bg-dorado px-3 py-1.5 font-bold text-noche">Ver</a>
+              <Link to="/recordatorios" className="shrink-0 rounded-xl bg-dorado px-3 py-1.5 font-bold text-noche">Ver</Link>
             </div>
           ))}
         </section>

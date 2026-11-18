@@ -132,7 +132,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
             </div>
             {splitMode === 'personalizado' && (
               <div className="mt-2 flex items-center gap-2 text-sm">
-                <input type="range" min={0} max={100} value={customPct} onChange={(e) => setCustomPct(Number(e.target.value))} className="flex-1" />
+                <input type="range" min={0} max={100} value={customPct} onChange={(e) => setCustomPct(Number(e.target.value))} aria-label="Porcentaje que pago yo" className="flex-1" />
                 <span>Yo pago {customPct}%</span>
               </div>
             )}

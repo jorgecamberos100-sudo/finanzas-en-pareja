@@ -367,7 +367,7 @@ export function sanitizeProposedReminder(raw: unknown, timezone?: string | null)
 }
 
 /** Valida / sanea una propuesta que viene de la IA antes de mostrarla. */
-export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceType): CaptureResult | null {
+export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceType, timezone?: string | null): CaptureResult | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as { entries?: unknown; currency?: unknown; reminders?: unknown }
   if (!Array.isArray(r.entries)) return null
@@ -377,7 +377,7 @@ export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceTyp
     const amountMinor = Number(item.amount_minor)
     if (!Number.isFinite(amountMinor) || amountMinor <= 0 || amountMinor > 100_000_000) continue
     const type = item.type === 'ingreso' || item.type === 'transferencia' ? item.type : 'gasto'
-    const date = typeof item.occurred_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.occurred_at) ? item.occurred_at : todayIsoForTimezone()
+    const date = typeof item.occurred_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.occurred_at) ? item.occurred_at : todayIsoForTimezone(timezone)
     const payer: PayerRef = item.payer === 'partner' || item.payer === 'current_user' ? item.payer : 'unknown'
     const splitPct = type === 'transferencia' ? 100 : Math.min(100, Math.max(0, Number(item.split_pct ?? 50) || 50))
     entries.push({
@@ -398,7 +398,7 @@ export function sanitizeCaptureResult(raw: unknown, sourceType: CaptureSourceTyp
   // Recordatorios: se pasan tal cual, aunque no haya movimientos (un
   // "recuérdame pagar..." no es un gasto, no va en entries).
   const reminders = Array.isArray(r.reminders)
-    ? r.reminders.map((x) => sanitizeProposedReminder(x)).filter((x): x is ProposedReminder => x !== null)
+    ? r.reminders.map((x) => sanitizeProposedReminder(x, timezone)).filter((x): x is ProposedReminder => x !== null)
     : []
   if (entries.length === 0 && reminders.length === 0) return null
   return { currency: 'MXN', source_type: sourceType, entries, requires_confirmation: true, reminders }

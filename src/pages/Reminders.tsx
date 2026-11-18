@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AppData } from '../App'
 import type { Reminder, ReminderRecurrence } from '../types'
-import { formatDateEs, formatMoney, todayIso } from '../lib/format'
+import { deviceTimeZone, formatDateEs, formatMoney, parseAmount, todayIso } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import {
   DEFAULT_NOTIFICATION_TIME,
   RECURRENCE_LABELS,
   daysUntil,
   isPushSubscribed,
+  lastDayOfMonth,
   nextDueDate,
   notificationPermission,
   notificationsSupported,
@@ -27,11 +28,11 @@ interface Props {
 
 function nextRecurringDate(dueDay: number, today: string): string {
   const [y, m, d] = today.split('-').map(Number)
-  const lastThis = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const lastThis = lastDayOfMonth(y, m)
   if (dueDay >= d) return `${y}-${String(m).padStart(2, '0')}-${String(Math.min(dueDay, lastThis)).padStart(2, '0')}`
   const nm = m === 12 ? 1 : m + 1
   const ny = m === 12 ? y + 1 : y
-  const lastNext = new Date(Date.UTC(ny, nm, 0)).getUTCDate()
+  const lastNext = lastDayOfMonth(ny, nm)
   return `${ny}-${String(nm).padStart(2, '0')}-${String(Math.min(dueDay, lastNext)).padStart(2, '0')}`
 }
 
@@ -94,7 +95,7 @@ export default function Reminders({ data, onRefresh }: Props) {
     if (!data.household || !data.me) return
     if (!title.trim()) { setMessage('Escribe el título del recordatorio (ej. Renta).'); return }
     if (!dueDate) { setMessage('Elige la fecha en que vence.'); return }
-    const amountNum = amount.trim() ? Number(amount.replace(',', '.')) : null
+    const amountNum = amount.trim() ? parseAmount(amount) : null
     if (amount.trim() && (!amountNum || amountNum <= 0)) { setMessage('El monto debe ser mayor a $0.'); return }
     setBusy(true)
     setMessage(null)
@@ -108,7 +109,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       recurrence,
       category_id: categoryId || null,
       note: note.trim() || null,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezone: deviceTimeZone(),
     }
     const { error } = editingId
       ? await supabase.from('reminders').update(payload).eq('id', editingId)
@@ -160,7 +161,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       recurrence: 'monthly',
       category_id: rec.category_id,
       recurring_id: rec.id,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezone: deviceTimeZone(),
     })
     if (error) { setMessage(error.message); return }
     setMessage(`Recordatorio mensual de “${rec.title}” creado 🔔`)

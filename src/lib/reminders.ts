@@ -47,7 +47,7 @@ export function weekdayOfIso(iso: string, timezone?: string | null): number {
 }
 
 /** Último día del mes (YYYY-MM) — para que "cada mes el 31" no se pierda en febrero. */
-function lastDayOfMonth(year: number, month: number): number {
+export function lastDayOfMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate()
 }
 
@@ -56,7 +56,10 @@ export function nextDueDate(dueDate: string, recurrence: ReminderRecurrence): st
   const [y, m, d] = dueDate.split('-').map(Number)
   if (recurrence === 'daily') return addDaysToIso(dueDate, 1)
   if (recurrence === 'weekly') return addDaysToIso(dueDate, 7)
-  if (recurrence === 'yearly') return `${y + 1}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  if (recurrence === 'yearly') {
+    const ny = y + 1
+    return `${ny}-${String(m).padStart(2, '0')}-${String(Math.min(d, lastDayOfMonth(ny, m))).padStart(2, '0')}`
+  }
   if (recurrence === 'monthly') {
     const nm = m === 12 ? 1 : m + 1
     const ny = m === 12 ? y + 1 : y
@@ -376,12 +379,14 @@ export function useReminderNotifications(reminders: Reminder[], timezone?: strin
     }
     void check()
     const id = window.setInterval(() => void check(), 30_000)
-    document.addEventListener('visibilitychange', () => {
+    const onVisibilityChange = () => {
       if (!document.hidden) void check()
-    })
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
       stopped = true
       window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reminders.map((r) => `${r.id}:${r.due_date}:${r.due_time}:${r.is_done}`).join('|')])

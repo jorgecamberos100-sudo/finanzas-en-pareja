@@ -1,5 +1,7 @@
 node_modules
 dist
+public/icons/icon-192.png
+public/icons/icon-512.png
 .env
 .env.local
 .DS_Store

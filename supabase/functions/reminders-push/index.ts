@@ -95,7 +95,7 @@ function ecdsaSigToRaw(sig: Uint8Array): Uint8Array {
   return out
 }
 
-/** Cifra el payload para una suscripción (RFC 8291 aes128gcm). Devuelve {body, headers}. */
+/** Cifra el payload para una suscripción (RFC 8291 aes128gcm + RFC 8188). Devuelve {body, headers}. */
 export async function encryptPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
   plaintext: string,
@@ -118,30 +118,40 @@ export async function encryptPush(
     [],
   )
   const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: clientKey }, serverKeys.privateKey, 256))
-  // RFC 8291 §4.3 (igual que la librería web-push): PRK = HMAC(auth, shared);
-  // luego CEK/nonce = HKDF completo (extract con el salt aleatorio + expand).
-  const prk = await hmacSha256(clientAuth, shared)
-  const cekInfo = concat(encoder.encode('Content-Encoding: aes128gcm'), new Uint8Array([0]))
-  const nonceInfo = concat(encoder.encode('Content-Encoding: nonce'), new Uint8Array([0]))
-  const cek = await hkdfWithSalt(salt, prk, cekInfo, 16)
-  const nonce = await hkdfWithSalt(salt, prk, nonceInfo, 12)
+  // RFC 8291 §3.2-3.4:
+  // 1. PRK_key = HMAC-SHA-256(clientAuth, shared)
+  // 2. IKM = HKDF-Expand(PRK_key, "WebPush: info\0" || clientPub || serverPubRaw, 32)
+  // 3. PRK = HMAC-SHA-256(salt, IKM)
+  // 4. CEK = HKDF-Expand(PRK, "Content-Encoding: aes128gcm\0", 16)
+  // 5. Nonce = HKDF-Expand(PRK, "Content-Encoding: nonce\0", 12)
+  const prkKey = await hmacSha256(clientAuth, shared)
+  const keyInfo = concat(encoder.encode('WebPush: info\0'), clientPub, serverPubRaw)
+  const ikm = await hkdfExpand(prkKey, keyInfo, 32)
 
+  const cekInfo = concat(encoder.encode('Content-Encoding: aes128gcm\0'))
+  const nonceInfo = concat(encoder.encode('Content-Encoding: nonce\0'))
+  const cek = await hkdfWithSalt(salt, ikm, cekInfo, 16)
+  const nonce = await hkdfWithSalt(salt, ikm, nonceInfo, 12)
+
+  // RFC 8188: delimitar con 0x02 para el último registro
   const plain = encoder.encode(plaintext)
-  const padded = new Uint8Array(Math.ceil((plain.length + 1) / 16) * 16)
-  padded.set(plain)
-  padded[plain.length] = 2 // delimitador: el texto termina aquí
+  const padded = concat(plain, new Uint8Array([2]))
   const aesKey = await crypto.subtle.importKey('raw', cek as BufferSource, { name: 'AES-GCM' }, false, ['encrypt'])
   const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce as BufferSource }, aesKey, padded as BufferSource))
+
+  // RFC 8188 encabezado: salt (16 bytes) + rs (4 bytes = 4096) + idlen (1 byte = 65) + keyid (65 bytes)
+  const rs = 4096
+  const rsBytes = new Uint8Array([(rs >> 24) & 0xff, (rs >> 16) & 0xff, (rs >> 8) & 0xff, rs & 0xff])
+  const header = concat(salt, rsBytes, new Uint8Array([serverPubRaw.length]), serverPubRaw)
+  const body = concat(header, cipher)
 
   const audience = new URL(subscription.endpoint).origin
   const jwt = await vapidJwt(audience, vapidSubject, vapidPrivateKey, vapidPublicKey)
   return {
-    body: cipher,
+    body,
     headers: {
       'Content-Type': 'application/octet-stream',
       'Content-Encoding': 'aes128gcm',
-      Encryption: `salt=${b64urlEncode(salt)}`,
-      'Crypto-Key': `dh=${b64urlEncode(serverPubRaw)}`,
       Authorization: `vapid t=${jwt}, k=${vapidPublicKey}`,
       TTL: '86400',
     },
