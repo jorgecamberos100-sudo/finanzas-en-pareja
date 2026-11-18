@@ -1,18 +1,16 @@
 import Mascota, { type MascotaPose } from './Mascota'
+import { REACTION_POSES, type ReactionContext } from '../lib/pibbi-poses'
 
-/** Contextos en los que PIBBI reacciona cuando alguien registra un dato. */
-export type ReactionContext =
-  | 'saludando' | 'apuntando' | 'calculando' | 'pensando'
-  | 'celebrando' | 'progreso' | 'ahorrando'
+export type { ReactionContext } from '../lib/pibbi-poses'
 
 const REACTIONS: Record<ReactionContext, { pose: MascotaPose; text: string }> = {
-  saludando: { pose: 'saludando', text: '¡Hola! 👋' },
-  apuntando: { pose: 'saludando', text: '¡Anotado! 📝' },
-  calculando: { pose: 'contar', text: 'Haciendo cuentas… 🧮' },
-  pensando: { pose: 'pensativo', text: 'Déjame pensar… 🤔' },
-  celebrando: { pose: 'celebrando', text: '¡Lo lograste! 🎉' },
-  progreso: { pose: 'progreso', text: '¡Vas muy bien! 📈' },
-  ahorrando: { pose: 'ahorrando', text: '¡A ahorrar! 🪙' },
+  saludando: { pose: REACTION_POSES.saludando, text: '¡Hola! 👋' },
+  apuntando: { pose: REACTION_POSES.apuntando, text: '¡Anotado! 📝' },
+  calculando: { pose: REACTION_POSES.calculando, text: 'Haciendo cuentas… 🧮' },
+  pensando: { pose: REACTION_POSES.pensando, text: 'Déjame pensar… 🤔' },
+  celebrando: { pose: REACTION_POSES.celebrando, text: '¡Lo lograste! 🎉' },
+  progreso: { pose: REACTION_POSES.progreso, text: '¡Vas muy bien! 📈' },
+  ahorrando: { pose: REACTION_POSES.ahorrando, text: '¡A ahorrar! 🪙' },
 }
 
 interface Props {

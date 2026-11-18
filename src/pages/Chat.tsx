@@ -14,7 +14,7 @@ export default function Chat({ data, onSave, onRefresh }: Props) {
   return (
     <main className="space-y-2">
       <header className="flex items-start gap-3 px-4 pt-4">
-        <Mascota className="h-14 w-14 shrink-0" />
+        <Mascota pose="avatarCircular" alt="PIBBI, tu cerdito de los ahorros" className="h-14 w-14 shrink-0" />
         <div>
           <h1 className="text-2xl font-bold">Chat de captura 💬</h1>
           <p className="text-sm text-humo">
