@@ -30,10 +30,10 @@ export default function PibbiDresser({ title = 'Viste a PIBBI' }: Props) {
             aria-pressed={accessory === a.id}
             title={a.name}
             className={`flex flex-col items-center gap-1 rounded-2xl border-2 p-2 ${
-              accessory === a.id ? 'border-rosafuerte bg-[#F4728F1A]' : 'border-borde bg-elevado'
+              accessory === a.id ? 'border-rosafuerte bg-rosatenue' : 'border-borde bg-elevado'
             }`}
           >
-            <Mascota pose="frente" accessory={a.id} alt={`PIBBI con ${a.name}`} className="h-12 w-12" />
+            <Mascota pose="frente" accessory={a.id} alt={a.id === 'ninguno' ? 'PIBBI sin prenda' : `PIBBI con ${a.name}`} className="h-12 w-12" />
             <span className="text-center text-[11px] leading-tight text-humo">{a.emoji} {a.name}</span>
           </button>
         ))}
