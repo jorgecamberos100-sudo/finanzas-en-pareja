@@ -3,7 +3,8 @@ import type { Goal } from '../types'
 import { formatDateEs, formatMoney, parseAmount } from '../lib/format'
 import { expectedProgress } from '../lib/split'
 import Mascota from './Mascota'
-import { IconoBasura, IconoMeta } from './ui'
+import { usePibbi } from '../lib/pibbi'
+import { celebracionPibbi } from '../lib/pibbi-identidad'
 
 interface Props {
   goal: Goal
@@ -17,6 +18,7 @@ interface Props {
  * a la fecha actual (si vas por debajo del marcador, vas atrasado).
  */
 export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelete }: Props) {
+  const { name, vibe } = usePibbi()
   const [showCustom, setShowCustom] = useState(false)
   const [customAmount, setCustomAmount] = useState('')
   const pct = goal.target > 0 ? Math.min(100, (goal.current / goal.target) * 100) : 0
@@ -33,10 +35,10 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
   }
 
   return (
-    <article className="rounded-[28px] border border-borde/70 bg-tarjeta p-4 shadow-tarjeta">
+    <article className="rounded-2xl border border-borde bg-tarjeta p-4  ">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="flex items-center gap-2 font-bold truncate"><IconoMeta className="h-5 w-5 shrink-0 text-doradotexto" />{goal.name}</h3>
+          <h3 className="font-bold truncate">🎯 {goal.name}</h3>
           <p className="text-sm text-humo">
             {formatMoney(goal.current, currency)} de {formatMoney(goal.target, currency)}
             {goal.due_date ? ` · vence ${formatDateEs(goal.due_date)}` : ''}
@@ -51,7 +53,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
               title="Eliminar meta"
               className="rounded-lg p-1 text-xs text-humo transition hover:text-rojosuave"
             >
-              <IconoBasura className="h-4 w-4" />
+              🗑️
             </button>
           )}
         </div>
@@ -65,7 +67,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
         aria-label={`Progreso de meta ${goal.name}`}
         className="relative mt-3 h-3 overflow-visible rounded-full bg-borde "
       >
-        <div className="h-full w-full origin-left rounded-full bg-dorado transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
+        <div className="h-full rounded-full bg-dorado transition-all" style={{ width: `${pct}%` }} />
         {goal.due_date && (
           <div className="absolute -top-1 h-5 w-0.5 bg-dorado" style={{ left: `${expected}%` }} title={`Ritmo esperado: ${expected.toFixed(0)}%`} />
         )}
@@ -79,8 +81,8 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
 
       {pct >= 100 && (
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-elevado p-3">
-          <Mascota pose="celebrando" alt="PIBBI celebrando la meta alcanzada" className="h-12 w-12 shrink-0" />
-          <p className="text-sm font-bold text-doradotexto">¡Meta alcanzada! PIBBI celebra contigo.</p>
+          <Mascota pose="celebrando" dancing alt={`${name} celebrando la meta alcanzada`} className="h-[120px] w-[120px] shrink-0" />
+          <p className="text-sm font-bold text-doradotexto">{celebracionPibbi(vibe, name)}</p>
         </div>
       )}
 
