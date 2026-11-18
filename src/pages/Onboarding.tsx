@@ -3,12 +3,17 @@ import { supabase, setHouseholdId, getHouseholdId, findMyHouseholdId } from '../
 import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
 import { crearHogar } from '../lib/household'
 import { resolverSesionExistente } from '../lib/google-auth'
+import { mensajeHumano } from '../lib/errores'
 import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiDresser from '../components/PibbiDresser'
 import ThemeToggle from '../components/ThemeToggle'
 import GoogleSignInButton from '../components/GoogleSignInButton'
+import {
+  Alerta, Boton, Campo, CampoClave, IconoCheck, IconoCopiar, IconoCorreo, IconoCorazon,
+  IconoFlechaDer, IconoFlechaIzq, IconoLlave, IconoUsuario, Logo, PasoBarra, Tarjeta,
+} from '../components/ui'
 
 interface Props { onDone: () => void }
 
@@ -28,32 +33,47 @@ const SEED_CATEGORIES = [
   { group: 'Ingresos', name: 'Sueldo', icon: '💼', monthly_limit: 0, rollover: false },
 ]
 
+const CORREO_RE = /^\S+@\S+\.\S+$/
+
+/** Vistas de autenticación. El login NO es un paso del registro. */
+type Vista = 'registro' | 'login' | 'recuperar' | 'nueva' | 'confirma'
+interface ErroresCampo { nombre?: string; correo?: string; clave?: string; confirma?: string }
+
 /** Wizard de 5 pasos: cuenta → modo (solo o en pareja) → invitación opcional → viste a PIBBI → listo. */
 export default function Onboarding({ onDone }: Props) {
   const [step, setStep] = useState(1)
-  /** Paso 1 tiene dos modos: registrarse (nuevo) o iniciar sesión (ya tiene cuenta). */
-  const [mode, setMode] = useState<'registro' | 'login'>('registro')
+  const [vista, setVista] = useState<Vista>('registro')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [nuevaClave, setNuevaClave] = useState('')
+  const [nuevaConfirma, setNuevaConfirma] = useState('')
   const [householdName, setHouseholdName] = useState('Nuestro hogar')
   const [inviteCode, setInviteCode] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [joinExpanded, setJoinExpanded] = useState(false)
-  /** null = aún no elige; true = solo por ahora; false = en pareja. */
   const [soloMode, setSoloMode] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [errores, setErrores] = useState<ErroresCampo>({})
   const [busy, setBusy] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [copiado, setCopiado] = useState(false)
 
   // El enlace de invitación del paso 3 es /onboarding?codigo=XXXXXX: prellenar
   // el código y desplegar la sección de unirse, para que el enlace funcione.
+  // El enlace de recuperación es /onboarding?recuperar=1#...type=recovery.
+  const recuperacionPendiente = useRef(false)
   useEffect(() => {
-    const codigo = new URLSearchParams(window.location.search).get('codigo')
+    const params = new URLSearchParams(window.location.search)
+    const codigo = params.get('codigo')
     if (codigo) {
       setJoinCode(codigo.trim().toUpperCase())
       setJoinExpanded(true)
+    }
+    if (params.get('recuperar') === '1' || window.location.hash.includes('type=recovery')) {
+      recuperacionPendiente.current = true
+      setVista('nueva')
     }
   }, [])
 
@@ -63,47 +83,88 @@ export default function Onboarding({ onDone }: Props) {
    * sigue al paso 2 a crear o unirse a uno (la misma regla del login).
    * El `getSession` cubre el regreso con la sesión ya canjeada y el
    * `SIGNED_IN` cubre el canje que termina después de montar.
+   * Durante una recuperación de contraseña NO se resuelve el destino:
+   * primero se elige la nueva contraseña.
    */
   const sesionResuelta = useRef(false)
   useEffect(() => {
     async function resolver(userId: string) {
-      if (sesionResuelta.current) return
+      if (sesionResuelta.current || recuperacionPendiente.current) return
       sesionResuelta.current = true
       await resolverSesionExistente(findMyHouseholdId, userId, {
         setHouseholdId,
         irDashboard: onDone,
-        irPaso2: () => setStep(2),
+        irPaso2: () => { setVista('registro'); setStep(2) },
       })
     }
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) void resolver(data.session.user.id)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        recuperacionPendiente.current = true
+        setVista('nueva')
+        return
+      }
       if (event === 'SIGNED_IN' && session?.user) void resolver(session.user.id)
     })
     return () => {
       subscription.unsubscribe()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function limpiarErrorCampo(campo: keyof ErroresCampo) {
+    setErrores((e) => (e[campo] ? { ...e, [campo]: undefined } : e))
+    setError(null)
+  }
+
+  function validarRegistro(): boolean {
+    const e: ErroresCampo = {}
+    if (!name.trim()) e.nombre = 'Escribe tu nombre para que tu pareja te reconozca.'
+    if (!email.trim()) e.correo = 'Escribe tu correo electrónico.'
+    else if (!CORREO_RE.test(email.trim())) e.correo = 'Ese correo no es válido. Revisa que esté bien escrito.'
+    if (password.length < 6) e.clave = 'La contraseña debe tener al menos 6 caracteres.'
+    if (confirmPassword !== password || !confirmPassword) e.confirma = 'Las contraseñas no coinciden. Revísalas.'
+    setErrores(e)
+    return Object.keys(e).length === 0
+  }
+
   async function step1() {
-    if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
-    if (password !== confirmPassword) { setError('Las contraseñas no coinciden. Revísalas y vuelve a intentarlo.'); return }
-    setBusy(true); setError(null)
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (!validarRegistro()) return
+    setBusy(true); setError(null); setAviso(null)
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { data: { name: name.trim() } },
+    })
     if (error) {
       // Si el correo ya existe, no lo dejamos atorado: lo mandamos al login.
       if (esCorreoYaRegistrado(error.message)) {
-        setError('Ese correo ya tiene cuenta. Inicia sesión con tu contraseña.')
-        setMode('login')
+        setAviso('Ese correo ya tiene cuenta. Inicia sesión con tu contraseña.')
+        setVista('login')
       } else {
-        setError(traducirErrorAuth(error.message))
+        setError(traducirErrorAuth(error.message, { seguro: true }))
       }
       setBusy(false); return
     }
     const user = data.user
-    if (user) await supabase.from('users').upsert({ id: user.id, name: name || email.split('@')[0], email })
-    setBusy(false); setStep(2)
+    if (user && data.session) {
+      await supabase.from('users').upsert({ id: user.id, name: name.trim() || email.split('@')[0], email: email.trim() })
+      setBusy(false); setStep(2)
+    } else {
+      // Confirmación de correo activada: avisar en español y mandar al login.
+      setBusy(false); setVista('confirma')
+    }
+  }
+
+  function validarLogin(): boolean {
+    const e: ErroresCampo = {}
+    if (!email.trim()) e.correo = 'Escribe tu correo electrónico.'
+    else if (!CORREO_RE.test(email.trim())) e.correo = 'Ese correo no es válido. Revisa que esté bien escrito.'
+    if (!password) e.clave = 'Escribe tu contraseña.'
+    setErrores(e)
+    return Object.keys(e).length === 0
   }
 
   /**
@@ -112,19 +173,63 @@ export default function Onboarding({ onDone }: Props) {
    * sigue al paso 2 a crear o unirse a uno. Nunca manda al registro a fuerza.
    */
   async function login() {
-    setBusy(true); setError(null)
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setError(traducirErrorAuth(error.message)); setBusy(false); return }
+    if (!validarLogin()) return
+    setBusy(true); setError(null); setAviso(null)
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    if (error) { setError(traducirErrorAuth(error.message, { seguro: true })); setBusy(false); return }
     const user = data.user
     if (!user) { setError('No se pudo iniciar sesión. Inténtalo de nuevo.'); setBusy(false); return }
+    // Asegurar la fila de perfil (igual que el registro): la necesitan las
+    // invitaciones y el hogar. No cambia ninguna regla de negocio.
+    const nombreMeta = (user.user_metadata?.name as string | undefined) ?? email.trim().split('@')[0]
+    await supabase.from('users').upsert({ id: user.id, name: nombreMeta, email: user.email ?? email.trim() })
     const householdId = await findMyHouseholdId(user.id)
     setBusy(false)
     if (householdId) {
       setHouseholdId(householdId)
       onDone()
     } else {
-      setStep(2)
+      setVista('registro'); setStep(2)
     }
+  }
+
+  /** "Olvidé mi contraseña": correo de recuperación de Supabase. */
+  async function recuperar() {
+    const e: ErroresCampo = {}
+    if (!email.trim()) e.correo = 'Escribe el correo con el que creaste tu cuenta.'
+    else if (!CORREO_RE.test(email.trim())) e.correo = 'Ese correo no es válido. Revisa que esté bien escrito.'
+    setErrores(e)
+    if (Object.keys(e).length > 0) return
+    setBusy(true); setError(null)
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/onboarding?recuperar=1`,
+    })
+    setBusy(false)
+    if (error) { setError(traducirErrorAuth(error.message, { seguro: true })); return }
+    setAviso('Te enviamos un correo para restablecer tu contraseña. Ábrelo desde este celular y elige una nueva. Si no lo ves, revisa spam.')
+  }
+
+  /** Pantalla de nueva contraseña (tras abrir el enlace de recuperación). */
+  async function guardarNueva() {
+    const e: ErroresCampo = {}
+    if (nuevaClave.length < 6) e.clave = 'La contraseña debe tener al menos 6 caracteres.'
+    if (nuevaConfirma !== nuevaClave || !nuevaConfirma) e.confirma = 'Las contraseñas no coinciden. Revísalas.'
+    setErrores(e)
+    if (Object.keys(e).length > 0) return
+    setBusy(true); setError(null)
+    const { data, error } = await supabase.auth.updateUser({ password: nuevaClave })
+    if (error) { setError(traducirErrorAuth(error.message, { seguro: true })); setBusy(false); return }
+    recuperacionPendiente.current = false
+    sesionResuelta.current = false
+    const user = data.user
+    if (user) {
+      await resolverSesionExistente(findMyHouseholdId, user.id, {
+        setHouseholdId,
+        irDashboard: onDone,
+        irPaso2: () => { setVista('registro'); setStep(2) },
+      })
+    }
+    setBusy(false)
   }
 
   /**
@@ -145,10 +250,10 @@ export default function Onboarding({ onDone }: Props) {
     const user = session.session?.user
     if (!user) { setError('Primero crea tu cuenta.'); setBusy(false); return }
     const res = await crearHogar(supabase, {
-      name: solo ? 'Mi hogar' : householdName,
+      name: solo ? 'Mi hogar' : householdName.trim() || 'Nuestro hogar',
       defaultSplit: solo ? 100 : 50,
     })
-    if (!res.ok) { setError(res.error); setBusy(false); return }
+    if (!res.ok) { setError(mensajeHumano(res.error, 'No se pudo crear el hogar. Inténtalo de nuevo.')); setBusy(false); return }
     setSoloMode(solo)
     setInviteCode(res.hogar.invite_code)
     setHouseholdId(res.hogar.id)
@@ -164,6 +269,8 @@ export default function Onboarding({ onDone }: Props) {
     // find_household_by_code (migración 004), que solo devuelve el id.
     const { data: householdId, error: hError } = await supabase.rpc('find_household_by_code', { p_code: joinCode.trim().toUpperCase() })
     if (hError || !householdId || !user) { setError('Código inválido. Pídele a tu pareja el código de invitación.'); setBusy(false); return }
+    // Asegurar la fila de perfil antes de unirse (FK de household_members).
+    await supabase.from('users').upsert({ id: user.id, name: user.email?.split('@')[0] ?? 'Yo', email: user.email ?? '' })
     // OJO: sin `.select()` a propósito — si se pidiera RETURNING, la
     // política SELECT de household_members (`is_member`) se evaluaría con
     // el snapshot previo al insert y Postgres rechazaría con 42501
@@ -177,7 +284,7 @@ export default function Onboarding({ onDone }: Props) {
         onDone()
         return
       }
-      setError(joinError.message)
+      setError(mensajeHumano(joinError.message, 'No se pudo unir al hogar. Inténtalo de nuevo.'))
       setBusy(false)
       return
     }
@@ -198,181 +305,271 @@ export default function Onboarding({ onDone }: Props) {
     ])
     const { error: eCat } = await supabase.from('categories').insert(SEED_CATEGORIES.map((c) => ({ ...c, household_id: householdId })))
     if (eAcc || eCat) {
-      setError(eAcc?.message ?? eCat?.message ?? 'No se pudieron crear las cuentas y categorías iniciales.')
+      setError(mensajeHumano(eAcc?.message ?? eCat?.message, 'No se pudieron crear las cuentas y categorías iniciales.'))
       setBusy(false)
       return
     }
     setBusy(false); setStep(5)
   }
 
+  async function copiarInvitacion() {
+    const link = `${window.location.origin}/onboarding?codigo=${inviteCode}`
+    try {
+      await navigator.clipboard.writeText(`Únete a mi hogar en Finanzas en Pareja. Código: ${inviteCode} · Enlace: ${link}`)
+      setCopiado(true)
+      window.setTimeout(() => setCopiado(false), 2500)
+    } catch {
+      setError('No se pudo copiar automáticamente: copia el código y el enlace de la tarjeta.')
+    }
+  }
+
+  const registroValido = Boolean(name.trim()) && CORREO_RE.test(email.trim()) && password.length >= 6 && confirmPassword === password && Boolean(confirmPassword)
+  const loginValido = CORREO_RE.test(email.trim()) && Boolean(password)
+  const esAuth = vista !== 'registro' || step === 1
+
+  const saludo: Record<Vista, string> = {
+    registro: '¡Hola! Soy PIBBI, tu cerdito de los ahorros. Te ayudo a cuidar cada peso, en pareja.',
+    login: '¡Qué gusto verte de nuevo! Entra y sigamos cuidando sus pesos.',
+    recuperar: 'No pasa nada, a todos se nos olvida. Te mando un correo para crear una nueva.',
+    nueva: 'Elige una contraseña nueva y sigamos donde nos quedamos.',
+    confirma: 'Falta un pasito: confirma tu correo y luego inicia sesión.',
+  }
+
   return (
-    <div className="mx-auto max-w-lg p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-humo">Paso {step} de 5</p>
-        <ThemeToggle className="rounded-full border border-borde bg-tarjeta p-2 text-crema" />
-      </div>
-      <div className="mb-6 mt-1 h-2 overflow-hidden rounded-full bg-borde ">
-        <div className="h-full w-full origin-left bg-foco transition-transform" style={{ transform: `scaleX(${step / 5})` }} />
+    <div className="mx-auto min-h-screen max-w-md px-5 pb-12 pt-6">
+      <div className="mb-6 flex items-center justify-between">
+        <Logo tamano="sm" />
+        <ThemeToggle className="rounded-full border border-borde bg-tarjeta p-2.5 text-crema shadow-tarjeta transition active:scale-95" />
       </div>
 
-      {step === 1 && (
-        <section>
-          <div className="mb-4 flex items-start gap-3">
-            <Mascota className="h-16 w-16 shrink-0" />
-            <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">¡Hola! Soy PIBBI, tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.</p>
-          </div>
-          {mode === 'login' ? (
-            <>
-              <h1 className="text-2xl font-bold">Inicia sesión</h1>
-              <p className="mb-4 text-humo">Entra con el correo y la contraseña con los que creaste tu cuenta.</p>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" aria-label="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
-              <div className="relative mb-4">
-                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" aria-label="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
+      {vista === 'registro' && step > 1 && <PasoBarra paso={step} total={5} />}
+
+      <div key={`${vista}-${step}`} className="animate-paso-entrar">
+        {esAuth && (
+          <>
+            {/* PIBBI grande, nítido y sin cuadrito; el logo ya trae el nombre. */}
+            <div className="mb-5 flex flex-col items-center text-center">
+              <Mascota pose="saludando" className="h-32 w-32" />
+              <h1 className="mt-4 font-display text-2xl font-extrabold tracking-tight">
+                Finanzas <span className="text-doradotexto">en Pareja</span>
+              </h1>
+              <p className="mt-1 text-sm text-humo">Su dinero, en equipo · Gratis para los dos</p>
+            </div>
+
+            <Tarjeta className="p-5 sm:p-6">
+              <div className="mb-5 rounded-2xl rounded-tl-sm bg-elevado p-3.5">
+                <p className="text-sm text-crema">{saludo[vista]}</p>
               </div>
-              <button onClick={login} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
-                {busy ? 'Entrando…' : 'Entrar'}
-              </button>
-              <GoogleSignInButton disabled={busy} onError={setError} />
-              <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿No tienes cuenta? Crea una</button>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
-              <p className="mb-4 text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" aria-label="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" aria-label="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
-              <div className="relative mb-2">
-                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" aria-label="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
+
+              {vista === 'registro' && (
+                <>
+                  <h2 className="font-display text-xl font-bold">Crea tu cuenta</h2>
+                  <p className="mb-4 mt-1 text-sm text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
+                  <div className="space-y-3.5">
+                    <Campo etiqueta="Tu nombre" icono={<IconoUsuario className="h-4 w-4 text-humo" />} value={name}
+                      onChange={(e) => { setName(e.target.value); limpiarErrorCampo('nombre') }}
+                      placeholder="¿Cómo te llamas?" autoComplete="name" error={errores.nombre} />
+                    <Campo etiqueta="Correo electrónico" icono={<IconoCorreo className="h-4 w-4 text-humo" />} type="email" value={email}
+                      onChange={(e) => { setEmail(e.target.value); limpiarErrorCampo('correo') }}
+                      placeholder="tu@correo.com" autoComplete="email" inputMode="email" error={errores.correo} />
+                    <CampoClave etiqueta="Contraseña" value={password}
+                      onChange={(e) => { setPassword(e.target.value); limpiarErrorCampo('clave') }}
+                      placeholder="Mínimo 6 caracteres" autoComplete="new-password" error={errores.clave} />
+                    <CampoClave etiqueta="Confirmar contraseña" value={confirmPassword}
+                      onChange={(e) => { setConfirmPassword(e.target.value); limpiarErrorCampo('confirma') }}
+                      placeholder="Repite tu contraseña" autoComplete="new-password" error={errores.confirma} />
+                    <Boton onClick={() => void step1()} disabled={!registroValido} cargando={busy} className="w-full">
+                      Continuar <IconoFlechaDer className="h-4 w-4" />
+                    </Boton>
+                  </div>
+                  <GoogleSignInButton disabled={busy} onError={setError} />
+                  <Boton variante="fantasma" className="mt-2 w-full" onClick={() => { setVista('login'); setError(null); setErrores({}); setAviso(null) }}>
+                    ¿Ya tienes cuenta? Inicia sesión
+                  </Boton>
+                </>
+              )}
+
+              {vista === 'login' && (
+                <>
+                  <h2 className="font-display text-xl font-bold">Inicia sesión</h2>
+                  <p className="mb-4 mt-1 text-sm text-humo">Entra con el correo y la contraseña con los que creaste tu cuenta.</p>
+                  {aviso && <div className="mb-4"><Alerta tono="info">{aviso}</Alerta></div>}
+                  <div className="space-y-3.5">
+                    <Campo etiqueta="Correo electrónico" icono={<IconoCorreo className="h-4 w-4 text-humo" />} type="email" value={email}
+                      onChange={(e) => { setEmail(e.target.value); limpiarErrorCampo('correo') }}
+                      placeholder="tu@correo.com" autoComplete="email" inputMode="email" error={errores.correo} />
+                    <CampoClave etiqueta="Contraseña" value={password}
+                      onChange={(e) => { setPassword(e.target.value); limpiarErrorCampo('clave') }}
+                      placeholder="Tu contraseña" autoComplete="current-password" error={errores.clave} />
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => { setVista('recuperar'); setError(null); setErrores({}); setAviso(null) }}
+                        className="text-xs font-semibold text-doradotexto hover:underline">
+                        Olvidé mi contraseña
+                      </button>
+                    </div>
+                    <Boton onClick={() => void login()} disabled={!loginValido} cargando={busy} className="w-full">
+                      Entrar <IconoFlechaDer className="h-4 w-4" />
+                    </Boton>
+                  </div>
+                  <GoogleSignInButton disabled={busy} onError={setError} />
+                  <Boton variante="fantasma" className="mt-2 w-full" onClick={() => { setVista('registro'); setError(null); setErrores({}); setAviso(null) }}>
+                    ¿No tienes cuenta? Crea una
+                  </Boton>
+                </>
+              )}
+
+              {vista === 'recuperar' && (
+                <>
+                  <h2 className="font-display text-xl font-bold">Restablecer contraseña</h2>
+                  <p className="mb-4 mt-1 text-sm text-humo">Te enviamos un enlace a tu correo para elegir una nueva.</p>
+                  {aviso && <div className="mb-4"><Alerta tono="exito">{aviso}</Alerta></div>}
+                  <div className="space-y-3.5">
+                    <Campo etiqueta="Correo electrónico" icono={<IconoCorreo className="h-4 w-4 text-humo" />} type="email" value={email}
+                      onChange={(e) => { setEmail(e.target.value); limpiarErrorCampo('correo') }}
+                      placeholder="tu@correo.com" autoComplete="email" inputMode="email" error={errores.correo} />
+                    <Boton onClick={() => void recuperar()} disabled={!CORREO_RE.test(email.trim())} cargando={busy} className="w-full">
+                      Enviar enlace
+                    </Boton>
+                  </div>
+                  <Boton variante="fantasma" className="mt-3 w-full" onClick={() => { setVista('login'); setError(null); setAviso(null) }}>
+                    <IconoFlechaIzq className="h-4 w-4" /> Volver a iniciar sesión
+                  </Boton>
+                </>
+              )}
+
+              {vista === 'nueva' && (
+                <>
+                  <h2 className="font-display text-xl font-bold">Nueva contraseña</h2>
+                  <p className="mb-4 mt-1 text-sm text-humo">Elige una contraseña nueva para tu cuenta.</p>
+                  <div className="space-y-3.5">
+                    <CampoClave etiqueta="Nueva contraseña" value={nuevaClave}
+                      onChange={(e) => { setNuevaClave(e.target.value); limpiarErrorCampo('clave') }}
+                      placeholder="Mínimo 6 caracteres" autoComplete="new-password" error={errores.clave} />
+                    <CampoClave etiqueta="Confirmar contraseña" value={nuevaConfirma}
+                      onChange={(e) => { setNuevaConfirma(e.target.value); limpiarErrorCampo('confirma') }}
+                      placeholder="Repite tu contraseña" autoComplete="new-password" error={errores.confirma} />
+                    <Boton onClick={() => void guardarNueva()} disabled={nuevaClave.length < 6 || nuevaConfirma !== nuevaClave} cargando={busy} className="w-full">
+                      Guardar y continuar
+                    </Boton>
+                  </div>
+                </>
+              )}
+
+              {vista === 'confirma' && (
+                <>
+                  <h2 className="font-display text-xl font-bold">Confirma tu correo</h2>
+                  <p className="mb-4 mt-1 text-sm text-humo">Te enviamos un correo a <strong className="text-crema">{email}</strong>. Ábrelo, confirma tu cuenta y luego inicia sesión aquí.</p>
+                  <Alerta tono="info">Si no lo ves en unos minutos, revisa la carpeta de spam.</Alerta>
+                  <Boton className="mt-4 w-full" onClick={() => { setVista('login'); setError(null); setAviso(null) }}>
+                    Ya confirmé, iniciar sesión
+                  </Boton>
+                </>
+              )}
+            </Tarjeta>
+          </>
+        )}
+
+        {vista === 'registro' && step === 2 && (
+          <section>
+            <PibbiHeader
+              pose={PAGE_PIBBI_POSES.onboarding}
+              title="¿Cómo quieres usar la app?"
+              subtitle="Puedes usarla solo por ahora e invitar a tu pareja después, o en pareja desde el inicio."
+              className="mb-4"
+            />
+            <Tarjeta className="mb-4 border-2 border-foco p-4">
+              <p className="flex items-center gap-2 font-display text-lg font-bold"><IconoUsuario className="h-5 w-5 text-doradotexto" /> Solo yo por ahora</p>
+              <p className="mb-3 mt-1 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
+              <Boton onClick={() => void createHousehold(true)} cargando={busy} className="w-full">Usar solo por ahora</Boton>
+            </Tarjeta>
+
+            <div className="mb-4 flex items-center gap-3 text-sm text-humo">
+              <span className="h-px flex-1 bg-borde" /><span>o en pareja</span><span className="h-px flex-1 bg-borde" />
+            </div>
+
+            <Tarjeta className="mb-4 border-2 border-foco p-4">
+              <p className="flex items-center gap-2 font-display text-lg font-bold"><IconoCorazon className="h-5 w-5 text-doradotexto" /> Soy el primero: crear nuestro hogar</p>
+              <p className="mb-3 mt-1 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
+              <div className="space-y-3">
+                <Campo etiqueta="Nombre del hogar" value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nuestro hogar" />
+                <Boton onClick={() => void createHousehold(false)} cargando={busy} className="w-full">Crear hogar</Boton>
               </div>
-              <div className="relative mb-4">
-                <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" aria-label="Confirmar contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
-              </div>
-              <button onClick={step1} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
-                {busy ? 'Guardando…' : 'Continuar'}
-              </button>
-              <GoogleSignInButton disabled={busy} onError={setError} />
-              <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿Ya tienes cuenta? Inicia sesión</button>
-            </>
-          )}
-        </section>
-      )}
+            </Tarjeta>
 
-      {step === 2 && (
-        <section>
-          <PibbiHeader
-            pose={PAGE_PIBBI_POSES.onboarding}
-            title="¿Cómo quieres usar la app?"
-            subtitle="Puedes usarla solo por ahora e invitar a tu pareja después, o en pareja desde el inicio."
-            className="mb-4"
-          />
+            <div className="mb-4 flex items-center gap-3 text-sm text-humo">
+              <span className="h-px flex-1 bg-borde" /><span>o</span><span className="h-px flex-1 bg-borde" />
+            </div>
 
-          {/* Modo individual: hogar de 1 persona, sin código ni invitación obligatoria. */}
-          <div className="mb-4 rounded-2xl border-2 border-foco p-4 ">
-            <p className="text-lg font-bold">🙋 Solo yo por ahora</p>
-            <p className="mb-3 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
-            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
-              {busy ? 'Creando hogar…' : 'Usar solo por ahora'}
-            </button>
-          </div>
-
-          <div className="mb-4 flex items-center gap-3 text-sm text-humo">
-            <span className="h-px flex-1 bg-borde " />
-            <span>o en pareja</span>
-            <span className="h-px flex-1 bg-borde " />
-          </div>
-
-          {/* Ruta principal en pareja: el primero crea el hogar. No necesita ningún código. */}
-          <div className="mb-4 rounded-2xl border-2 border-foco p-4 ">
-            <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
-            <p className="mb-3 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
-            <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
-              {busy ? 'Creando hogar…' : 'Crear hogar'}
-            </button>
-          </div>
-
-          <div className="mb-4 flex items-center gap-3 text-sm text-humo">
-            <span className="h-px flex-1 bg-borde " />
-            <span>o</span>
-            <span className="h-px flex-1 bg-borde " />
-          </div>
-
-          {/* Ruta secundaria: solo para quien ya recibió un código de su pareja. */}
-          <div className="rounded-2xl bg-elevado p-4 ">
-            <p className="text-lg font-bold">Mi pareja ya creó el hogar</p>
-            <p className="mb-3 text-sm text-humo">Solo si tu pareja ya creó el hogar y te pasó su código.</p>
-            {joinExpanded ? (
-              <>
-                {joinCode && <p className="mb-2 rounded-lg bg-doradotenue p-2 text-sm text-doradotexto  ">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
-                <div className="flex gap-2">
-                  <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" aria-label="Código de invitación" className="flex-1 rounded-xl border p-3 uppercase" />
-                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-tinta px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
-                    {busy ? 'Uniendo…' : 'Unirme'}
-                  </button>
+            <Tarjeta className="p-4">
+              <p className="flex items-center gap-2 font-display text-lg font-bold"><IconoLlave className="h-5 w-5 text-doradotexto" /> Mi pareja ya creó el hogar</p>
+              <p className="mb-3 mt-1 text-sm text-humo">Solo si tu pareja ya creó el hogar y te pasó su código.</p>
+              {joinExpanded ? (
+                <div className="space-y-3">
+                  {joinCode && <Alerta tono="info">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</Alerta>}
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <Campo etiqueta="Código de invitación" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="Ej. K7X2Q9" className="uppercase tracking-widest" />
+                    </div>
+                    <Boton variante="oscuro" onClick={() => void joinHousehold()} cargando={busy} disabled={joinCode.trim().length < 4} className="mb-0.5">Unirme</Boton>
+                  </div>
                 </div>
-              </>
-            ) : (
-              <button onClick={() => setJoinExpanded(true)} className="w-full whitespace-nowrap rounded-xl border border-borde bg-tarjeta py-3 font-bold">Tengo un código de invitación</button>
-            )}
-          </div>
+              ) : (
+                <Boton variante="secundario" className="w-full" onClick={() => setJoinExpanded(true)}>Tengo un código de invitación</Boton>
+              )}
+            </Tarjeta>
 
-          <div className="mt-6 text-center">
-            <button type="button" onClick={async () => { await supabase.auth.signOut(); setStep(1); setMode('login'); setError(null) }} className="text-xs text-humo underline hover:text-crema">
-              ¿Quieres usar otra cuenta? Cerrar sesión
-            </button>
-          </div>
-        </section>
-      )}
+            <div className="mt-6 text-center">
+              <button type="button" onClick={async () => { await supabase.auth.signOut(); setStep(1); setVista('login'); setError(null) }} className="text-xs text-humo underline hover:text-crema">
+                ¿Quieres usar otra cuenta? Cerrar sesión
+              </button>
+            </div>
+          </section>
+        )}
 
-      {step === 3 && (
-        <section>
-          <PibbiHeader
-            pose={PAGE_PIBBI_POSES.onboarding}
-            title={soloMode ? 'Invita a tu pareja (opcional)' : 'Invita a tu pareja'}
-            subtitle={soloMode ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.' : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}
-            className="mb-4"
-          />
-          <div className="mb-4 rounded-2xl bg-doradotenue p-4 text-center ">
-            <p className="text-3xl font-black tracking-widest text-doradotexto ">{inviteCode}</p>
-            <p className="mt-1 text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
-          </div>
-          <button onClick={() => setStep(4)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">{soloMode ? 'Lo haré después' : 'Continuar (se une después)'}</button>
-        </section>
-      )}
+        {vista === 'registro' && step === 3 && (
+          <section>
+            <PibbiHeader
+              pose={PAGE_PIBBI_POSES.onboarding}
+              title={soloMode ? 'Invita a tu pareja (opcional)' : 'Invita a tu pareja'}
+              subtitle={soloMode ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.' : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}
+              className="mb-4"
+            />
+            <Tarjeta className="mb-4 bg-doradotenue p-5 text-center">
+              <p className="font-display text-3xl font-extrabold tracking-[0.3em] text-doradotexto">{inviteCode}</p>
+              <p className="mt-2 break-all text-xs text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
+              <Boton variante="secundario" tamano="sm" className="mt-3" onClick={() => void copiarInvitacion()}>
+                {copiado ? <><IconoCheck className="h-4 w-4" /> ¡Copiado!</> : <><IconoCopiar className="h-4 w-4" /> Copiar código y enlace</>}
+              </Boton>
+            </Tarjeta>
+            <Boton onClick={() => setStep(4)} cargando={busy} className="w-full">
+              {soloMode ? 'Lo haré después' : 'Continuar (se une después)'} <IconoFlechaDer className="h-4 w-4" />
+            </Boton>
+          </section>
+        )}
 
-      {step === 4 && (
-        <section>
-          <h1 className="text-2xl font-bold">Viste a PIBBI</h1>
-          <p className="mb-4 text-humo">Elige la prenda de tu PIBBI. Puedes cambiarla cuando quieras desde Inicio. Este paso es opcional.</p>
-          <div className="mb-4 rounded-2xl border border-borde bg-tarjeta p-4">
-            <PibbiDresser title="Prendas" />
-          </div>
-          <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
-            {busy ? 'Creando cuentas…' : 'Crear mis cuentas y terminar'}
-          </button>
-        </section>
-      )}
+        {vista === 'registro' && step === 4 && (
+          <section>
+            <h1 className="font-display text-2xl font-bold">Viste a PIBBI</h1>
+            <p className="mb-4 mt-1 text-humo">Elige la prenda de tu PIBBI. Puedes cambiarla cuando quieras desde Inicio. Este paso es opcional.</p>
+            <Tarjeta className="mb-4 p-4">
+              <PibbiDresser title="Prendas" />
+            </Tarjeta>
+            <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
+            <Boton onClick={() => void seedAccountsAndCategories()} cargando={busy} className="w-full">Crear mis cuentas y terminar</Boton>
+          </section>
+        )}
 
-      {step === 5 && (
-        <section className="text-center">
-          <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-24 w-24" />
-          <h1 className="text-2xl font-bold">¡Listo! 🎉</h1>
-          <p className="mb-4 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
-          <button onClick={onDone} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Ir al inicio</button>
-        </section>
-      )}
+        {vista === 'registro' && step === 5 && (
+          <section className="text-center">
+            <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-28 w-28" />
+            <h1 className="font-display text-2xl font-extrabold">¡Listo!</h1>
+            <p className="mb-5 mt-1 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
+            <Boton onClick={onDone} className="w-full">Ir al inicio <IconoFlechaDer className="h-4 w-4" /></Boton>
+          </section>
+        )}
+      </div>
 
-      {error && <div role="alert" className="mt-4 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">⚠️ {error}</div>}
+      {error && <div className="mt-4"><Alerta>{error}</Alerta></div>}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { PIBBI_POSES, type MascotaPose } from '../lib/pibbi-poses'
 import { usePibbi, type PibbiAccessory } from '../lib/pibbi'
 
@@ -6,14 +6,18 @@ export type { MascotaPose } from '../lib/pibbi-poses'
 
 /**
  * La mascota de la app: PIBBI, el cerdito rosa de la hoja de personaje.
- * Las fotos son verticales (el cerdito entero, de orejas a patitas) y
- * van con object-contain en un marco del color de fondo del tema, así
- * se ve todo su cuerpo en vez de un primer plano recortado. Las
- * prendas se dibujan como SVG sobre la imagen, así cada persona ve su
- * propio PIBBI vestido. Las poses nuevas (perfil con lápiz,
- * calculadora, avatar circular) traen fondo circular negro, como el
- * avatar de referencia de George; el avatar circular sigue con
- * object-cover para llenar el círculo.
+ *
+ * Las fotos fuente traen un fondo azul marino horneado (sin transparencia).
+ * Para que PIBBI se vea grande, nítido y SIN el cuadrito que desentona,
+ * aquí se recorta ese fondo en un canvas (flood-fill desde las orillas:
+ * solo se elimina el fondo conectado al borde, nunca el cuerpo de PIBBI)
+ * y el resultado se cachea por pose. Las poses con fondo circular negro
+ * intencional (perfil con lápiz, calculadora, avatar) se muestran como
+ * insignia redonda, igual en tema día y noche.
+ *
+ * Las prendas se dibujan como SVG sobre la imagen, así cada persona ve
+ * su propio PIBBI vestido. Si el canvas no está disponible, se usa la
+ * imagen original (nunca se rompe la mascota).
  */
 
 interface Props {
@@ -24,9 +28,57 @@ interface Props {
   className?: string
 }
 
-const POSES: Record<MascotaPose, string> = Object.fromEntries(
-  Object.entries(PIBBI_POSES).map(([pose, cfg]) => [pose, cfg.image]),
-) as Record<MascotaPose, string>
+/** Cache de recortes por imagen fuente (data URI -> data URI sin fondo). */
+const cacheRecortes = new Map<string, string>()
+
+/** ¿El píxel es del fondo navy horneado? (azul dominante y oscuro) */
+function esFondo(px: Uint8ClampedArray, o: number): boolean {
+  return px[o + 2] > px[o] && px[o + 2] >= px[o + 1] && (px[o] + px[o + 1] + px[o + 2]) < 380
+}
+
+/** Recorta el fondo conectado al borde. Devuelve null si no se pudo. */
+function recortarFondo(img: HTMLImageElement): string | null {
+  try {
+    const w = img.naturalWidth
+    const h = img.naturalHeight
+    if (!w || !h) return null
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return null
+    ctx.drawImage(img, 0, 0)
+    const datos = ctx.getImageData(0, 0, w, h)
+    const px = datos.data
+    const n = w * h
+    const visitado = new Uint8Array(n)
+    const cola = new Int32Array(n)
+    let cabeza = 0
+    let fin = 0
+    const empujar = (i: number) => {
+      if (!visitado[i] && esFondo(px, i * 4)) {
+        visitado[i] = 1
+        cola[fin++] = i
+      }
+    }
+    for (let x = 0; x < w; x++) { empujar(x); empujar((h - 1) * w + x) }
+    for (let y = 0; y < h; y++) { empujar(y * w); empujar(y * w + w - 1) }
+    while (cabeza < fin) {
+      const i = cola[cabeza++]
+      const x = i % w
+      const y = (i / w) | 0
+      if (x > 0) empujar(i - 1)
+      if (x < w - 1) empujar(i + 1)
+      if (y > 0) empujar(i - w)
+      if (y < h - 1) empujar(i + w)
+    }
+    for (let i = 0; i < n; i++) if (visitado[i]) px[i * 4 + 3] = 0
+    ctx.putImageData(datos, 0, 0)
+    return canvas.toDataURL('image/png')
+  } catch {
+    return null
+  }
+}
 
 /** Prendas dibujadas en SVG sobre la foto de PIBBI (posiciones relativas). */
 function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
@@ -85,11 +137,53 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
     '--pibbi-breathe-delay': `${-((seed % 72) / 10)}s`, // ciclo 7.2 s
     '--pibbi-blink-delay': `${-((seed % 42) / 10)}s`, // ciclo 4.2 s
   } as React.CSSProperties
+
+  const poseCfg = PIBBI_POSES[pose]
+  // Insignia: pose con fondo circular negro intencional (avatar, perfil,
+  // calculadora). Se ve igual en día y noche, como un chip redondo.
+  const esInsignia = poseCfg.circular === true || poseCfg.accessories === false
+
+  const [src, setSrc] = useState<string>(() => cacheRecortes.get(poseCfg.image) ?? poseCfg.image)
+  const [listo, setListo] = useState<boolean>(() => esInsignia || cacheRecortes.has(poseCfg.image))
+
+  useEffect(() => {
+    if (esInsignia) {
+      setSrc(poseCfg.image)
+      setListo(true)
+      return
+    }
+    const cacheado = cacheRecortes.get(poseCfg.image)
+    if (cacheado) {
+      setSrc(cacheado)
+      setListo(true)
+      return
+    }
+    setListo(false)
+    let vivo = true
+    const img = new Image()
+    img.onload = () => {
+      const recorte = recortarFondo(img)
+      const final = recorte ?? poseCfg.image
+      cacheRecortes.set(poseCfg.image, final)
+      if (vivo) {
+        setSrc(final)
+        setListo(true)
+      }
+    }
+    img.onerror = () => {
+      if (vivo) {
+        setSrc(poseCfg.image)
+        setListo(true)
+      }
+    }
+    img.src = poseCfg.image
+    return () => { vivo = false }
+  }, [poseCfg.image, esInsignia])
+
   // Micro-interacción al tocarlo: el envoltorio escala (hover/active) y el
   // interior sigue con su animación de flotar y pestañear. La animación CSS
   // de .pibbi-vivo pisa el transform de su propio elemento, por eso la
   // escala vive en el envoltorio y no en el mismo div.
-  const poseCfg = PIBBI_POSES[pose]
   return (
     <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${className}`} style={delays}>
       <div className="pibbi-vivo relative h-full w-full">
@@ -97,7 +191,13 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
             así no pelea con la flotación (translate) del padre y la imagen,
             los párpados y las prendas respiran todos juntos. */}
         <div className="pibbi-respira">
-          <img src={POSES[pose]} alt={alt} className={`h-full w-full ring-1 ring-borde ${poseCfg.circular ? 'rounded-full bg-black object-cover' : 'rounded-3xl bg-noche object-contain'}`} />
+          <img
+            src={src}
+            alt={alt}
+            className={`h-full w-full transition-opacity duration-300 ${listo ? 'opacity-100' : 'opacity-0'} ${
+              esInsignia ? 'rounded-full bg-black object-cover' : 'pibbi-recorte object-contain'
+            }`}
+          />
           {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
               Cada pose trae la posición de sus ojos (las de frente los tienen
               a ~30% de altura y ~28% / ~72% de ancho; las nuevas, en su sitio). */}
@@ -108,8 +208,8 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
         </div>
       </div>
       {/* Sombra del suelo: fuera del div que flota, respira en contrafase.
-          El avatar circular no lleva sombra: es un círculo, no está "de pie". */}
-      {!poseCfg.circular && <span aria-hidden="true" className="pibbi-sombra" />}
+          Las insignias redondas no llevan sombra: no están "de pie". */}
+      {!esInsignia && <span aria-hidden="true" className="pibbi-sombra" />}
     </div>
   )
 }

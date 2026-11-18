@@ -3,9 +3,10 @@
     "@supabase/supabase-js": "^2.45.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-router-dom": "^6.26.2",
+    "tesseract.js": "^6.0.1"
   },
-  "description": "App de finanzas para una pareja (2 usuarios): control mutuo de ingresos, gastos, presupuesto por sobres, metas y deuda mutua. Espa\u00f1ol latinoamericano, MXN por defecto.",
+  "description": "App de finanzas para una pareja (2 usuarios): control mutuo de ingresos, gastos, presupuesto por sobres, metas y deuda mutua. Español latinoamericano, MXN por defecto.",
   "devDependencies": {
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
@@ -29,6 +30,7 @@
     "test:pibbi": "esbuild scripts/test-pibbi.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-pibbi.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-pibbi.mjs",
     "test:login": "esbuild scripts/test-login.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-login.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-login.mjs",
     "test:capture": "esbuild scripts/test-capture.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-capture.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-capture.mjs",
+    "test:captura-local": "esbuild scripts/test-captura-local.ts --bundle --platform=node --format=esm --external:tesseract.js --outfile=node_modules/.cache/test-captura-local.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-captura-local.mjs",
     "test:sw": "esbuild scripts/test-sw.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-sw.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-sw.mjs",
     "test:push": "node scripts/test-push.mjs",
     "test:planes": "esbuild scripts/test-planes.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/test-planes.mjs --log-level=error && TZ=America/Tijuana node node_modules/.cache/test-planes.mjs",

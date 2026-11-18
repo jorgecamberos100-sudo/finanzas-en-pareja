@@ -4,8 +4,14 @@ import { supabase, getHouseholdId, setHouseholdId, clearHouseholdId, findMyHouse
 import { useReminderNotifications } from './lib/reminders'
 import { cargarPlan } from './lib/planes-db'
 import { onUpdateAvailable, applyUpdate } from './lib/sw-update'
+import { mensajeHumano } from './lib/errores'
 import { PibbiProvider } from './lib/pibbi'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
+import Mascota from './components/Mascota'
+import {
+  Alerta, Boton, Esqueleto, IconoBrillo, IconoCampana, IconoChat, IconoInicio, IconoLista,
+  IconoMas, IconoMeta, IconoSobre, IconoX, Logo, Spinner,
+} from './components/ui'
 import type { Account, Category, Goal, Household, HouseholdPlan, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
@@ -49,20 +55,35 @@ function UpdateBanner() {
   useEffect(() => onUpdateAvailable(() => setShow(true)), [])
   if (!show) return null
   return (
-    <div className="fixed inset-x-0 top-0 z-50">
+    <div className="fixed inset-x-0 top-0 z-50 animate-paso-entrar">
       <div className="mx-auto max-w-lg px-3 pt-3">
-        <div role="alert" className="flex items-center gap-2 rounded-xl border border-dorado bg-tarjeta p-3 shadow-lg">
-          <span className="flex-1 text-sm text-crema">✨ Nueva versión disponible</span>
-          <button
-            onClick={applyUpdate}
-            className="rounded-lg bg-dorado px-3 py-1.5 text-sm font-extrabold tracking-wide text-tinta"
-          >
-            Actualizar ahora
-          </button>
-          <button aria-label="Cerrar aviso" onClick={() => setShow(false)} className="px-2 text-lg text-humo">
-            ✕
+        <div role="alert" className="flex items-center gap-2 rounded-2xl border border-foco/60 bg-tarjeta p-3 shadow-elevado">
+          <IconoBrillo className="h-5 w-5 shrink-0 text-doradotexto" />
+          <span className="flex-1 text-sm font-medium text-crema">Nueva versión disponible</span>
+          <Boton tamano="sm" onClick={applyUpdate}>Actualizar ahora</Boton>
+          <button aria-label="Cerrar aviso" onClick={() => setShow(false)} className="rounded-lg p-1.5 text-humo transition hover:text-crema active:scale-90">
+            <IconoX className="h-4 w-4" />
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** Pantalla de primera carga: PIBBI + logo + esqueletos (nunca texto plano). */
+function PantallaCarga() {
+  return (
+    <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 p-6" role="status" aria-label="Cargando tus datos">
+      <Mascota pose="saludando" className="h-24 w-24" />
+      <Logo tamano="md" conPibbi={false} />
+      <Spinner className="h-6 w-6 text-doradotexto" />
+      <div className="w-full space-y-3">
+        <Esqueleto className="h-28 rounded-3xl" />
+        <div className="grid grid-cols-2 gap-3">
+          <Esqueleto className="h-20" />
+          <Esqueleto className="h-20" />
+        </div>
+        <Esqueleto className="h-16" />
       </div>
     </div>
   )
@@ -87,8 +108,8 @@ export default function App() {
   const householdId = getHouseholdId()
 
   /**
-   * Carga todo el hogar. El try/finally garantiza que "Cargando…" siempre
-   * se apaga: si una query de Promise.all falla (red caída),
+   * Carga todo el hogar. El try/finally garantiza que la carga siempre
+   * termina: si una query de Promise.all falla (red caída),
    * setLoading(false) corre y muestra el mensaje amigable de error.
    */
   async function loadAll() {
@@ -126,7 +147,7 @@ export default function App() {
         // la deuda reaparecía al recargar (ver computeMutualBalance).
         supabase.from('money_dates').select('*').eq('household_id', hid).order('date', { ascending: false }),
       ])
-      if (hh.error) { setSyncError(hh.error.message); return }
+      if (hh.error) { setSyncError(mensajeHumano(hh.error.message, 'No se pudo cargar tu hogar. Revisa tu conexión e inténtalo de nuevo.')); return }
 
       // Plan del hogar (migración 005). Se carga aparte y tolera que la
       // tabla aún no exista en producción: sin fila, el hogar es Free.
@@ -152,7 +173,7 @@ export default function App() {
       // Carga exitosa: limpiar cualquier error de sincronización anterior.
       setSyncError(null)
     } catch (e) {
-      setSyncError(e instanceof Error ? `No se pudo cargar tus datos: ${e.message}` : 'No se pudo cargar tus datos. Revisa tu conexión e inténtalo de nuevo.')
+      setSyncError(mensajeHumano(e, 'No se pudo cargar tus datos. Revisa tu conexión e inténtalo de nuevo.'))
     } finally {
       setLoading(false)
     }
@@ -183,6 +204,7 @@ export default function App() {
     return () => {
       subscription.unsubscribe()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Carga inicial + Realtime: todo cambio se refleja al instante en ambos teléfonos.
@@ -219,16 +241,16 @@ export default function App() {
       visibility: tx.visibility, review_status: tx.review_status, dedupe_hash: tx.dedupe_hash ?? null,
     })
     if (error) {
-      setSyncError(`No se pudo guardar el movimiento: ${error.message}`)
+      setSyncError(mensajeHumano(error.message, 'No se pudo guardar el movimiento. Inténtalo de nuevo.'))
       setData((d) => ({ ...d, transactions: d.transactions.filter((t) => t.id !== optimistic.id) }))
     } else {
       setSyncError(null)
-      showReaction('calculando', '¡Guardado! PIBBI ya hizo las cuentas 🧮')
+      showReaction('calculando', '¡Guardado! PIBBI ya hizo las cuentas')
       await loadAll()
     }
   }
 
-  if (loading) return <PibbiProvider><UpdateBanner /><div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div></PibbiProvider>
+  if (loading) return <PibbiProvider><UpdateBanner /><PantallaCarga /></PibbiProvider>
   if (!householdId || !data.household) return <PibbiProvider><UpdateBanner /><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
 
   // Etiqueta corta para pantallas angostas (360 px): con 6 pestañas y
@@ -236,12 +258,12 @@ export default function App() {
   // tocar. En móvil se reparte el ancho en partes iguales (flex-1) y se
   // usan las etiquetas cortas; en ≥640 px, las completas.
   const tabs = [
-    { to: '/', label: 'Inicio', short: 'Inicio', icon: '🏠' },
-    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icon: '🧾' },
-    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icon: '💰' },
-    { to: '/plan', label: 'Plan', short: 'Plan', icon: '🎯' },
-    { to: '/chat', label: 'Chat', short: 'Chat', icon: '💬' },
-    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icon: '🔔' },
+    { to: '/', label: 'Inicio', short: 'Inicio', icono: IconoInicio },
+    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icono: IconoLista },
+    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icono: IconoSobre },
+    { to: '/plan', label: 'Plan', short: 'Plan', icono: IconoMeta },
+    { to: '/chat', label: 'Chat', short: 'Chat', icono: IconoChat },
+    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icono: IconoCampana },
   ]
 
   return (
@@ -249,9 +271,7 @@ export default function App() {
     <UpdateBanner />
     <div className="mx-auto min-h-screen max-w-lg pb-28">
       {syncError && (
-        <div role="alert" className="m-3 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave  ">
-          ⚠️ {syncError}
-        </div>
+        <div className="m-3"><Alerta>{syncError}</Alerta></div>
       )}
       {reaction && (
         <div className="px-3 pt-3">
@@ -271,18 +291,24 @@ export default function App() {
       <button
         aria-label="Agregar movimiento"
         onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-dorado text-2xl text-tinta shadow-[0_8px_24px_rgba(245,197,66,0.45)] transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-dorado text-tinta shadow-fab transition-transform duration-150 hover:scale-105 active:scale-90"
       >
-        +
+        <IconoMas className="h-7 w-7" />
       </button>
 
-      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2  ">
+      <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-lg justify-around border-t border-borde bg-tarjeta py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-elevado">
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
-            className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center px-1 text-center text-[11px] leading-tight sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-doradotexto ' : 'text-humo'}`}>
-            <span className="text-xl" aria-hidden="true">{t.icon}</span>
-            <span className="sm:hidden">{t.short}</span>
-            <span className="hidden sm:inline">{t.label}</span>
+            className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 text-center text-[11px] leading-tight transition-colors sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-doradotexto' : 'text-humo'}`}>
+            {({ isActive }) => (
+              <>
+                <span className={`rounded-xl px-3 py-1 transition-colors ${isActive ? 'bg-doradotenue' : ''}`}>
+                  <t.icono className="h-5 w-5" />
+                </span>
+                <span className="sm:hidden">{t.short}</span>
+                <span className="hidden sm:inline">{t.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
         <ThemeToggle className="flex min-w-0 flex-col items-center justify-center px-2 text-humo" />

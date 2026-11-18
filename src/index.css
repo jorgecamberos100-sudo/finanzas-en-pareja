@@ -43,6 +43,10 @@
   --rosaclaro: #F9A8B8;
   --rosaparado: #F49DB1;
   --sombra: rgba(0, 0, 0, 0.45);
+  /* Sombras de tarjetas y botón flotante (tema noche): profundas. */
+  --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.55);
+  --sombra-elevada: 0 2px 6px rgba(0, 0, 0, 0.35), 0 22px 48px -18px rgba(0, 0, 0, 0.65);
+  --sombra-fab: 0 6px 18px rgba(32, 185, 129, 0.35), 0 3px 8px rgba(0, 0, 0, 0.35);
 }
 
 :root[data-theme='dia'] {
@@ -72,10 +76,18 @@
   --rojosuave-rgb: 194 65 12;
   --tinta-rgb: 12 43 28;
   --foco-rgb: 19 122 85;
+  /* Sombras suaves de día: tarjetas blancas que flotan sobre el fondo. */
+  --sombra-tarjeta: 0 1px 2px rgba(12, 43, 28, 0.05), 0 10px 28px -16px rgba(12, 43, 28, 0.2);
+  --sombra-elevada: 0 2px 6px rgba(12, 43, 28, 0.07), 0 24px 52px -20px rgba(12, 43, 28, 0.3);
+  --sombra-fab: 0 6px 18px rgba(32, 185, 129, 0.4), 0 3px 8px rgba(12, 43, 28, 0.18);
 }
 
 html, body {
   overflow-x: clip;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -84,6 +96,8 @@ body {
 
 input, select, textarea {
   @apply border-borde bg-tarjeta text-crema transition-colors;
+  /* 16px mínimo: iOS deja de hacer zoom automático al enfocar un campo. */
+  font-size: 16px;
 }
 
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
@@ -107,6 +121,41 @@ select option {
    sobre el fondo en ambos temas. */
 :focus-visible {
   @apply outline-none ring-2 ring-foco ring-offset-2 ring-offset-noche;
+}
+
+/* Montos y cifras: figuras tabulares para que las columnas alineen. */
+.nums {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Esqueleto de carga con brillo que barre (nunca texto plano "Cargando…"). */
+.esqueleto {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--elevado-rgb));
+}
+.esqueleto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--crema-rgb) / 0.07), transparent);
+  animation: barrido 1.6s infinite;
+}
+@keyframes barrido {
+  100% { transform: translateX(100%); }
+}
+
+/* PIBBI recortado (sin el cuadrito de fondo): sombra proyectada suave
+   para que se sienta apoyado sobre la tarjeta, en ambos temas. */
+.pibbi-recorte {
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
+}
+
+/* Barra de desplazamiento discreta, acorde al tema. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--borde-rgb)) transparent;
 }
 
 /* PIBBI siempre vivo: flota, respira, pestañea y proyecta sombra, todo
@@ -223,6 +272,15 @@ select option {
     animation: none;
   }
   main {
+    animation: none;
+  }
+  .esqueleto::after {
+    animation: none;
+  }
+  .animate-hoja-subir,
+  .animate-paso-entrar,
+  .animate-aparecer,
+  .animate-latido-suave {
     animation: none;
   }
 }

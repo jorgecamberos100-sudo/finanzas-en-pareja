@@ -18,16 +18,16 @@ export default function Chat({ data, onSave, onRefresh }: Props) {
     <main className="space-y-2">
       <PibbiHeader
         pose={PAGE_PIBBI_POSES.chat}
-        title="Chat de captura 💬"
+        title="Chat de captura"
         subtitle={
           <>
             <p className="text-sm text-humo">
-              Soy PIBBI 🐷 Escríbelo, mándale foto al ticket o a tu libreta, o graba una nota de voz. Revisa la propuesta y confirma: nada se guarda solo.
+              Escríbelo, mándale foto al ticket o a tu libreta, o dicta una nota de voz. La foto y la voz se procesan gratis en tu teléfono. Revisa la propuesta y confirma: nada se guarda solo.
               También puedes pedirme un recordatorio: “recuérdame pagar la renta el 1ro”.
             </p>
             <p className="mt-1 text-xs text-humo">
-              Plan {def.nombre} · Capturas con IA este mes: {capturasUsadas(data.plan)}/{def.capturasIaMes}
-              {capturasRestantes(data.plan) === 0 ? ' · Llegaste al límite, pásate a Plus para seguir' : ''}
+              Plan {def.nombre} · Capturas con IA de servidor este mes: {capturasUsadas(data.plan)}/{def.capturasIaMes}
+              {capturasRestantes(data.plan) === 0 ? ' · La captura en tu teléfono sigue gratis y sin límite' : ''}
             </p>
           </>
         }
