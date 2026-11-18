@@ -236,7 +236,7 @@ export default function Reminders({ data, onRefresh }: Props) {
             {r.amount !== null && <p className="text-sm font-semibold">{formatMoney(r.amount, currency)}</p>}
             {r.note && <p className="text-sm text-humo">{r.note}</p>}
           </div>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${status === 'overdue' ? 'bg-[#FF8A8026] text-rojosuave' : status === 'today' ? 'bg-[#F5C54226] text-doradotexto' : 'bg-elevado text-humo '}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${status === 'overdue' ? 'bg-rojosuave/15 text-rojosuave' : status === 'today' ? 'bg-dorado/15 text-doradotexto' : 'bg-elevado text-humo '}`}>
             {badge}
           </span>
         </div>
@@ -359,7 +359,7 @@ export default function Reminders({ data, onRefresh }: Props) {
       {done.length > 0 && (
         <section>
           <div className="mb-2 flex items-center gap-3">
-            <Mascota pose="celebrando" alt="PIBBI celebrando un pago hecho" className="h-12 w-12 shrink-0" />
+            <Mascota pose="celebrando" alt="PIBBI celebrando un pago hecho" className="h-10 w-10 shrink-0" />
             <h2 className="font-bold">Ya pagados</h2>
           </div>
           {done.map((r) => (

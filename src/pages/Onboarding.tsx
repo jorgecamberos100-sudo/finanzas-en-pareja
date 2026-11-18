@@ -174,7 +174,7 @@ export default function Onboarding({ onDone }: Props) {
       {step === 1 && (
         <section>
           <div className="mb-4 flex items-start gap-3">
-            <Mascota className="h-20 w-20 shrink-0" />
+            <Mascota className="h-16 w-16 shrink-0" />
             <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">¡Hola! Soy PIBBI, tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.</p>
           </div>
           {mode === 'login' ? (
@@ -311,14 +311,14 @@ export default function Onboarding({ onDone }: Props) {
 
       {step === 5 && (
         <section className="text-center">
-          <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-32 w-32" />
+          <Mascota pose="celebrando" alt="PIBBI celebrando: tu hogar está listo" className="mx-auto mb-4 h-24 w-24" />
           <h1 className="text-2xl font-bold">¡Listo! 🎉</h1>
           <p className="mb-4 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
           <button onClick={onDone} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Ir al inicio</button>
         </section>
       )}
 
-      {error && <div role="alert" className="mt-4 rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave">⚠️ {error}</div>}
+      {error && <div role="alert" className="mt-4 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">⚠️ {error}</div>}
     </div>
   )
 }

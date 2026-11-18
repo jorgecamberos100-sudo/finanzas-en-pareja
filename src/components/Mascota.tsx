@@ -6,11 +6,14 @@ export type { MascotaPose } from '../lib/pibbi-poses'
 
 /**
  * La mascota de la app: PIBBI, el cerdito rosa de la hoja de personaje.
- * Los recortes ya traen fondo azul marino, así que van en un marco
- * redondeado que se funde con el tema oscuro. Las prendas se dibujan
- * como SVG sobre la imagen, así cada persona ve su propio PIBBI vestido.
- * Las poses nuevas (perfil con lápiz, calculadora, avatar circular)
- * traen fondo circular negro, como el avatar de referencia de George.
+ * Las fotos son verticales (el cerdito entero, de orejas a patitas) y
+ * van con object-contain en un marco del color de fondo del tema, así
+ * se ve todo su cuerpo en vez de un primer plano recortado. Las
+ * prendas se dibujan como SVG sobre la imagen, así cada persona ve su
+ * propio PIBBI vestido. Las poses nuevas (perfil con lápiz,
+ * calculadora, avatar circular) traen fondo circular negro, como el
+ * avatar de referencia de George; el avatar circular sigue con
+ * object-cover para llenar el círculo.
  */
 
 interface Props {
@@ -68,7 +71,7 @@ function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
   return null
 }
 
-export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-28 w-28' }: Props) {
+export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nuestro cerdito de los ahorros', className = 'h-24 w-24' }: Props) {
   const { accessory: saved } = usePibbi()
   const acc = accessory ?? saved
   // Cada PIBBI lleva su propio retraso negativo (estable por instancia):
@@ -94,7 +97,7 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
             así no pelea con la flotación (translate) del padre y la imagen,
             los párpados y las prendas respiran todos juntos. */}
         <div className="pibbi-respira">
-          <img src={POSES[pose]} alt={alt} className={`h-full w-full object-cover ring-1 ring-borde ${poseCfg.circular ? 'rounded-full bg-black' : 'rounded-3xl'}`} />
+          <img src={POSES[pose]} alt={alt} className={`h-full w-full ring-1 ring-borde ${poseCfg.circular ? 'rounded-full bg-black object-cover' : 'rounded-3xl bg-noche object-contain'}`} />
           {/* Párpados de PIBBI: bajan cada ~4 s para que siempre esté pestañeando.
               Cada pose trae la posición de sus ojos (las de frente los tienen
               a ~30% de altura y ~28% / ~72% de ancho; las nuevas, en su sitio). */}

@@ -101,7 +101,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
         <div className="mb-3 grid grid-cols-3 gap-2">
           {(['gasto', 'ingreso', 'transferencia'] as TxType[]).map((t) => (
             <button key={t} onClick={() => { setType(t); setError(null) }}
-              className={`rounded-xl py-2 text-sm font-semibold capitalize ${type === t ? (t === 'gasto' ? 'bg-[#FF8A8026] text-rojosuave' : t === 'ingreso' ? 'bg-[#4ADE8026] text-verde' : 'bg-[#7DDBC326] text-menta') : 'bg-elevado text-humo '}`}>
+              className={`rounded-xl py-2 text-sm font-semibold capitalize ${type === t ? (t === 'gasto' ? 'bg-rojosuave/15 text-rojosuave' : t === 'ingreso' ? 'bg-verde/15 text-verde' : 'bg-menta/15 text-menta') : 'bg-elevado text-humo '}`}>
               {t}
             </button>
           ))}

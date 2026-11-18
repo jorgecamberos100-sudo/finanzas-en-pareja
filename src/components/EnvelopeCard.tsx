@@ -18,7 +18,7 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
   const limit = category.monthly_limit + (category.rollover ? rolloverBalance : 0)
   const available = Math.round((limit - spent) * 100) / 100
   const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0
-  const bar = pct >= 100 ? 'bg-[#E05353]' : pct >= 80 ? 'bg-dorado' : 'bg-verde'
+  const bar = pct >= 100 ? 'bg-rojosuave' : pct >= 80 ? 'bg-dorado' : 'bg-verde'
 
   return (
     <article className="rounded-2xl border border-borde bg-tarjeta p-4  ">
@@ -27,7 +27,7 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
           <h3 className="font-bold">{category.icon} {category.name}</h3>
           <p className="text-xs text-humo">{category.group}{category.rollover ? ' · rollover activado' : ''}</p>
         </div>
-        <span className={`rounded-full px-2 py-1 text-xs font-bold ${available < 0 ? 'bg-[#FF8A8026] text-rojosuave' : 'bg-elevado text-humo '}`}>
+        <span className={`rounded-full px-2 py-1 text-xs font-bold ${available < 0 ? 'bg-rojosuave/15 text-rojosuave' : 'bg-elevado text-humo '}`}>
           {available < 0 ? 'Excedido' : 'Disponible'}
         </span>
       </div>

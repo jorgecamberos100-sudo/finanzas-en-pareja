@@ -603,7 +603,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         <article key={d.id} className="rounded-2xl border border-amber-500/40 bg-tarjeta p-3 shadow-sm ">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold">🔔 Recordatorio propuesto</h3>
-            <span className="rounded-full bg-[#F5C54226] px-2 py-0.5 text-xs font-semibold text-doradotexto">Sin guardar aún · no es un gasto</span>
+            <span className="rounded-full bg-dorado/15 px-2 py-0.5 text-xs font-semibold text-doradotexto">Sin guardar aún · no es un gasto</span>
           </div>
           {d.proposal.needs_review.length > 0 && (
             <p className="mb-2 text-xs text-doradotexto ">
@@ -821,7 +821,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       ))}
 
       {error && (
-        <p role="alert" className="rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave  ">
+        <p role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave  ">
           {error}
         </p>
       )}
@@ -864,7 +864,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             else startDictation()
           }}
           disabled={busy || !speechSupported}
-          className={`rounded-full px-3 py-2 text-lg ${recording || listening ? 'bg-[#FF8A8026]' : 'bg-elevado '}`}
+          className={`rounded-full px-3 py-2 text-lg ${recording || listening ? 'bg-rojosuave/15' : 'bg-elevado '}`}
         >
           🎙️
         </button>

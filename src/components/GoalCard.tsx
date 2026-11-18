@@ -78,7 +78,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
 
       {pct >= 100 && (
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-elevado p-3">
-          <Mascota pose="celebrando" alt="PIBBI celebrando la meta alcanzada" className="h-14 w-14 shrink-0" />
+          <Mascota pose="celebrando" alt="PIBBI celebrando la meta alcanzada" className="h-12 w-12 shrink-0" />
           <p className="text-sm font-bold text-doradotexto">¡Meta alcanzada! 🎉 PIBBI celebra contigo.</p>
         </div>
       )}
