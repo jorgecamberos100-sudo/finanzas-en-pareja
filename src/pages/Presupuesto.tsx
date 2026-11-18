@@ -5,6 +5,7 @@ import { monthTotals } from '../lib/split'
 import { defPlan, puedeCrearSobre } from '../lib/planes'
 import { supabase } from '../lib/supabase'
 import EnvelopeCard from '../components/EnvelopeCard'
+import Mascota from '../components/Mascota'
 import Paywall from '../components/Paywall'
 import type { Category } from '../types'
 
@@ -38,6 +39,10 @@ export default function Presupuesto({ data, onRefresh }: Props) {
   const unbudgeted = data.categories.filter((c) => c.monthly_limit === 0 && c.group !== 'Ingresos')
   const totalBudget = budgeted.reduce((s, c) => s + c.monthly_limit, 0)
   const totalSpent = budgeted.reduce((s, c) => s + (spentByCategory.get(c.id) ?? 0), 0)
+  // Sobres que se pasaron de su límite este mes: PIBBI se preocupa, sin
+  // juzgar (propuesta "Emerald Finance": gasto excesivo = expresión
+  // preocupada, nunca un regaño).
+  const pasados = budgeted.filter((c) => (spentByCategory.get(c.id) ?? 0) > c.monthly_limit)
   // Por asignar = ingresos del mes − lo ya presupuestado. Rollover: lo no gastado
   // de un sobre con rollover se suma a su límite del mes siguiente (aquí se
   // muestra como saldo acumulado; la migración guarda rollover por categoría).
@@ -123,6 +128,15 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       <p className="text-sm text-humo">
         Recurrentes proyectados este mes: <strong>{formatMoney(recurringTotal, currency)}</strong> · Disponible real tras recurrentes: <strong>{formatMoney(disponibleReal, currency)}</strong>
       </p>
+
+      {pasados.length > 0 && (
+        <div className="flex items-center gap-3 rounded-2xl border border-borde bg-tarjeta p-3">
+          <Mascota pose="pensativo" className="h-16 w-16 shrink-0" />
+          <p className="text-sm">
+            Te pasaste un poco en {pasados.map((c) => c.name).join(', ')}, sin drama — lo ajustamos el próximo mes.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div role="alert" className="rounded-xl bg-[#FF8A8014] p-3 text-sm text-rojosuave">
