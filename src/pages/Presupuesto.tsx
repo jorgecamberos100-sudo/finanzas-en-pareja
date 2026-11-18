@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
-import { formatMoney, monthKey } from '../lib/format'
+import { formatMoney, monthKey, parseAmount } from '../lib/format'
 import { monthTotals } from '../lib/split'
 import { supabase } from '../lib/supabase'
 import EnvelopeCard from '../components/EnvelopeCard'
@@ -39,8 +39,9 @@ export default function Presupuesto({ data, onRefresh }: Props) {
 
   async function doTransfer() {
     if (!transferFrom || !transferTo || !transferAmount) return
-    const amount = Number(transferAmount)
-    if (!amount || amount <= 0) { setError('Escribe un monto válido.'); return }
+    const amount = parseAmount(transferAmount)
+    if (!amount || amount <= 0) { setError('Escribe un monto válido mayor a $0.'); return }
+    if (amount > transferFrom.monthly_limit) { setError(`El sobre solo tiene ${formatMoney(transferFrom.monthly_limit, currency)} para traspasar.`); return }
     const to = data.categories.find((c) => c.id === transferTo)
     if (!to) return
     // Traspaso entre sobres = mover límite, no un gasto.

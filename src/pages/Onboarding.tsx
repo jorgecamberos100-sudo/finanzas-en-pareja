@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, setHouseholdId, findMyHouseholdId } from '../lib/supabase'
+import { supabase, setHouseholdId, getHouseholdId, findMyHouseholdId } from '../lib/supabase'
 import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
 import Mascota from '../components/Mascota'
 import PibbiDresser from '../components/PibbiDresser'
@@ -106,7 +106,8 @@ export default function Onboarding({ onDone }: Props) {
       name: solo ? 'Mi hogar' : householdName, currency: 'MXN', default_split: solo ? 100 : 50, invite_code: code,
     }).select().single()
     if (error || !hh) { setError(error?.message ?? 'No se pudo crear el hogar.'); setBusy(false); return }
-    await supabase.from('household_members').insert({ household_id: hh.id, user_id: user.id, role: 'admin' })
+    const { error: mError } = await supabase.from('household_members').insert({ household_id: hh.id, user_id: user.id, role: 'admin' })
+    if (mError) { setError(mError.message); setBusy(false); return }
     setSoloMode(solo)
     setInviteCode(code)
     setHouseholdId(hh.id)
@@ -117,25 +118,34 @@ export default function Onboarding({ onDone }: Props) {
     setBusy(true); setError(null)
     const { data: session } = await supabase.auth.getSession()
     const user = session.session?.user
-    const { data: hh } = await supabase.from('households').select('id').eq('invite_code', joinCode.trim().toUpperCase()).single()
-    if (!hh || !user) { setError('Código inválido. Pídele a tu pareja el código de invitación.'); setBusy(false); return }
-    await supabase.from('household_members').insert({ household_id: hh.id, user_id: user.id, role: 'miembro' })
-    setHouseholdId(hh.id)
+    // El hogar NO se busca con un SELECT directo: RLS solo deja ver el hogar a
+    // sus miembros y la pareja aún no lo es. Se usa la función SECURITY DEFINER
+    // find_household_by_code (migración 004), que solo devuelve el id.
+    const { data: householdId, error: hError } = await supabase.rpc('find_household_by_code', { p_code: joinCode.trim().toUpperCase() })
+    if (hError || !householdId || !user) { setError('Código inválido. Pídele a tu pareja el código de invitación.'); setBusy(false); return }
+    const { error: joinError } = await supabase.from('household_members').insert({ household_id: householdId, user_id: user.id, role: 'miembro' })
+    if (joinError) { setError(joinError.message); setBusy(false); return }
+    setHouseholdId(householdId)
     setBusy(false); onDone()
   }
 
   async function seedAccountsAndCategories() {
     setBusy(true); setError(null)
-    const householdId = localStorage.getItem('fp_household_id')
+    const householdId = getHouseholdId()
     const { data: session } = await supabase.auth.getSession()
     const user = session.session?.user
     if (!householdId || !user) { setError('Falta el hogar.'); setBusy(false); return }
-    await supabase.from('accounts').insert([
+    const { error: eAcc } = await supabase.from('accounts').insert([
       { household_id: householdId, owner_id: user.id, name: 'Efectivo', type: 'efectivo', visibility: 'compartida', balance: 0 },
       { household_id: householdId, owner_id: user.id, name: 'Cuenta principal', type: 'banco', visibility: 'compartida', balance: 0 },
       { household_id: householdId, owner_id: user.id, name: 'Tarjeta de crédito', type: 'tarjeta', visibility: 'solo_saldo', balance: 0 },
     ])
-    await supabase.from('categories').insert(SEED_CATEGORIES.map((c) => ({ ...c, household_id: householdId })))
+    const { error: eCat } = await supabase.from('categories').insert(SEED_CATEGORIES.map((c) => ({ ...c, household_id: householdId })))
+    if (eAcc || eCat) {
+      setError(eAcc?.message ?? eCat?.message ?? 'No se pudieron crear las cuentas y categorías iniciales.')
+      setBusy(false)
+      return
+    }
     setBusy(false); setStep(5)
   }
 

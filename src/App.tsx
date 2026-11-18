@@ -122,7 +122,8 @@ export default function App() {
 
       const memberRows = (members.data ?? []) as Array<{ user_id: string; user: UserProfile }>
       const me = memberRows.find((m) => m.user_id === user.id)?.user ?? { id: user.id, name: user.email ?? 'Yo', email: user.email ?? '' }
-      const partner = memberRows.find((m) => m.user_id !== user.id)?.user ?? null
+      const partnerMember = memberRows.find((m) => m.user_id !== user.id)
+      const partner = partnerMember?.user ?? (partnerMember ? { id: partnerMember.user_id, name: 'Pareja', email: '' } : null)
 
       setData({
         household: hh.data as Household,
@@ -159,6 +160,8 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goal_contributions' }, () => loadAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders', filter: `household_id=eq.${householdId}` }, () => loadAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'money_dates', filter: `household_id=eq.${householdId}` }, () => loadAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'household_members', filter: `household_id=eq.${householdId}` }, () => loadAll())
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
     // eslint-disable-next-line react-hooks/exhaustive-deps

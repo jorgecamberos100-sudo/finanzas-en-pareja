@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AppData } from '../App'
 import type { ProposedReminder, ReminderRecurrence, Transaction, TxType } from '../types'
-import { dedupeHashSync, formatMoney, parseAmount } from '../lib/format'
+import { dedupeHash, formatMoney, parseAmount } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import {
   amountMinorToUnits,
@@ -68,6 +68,7 @@ interface SpeechRecognitionInstance {
   onend: (() => void) | null
   start: () => void
   stop: () => void
+  abort?: () => void
 }
 
 type SpeechRecognitionCtor = new () => SpeechRecognitionInstance
@@ -139,9 +140,22 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     reactionTimer.current = window.setTimeout(() => setReaction(null), 5000)
   }
   // Al salir del chat (cambio de pestaña) se limpia el temporizador de la
-  // reacción de PIBBI: antes quedaba vivo tras desmontar el componente.
+  // reacción de PIBBI y se detienen grabaciones o dictados activos.
   useEffect(() => () => {
     if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stream?.getTracks().forEach((t) => t.stop())
+        mediaRecorderRef.current.stop()
+      } catch {
+        // stream ya cerrado
+      }
+    }
+    try {
+      recognitionRef.current?.abort?.()
+    } catch {
+      // reconocimiento ya cerrado
+    }
   }, [])
   const [savingId, setSavingId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -233,7 +247,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     try {
       const { data: res, error: err } = await supabase.functions.invoke('capture-parse', { body: { ...body, timezone: deviceTimezone } })
       if (err || !res) return null
-      const clean = sanitizeCaptureResult(res, (body.source_type as CaptureResult['source_type']) ?? 'text')
+      const clean = sanitizeCaptureResult(res, (body.source_type as CaptureResult['source_type']) ?? 'text', deviceTimezone)
       if (!clean) return null
       return { ...clean, provider: typeof res.provider === 'string' ? res.provider : clean.provider }
     } catch {
@@ -436,7 +450,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         split_pct: draft.type === 'transferencia' ? 100 : draft.splitPct,
         visibility: 'compartida',
         review_status: 'aprobado',
-        dedupe_hash: dedupeHashSync({ date: draft.date, amount, merchant: draft.merchant.trim() || '', account_id: draft.accountId }),
+        dedupe_hash: await dedupeHash({ date: draft.date, amount, merchant: draft.merchant.trim() || '', account_id: draft.accountId }),
       })
       setDrafts((ds) => ds.filter((d) => d.id !== draft.id))
       pushMessage('assistant', `Guardado: ${formatMoney(amount, currency)}${draft.merchant ? ` en ${draft.merchant}` : ''} (${draft.date}). ${data.partner ? 'Ya se ve en ambos teléfonos.' : 'Ya se ve en tu app.'}`)

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { AppData } from '../App'
-import { formatMoney, todayIso } from '../lib/format'
+import { formatMoney, parseAmount, todayIso } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import GoalCard from '../components/GoalCard'
 import PibbiReaction, { type ReactionContext } from '../components/PibbiReaction'
@@ -21,9 +21,11 @@ export default function Plan({ data, onRefresh }: Props) {
   const patrimonio = useMemo(() => data.accounts.reduce((acc, a) => acc + (a.type === 'deuda' || a.type === 'tarjeta' ? -a.balance : a.balance), 0), [data.accounts])
 
   async function createGoal() {
-    if (!data.household || !goalName || !goalTarget) return
+    if (!data.household || !goalName.trim() || !goalTarget.trim()) return
+    const target = parseAmount(goalTarget)
+    if (!target || target <= 0) { setMessage('El monto objetivo debe ser mayor a $0.'); return }
     const { error } = await supabase.from('goals').insert({
-      household_id: data.household.id, name: goalName, target: Number(goalTarget),
+      household_id: data.household.id, name: goalName.trim(), target,
       current: 0, due_date: goalDate || null,
     })
     if (error) { setMessage(error.message); return }

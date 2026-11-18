@@ -31,7 +31,14 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute }: Props
         <span className="rounded-full bg-[#F4728F1A] px-2 py-1 text-sm font-bold text-rosaclaro ">{pct.toFixed(0)}%</span>
       </div>
 
-      <div className="relative mt-3 h-3 overflow-visible rounded-full bg-borde ">
+      <div
+        role="progressbar"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Progreso de meta ${goal.name}`}
+        className="relative mt-3 h-3 overflow-visible rounded-full bg-borde "
+      >
         <div className="h-full rounded-full bg-rosafuerte transition-all" style={{ width: `${pct}%` }} />
         {goal.due_date && (
           <div className="absolute -top-1 h-5 w-0.5 bg-dorado" style={{ left: `${expected}%` }} title={`Ritmo esperado: ${expected.toFixed(0)}%`} />

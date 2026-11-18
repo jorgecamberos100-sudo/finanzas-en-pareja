@@ -30,7 +30,14 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
           {available < 0 ? 'Excedido' : 'Disponible'}
         </span>
       </div>
-      <div className="mt-3 h-3 overflow-hidden rounded-full bg-borde ">
+      <div
+        role="progressbar"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Gasto en ${category.name}`}
+        className="mt-3 h-3 overflow-hidden rounded-full bg-borde "
+      >
         <div className={`h-full rounded-full transition-all ${bar}`} style={{ width: `${pct}%` }} />
       </div>
       <div className="mt-2 flex justify-between text-sm">

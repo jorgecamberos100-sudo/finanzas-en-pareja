@@ -98,6 +98,7 @@ check('fecha: el lunes (hoy martes -> 23)', parseReminderDateEs('el lunes', unde
 check('fecha: en 3 días', parseReminderDateEs('en 3 días', undefined).date, '2026-11-20')
 
 check('next mensual 31 ene -> 28 feb', nextDueDate('2026-01-31', 'monthly'), '2026-02-28')
+check('next anual 29 feb (bisiesto) -> 28 feb', nextDueDate('2024-02-29', 'yearly'), '2025-02-28')
 check('next semanal', nextDueDate('2026-11-17', 'weekly'), '2026-11-24')
 check('next diario', nextDueDate('2026-11-17', 'daily'), '2026-11-18')
 check('next anual', nextDueDate('2026-11-17', 'yearly'), '2027-11-17')

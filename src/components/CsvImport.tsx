@@ -51,6 +51,14 @@ export default function CsvImport({ data, onDone }: Props) {
   async function handleFile(file: File) {
     const text = await file.text()
     const raw = parseCsv(text)
+    // Traer todas las reglas del hogar en una sola consulta para no hacer
+    // una petición por cada fila del CSV (evita N consultas secuenciales).
+    const { data: rulesData } = await supabase
+      .from('rules')
+      .select('category_id, pattern')
+      .eq('household_id', data.household!.id)
+    const householdRules = rulesData ?? []
+
     const parsed: ParsedRow[] = []
     for (const r of raw) {
       const date = DATE_KEYS.map((k) => r[k]).find(Boolean) ?? ''
@@ -59,15 +67,15 @@ export default function CsvImport({ data, onDone }: Props) {
       const amount = Math.abs(Number(amountRaw.replace(/[$,\s]/g, ''))) || 0
       if (!date || !amount) continue
       const hash = dedupeHashSync({ date, amount, merchant, account_id: accountId })
-      // Regla por comercio: si ya corregiste este comercio antes, se aplica sola.
-      const rule = await supabase.from('rules').select('category_id').eq('household_id', data.household!.id).ilike('pattern', `%${merchant.toLowerCase()}%`).maybeSingle()
+      const mLower = merchant.toLowerCase()
+      const rule = householdRules.find((rl) => mLower.includes(rl.pattern.toLowerCase()))
       parsed.push({
         date, merchant, amount,
         type: Number(amountRaw.replace(/[$,\s]/g, '')) < 0 ? 'gasto' : 'ingreso',
-        category_id: rule.data?.category_id ?? null,
+        category_id: rule?.category_id ?? null,
         hash,
         duplicate: existingHashes.has(hash),
-        ruleApplied: Boolean(rule.data),
+        ruleApplied: Boolean(rule),
       })
     }
     setRows(parsed)

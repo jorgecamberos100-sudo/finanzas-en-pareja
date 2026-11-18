@@ -42,10 +42,14 @@ export default function Movimientos({ data, onRefresh }: Props) {
       [tx.date, `"${tx.merchant ?? ''}"`, tx.amount, tx.type, categoryById.get(tx.category_id ?? '')?.name ?? '', accountById.get(tx.account_id)?.name ?? '', userById.get(tx.paid_by) ?? '', `"${tx.note ?? ''}"`].join(','),
     ).join('\n')
     const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
+    a.href = url
     a.download = `finanzas-en-pareja-${todayIso()}.csv`
     a.click()
+    // No revocar de inmediato: algunos navegadores cancelan la descarga
+    // si la URL se libera antes de que arranque.
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
   return (
