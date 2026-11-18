@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase, setHouseholdId, getHouseholdId, findMyHouseholdId } from '../lib/supabase'
 import { traducirErrorAuth, esCorreoYaRegistrado } from '../lib/auth'
 import { crearHogar } from '../lib/household'
+import { resolverSesionExistente } from '../lib/google-auth'
 import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import PibbiDresser from '../components/PibbiDresser'
 import ThemeToggle from '../components/ThemeToggle'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 
 interface Props { onDone: () => void }
 
@@ -52,6 +54,35 @@ export default function Onboarding({ onDone }: Props) {
     if (codigo) {
       setJoinCode(codigo.trim().toUpperCase())
       setJoinExpanded(true)
+    }
+  }, [])
+
+  /**
+   * Al volver de Google la sesión ya existe: no pedir correo/contraseña.
+   * Si el usuario ya tiene hogar, entra directo al Dashboard; si no,
+   * sigue al paso 2 a crear o unirse a uno (la misma regla del login).
+   * El `getSession` cubre el regreso con la sesión ya canjeada y el
+   * `SIGNED_IN` cubre el canje que termina después de montar.
+   */
+  const sesionResuelta = useRef(false)
+  useEffect(() => {
+    async function resolver(userId: string) {
+      if (sesionResuelta.current) return
+      sesionResuelta.current = true
+      await resolverSesionExistente(findMyHouseholdId, userId, {
+        setHouseholdId,
+        irDashboard: onDone,
+        irPaso2: () => setStep(2),
+      })
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) void resolver(data.session.user.id)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) void resolver(session.user.id)
+    })
+    return () => {
+      subscription.unsubscribe()
     }
   }, [])
 
@@ -204,6 +235,7 @@ export default function Onboarding({ onDone }: Props) {
               <button onClick={login} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
                 {busy ? 'Entrando…' : 'Entrar'}
               </button>
+              <GoogleSignInButton disabled={busy} onError={setError} />
               <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿No tienes cuenta? Crea una</button>
             </>
           ) : (
@@ -227,6 +259,7 @@ export default function Onboarding({ onDone }: Props) {
               <button onClick={step1} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
                 {busy ? 'Guardando…' : 'Continuar'}
               </button>
+              <GoogleSignInButton disabled={busy} onError={setError} />
               <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿Ya tienes cuenta? Inicia sesión</button>
             </>
           )}

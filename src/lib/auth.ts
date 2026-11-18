@@ -25,6 +25,12 @@ export function traducirErrorAuth(message: string): string {
   if (m.includes('user not found')) {
     return 'No hay ninguna cuenta con ese correo. Crea tu cuenta primero.'
   }
+  if (m.includes('provider') && (m.includes('not enabled') || m.includes('disabled'))) {
+    return 'El inicio de sesión con Google no está activado todavía. Prueba con correo y contraseña.'
+  }
+  if (m.includes('redirect_uri') || m.includes('redirect url')) {
+    return 'La redirección de Google no está configurada. Prueba con correo y contraseña.'
+  }
   return message
 }
 

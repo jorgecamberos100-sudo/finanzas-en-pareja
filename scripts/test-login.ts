@@ -168,5 +168,87 @@ check('migración 006: devuelve id y código', mig006.includes('returns table (i
 check('migración 006: solo authenticated ejecuta', mig006.includes('grant execute on function public.create_household(text, text, int) to authenticated'), true)
 check('migración 006: no toca las políticas existentes', !mig006.includes('create policy') && !mig006.includes('drop policy'), true)
 
+// ---- Inicio / registro con Google ----
+// El botón vive en src/components/GoogleSignInButton.tsx y la lógica en
+// src/lib/google-auth.ts. En Node no existe `window`: se simula el origin
+// de la app desplegada para verificar el redirectTo.
+import { iniciarConGoogle, resolverSesionExistente } from '../src/lib/google-auth.ts'
+
+;(globalThis as unknown as { window: unknown }).window = {
+  location: { origin: 'https://finanzas-en-pareja-ten.vercel.app' },
+}
+
+{
+  let capturado: unknown
+  const cliente = {
+    auth: {
+      signInWithOAuth: async (args: unknown) => {
+        capturado = args
+        return { data: { url: 'https://accounts.google.com/o/oauth2/auth' }, error: null }
+      },
+    },
+  }
+  const res = await iniciarConGoogle(cliente)
+  check('Google: ok cuando Supabase no devuelve error', res, { ok: true })
+  check(
+    'Google: llama a signInWithOAuth con provider google y redirect a /onboarding',
+    capturado,
+    { provider: 'google', options: { redirectTo: 'https://finanzas-en-pareja-ten.vercel.app/onboarding' } },
+  )
+}
+
+{
+  const cliente = {
+    auth: {
+      signInWithOAuth: async () => ({ data: null, error: { message: 'Provider not enabled' } }),
+    },
+  }
+  const res = await iniciarConGoogle(cliente)
+  check('Google: proveedor no habilitado se explica en español', res, {
+    ok: false,
+    error: 'El inicio de sesión con Google no está activado todavía. Prueba con correo y contraseña.',
+  })
+}
+
+{
+  const cliente = {
+    auth: {
+      signInWithOAuth: async () => {
+        throw new Error('red caída')
+      },
+    },
+  }
+  const res = await iniciarConGoogle(cliente)
+  check('Google: si la llamada lanza, no explota', res, { ok: false, error: 'red caída' })
+}
+
+{
+  const llamadas: string[] = []
+  const destino = {
+    setHouseholdId: (id: string) => llamadas.push(`hogar:${id}`),
+    irDashboard: () => llamadas.push('dashboard'),
+    irPaso2: () => llamadas.push('paso2'),
+  }
+  const r1 = await resolverSesionExistente(async () => 'hh-9', 'u-1', destino)
+  check('Google retorno: con hogar va al Dashboard', [r1, llamadas], ['dashboard', ['hogar:hh-9', 'dashboard']])
+  llamadas.length = 0
+  const r2 = await resolverSesionExistente(async () => null, 'u-2', destino)
+  check('Google retorno: sin hogar va al paso 2', [r2, llamadas], ['paso2', ['paso2']])
+}
+
+check('auth.ts: error de proveedor no habilitado en español', traducirErrorAuth('Provider not enabled'), 'El inicio de sesión con Google no está activado todavía. Prueba con correo y contraseña.')
+check('auth.ts: error de redirect_uri en español', traducirErrorAuth('redirect_uri_mismatch'), 'La redirección de Google no está configurada. Prueba con correo y contraseña.')
+
+const botonGoogle = readFileSync(join(root, 'src/components/GoogleSignInButton.tsx'), 'utf8')
+check('GoogleSignInButton: dice Continuar con Google', botonGoogle.includes('Continuar con Google'), true)
+check('GoogleSignInButton: trae el logo G (SVG 4 colores)', botonGoogle.includes('#4285F4') && botonGoogle.includes('#EA4335') && botonGoogle.includes('#FBBC05') && botonGoogle.includes('#34A853'), true)
+check('GoogleSignInButton: usa el helper iniciarConGoogle', botonGoogle.includes('iniciarConGoogle(supabase)'), true)
+check('GoogleSignInButton: no tiene secretos', !/client_secret|client_id|CLIENT_ID|CLIENT_SECRET/i.test(botonGoogle), true)
+check('Onboarding: importa el botón de Google', onboarding.includes("import GoogleSignInButton from '../components/GoogleSignInButton'"), true)
+check('Onboarding: botón de Google en ambos modos del paso 1', onboarding.split('<GoogleSignInButton').length - 1, 2)
+check('Onboarding: al volver de Google detecta la sesión (getSession + SIGNED_IN)', onboarding.includes('supabase.auth.getSession()') && onboarding.includes("event === 'SIGNED_IN'") && onboarding.includes('resolverSesionExistente'), true)
+check('Onboarding: el correo/contraseña sigue existiendo', onboarding.includes('signInWithPassword') && onboarding.includes('signUp'), true)
+check('google-auth.ts: sin secretos', !/client_secret|client_id|CLIENT_ID|CLIENT_SECRET/i.test(readFileSync(join(root, 'src/lib/google-auth.ts'), 'utf8')), true)
+
 console.log(`\n${pass} pasaron, ${fail} fallaron`)
 if (fail > 0) process.exit(1)
