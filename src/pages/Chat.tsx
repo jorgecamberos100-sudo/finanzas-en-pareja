@@ -3,6 +3,7 @@ import type { Transaction } from '../types'
 import { capturasRestantes, capturasUsadas, defPlan } from '../lib/planes'
 import ChatCapture from '../components/ChatCapture'
 import PibbiHeader from '../components/PibbiHeader'
+import ThemeToggle from '../components/ThemeToggle'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import { usePibbi } from '../lib/pibbi'
 import { saludoPibbi } from '../lib/pibbi-identidad'
@@ -21,7 +22,12 @@ export default function Chat({ data, onSave, onRefresh }: Props) {
     <main className="space-y-2">
       <PibbiHeader
         pose={PAGE_PIBBI_POSES.chat}
-        title="Chat de captura 💬"
+        // Título sin salto: con el interruptor en el encabezado, a 360 px
+        // el emoji 💬 bajaba solo a una segunda línea y se veía roto.
+        // Sin salto, el título conserva su ancho y el interruptor baja a
+        // una segunda línea del encabezado (flex-wrap), como los botones
+        // de Movimientos.
+        title={<span className="whitespace-nowrap">Chat de captura 💬</span>}
         subtitle={
           <>
             <p className="text-sm text-humo">
@@ -35,7 +41,10 @@ export default function Chat({ data, onSave, onRefresh }: Props) {
           </>
         }
         className="px-4 pt-4"
-      />
+      >
+        {/* El interruptor vive en el encabezado (no en la barra inferior). */}
+        <ThemeToggle className="rounded-full border border-borde bg-elevado p-2.5 text-crema transition active:scale-95" />
+      </PibbiHeader>
       <ChatCapture data={data} onSave={onSave} onRefresh={onRefresh} />
     </main>
   )
