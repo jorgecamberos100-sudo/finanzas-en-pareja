@@ -65,7 +65,7 @@ export default function GoalCard({ goal, currency = 'MXN', onContribute, onDelet
         aria-label={`Progreso de meta ${goal.name}`}
         className="relative mt-3 h-3 overflow-visible rounded-full bg-borde "
       >
-        <div className="h-full rounded-full bg-dorado transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full w-full origin-left rounded-full bg-dorado transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
         {goal.due_date && (
           <div className="absolute -top-1 h-5 w-0.5 bg-dorado" style={{ left: `${expected}%` }} title={`Ritmo esperado: ${expected.toFixed(0)}%`} />
         )}

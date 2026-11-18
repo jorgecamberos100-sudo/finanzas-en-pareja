@@ -18,19 +18,19 @@ import {
 interface Props { onDone: () => void }
 
 const SEED_CATEGORIES = [
-  { group: 'Vivienda', name: 'Renta / Hipoteca', icon: '🏠', monthly_limit: 8000, rollover: false },
-  { group: 'Servicios', name: 'Luz, agua e internet', icon: '💡', monthly_limit: 1500, rollover: false },
-  { group: 'Despensa', name: 'Súper y mercado', icon: '🛒', monthly_limit: 6000, rollover: true },
-  { group: 'Transporte', name: 'Gasolina y transporte', icon: '🚗', monthly_limit: 2500, rollover: true },
-  { group: 'Salud', name: 'Salud y farmacia', icon: '💊', monthly_limit: 1200, rollover: true },
-  { group: 'Restaurantes', name: 'Comer fuera', icon: '🍽️', monthly_limit: 2000, rollover: false },
-  { group: 'Ocio', name: 'Ocio y entretenimiento', icon: '🎬', monthly_limit: 1200, rollover: false },
-  { group: 'Suscripciones', name: 'Suscripciones', icon: '📺', monthly_limit: 600, rollover: false },
-  { group: 'Educación', name: 'Educación', icon: '📚', monthly_limit: 1000, rollover: true },
-  { group: 'Ropa', name: 'Ropa', icon: '👕', monthly_limit: 800, rollover: true },
-  { group: 'Imprevistos', name: 'Imprevistos', icon: '🆘', monthly_limit: 1000, rollover: true },
-  { group: 'Metas', name: 'Ahorro para metas', icon: '🎯', monthly_limit: 2000, rollover: true },
-  { group: 'Ingresos', name: 'Sueldo', icon: '💼', monthly_limit: 0, rollover: false },
+  { group: 'Vivienda', name: 'Renta / Hipoteca', icon: 'vivienda', monthly_limit: 8000, rollover: false },
+  { group: 'Servicios', name: 'Luz, agua e internet', icon: 'servicios', monthly_limit: 1500, rollover: false },
+  { group: 'Despensa', name: 'Súper y mercado', icon: 'despensa', monthly_limit: 6000, rollover: true },
+  { group: 'Transporte', name: 'Gasolina y transporte', icon: 'transporte', monthly_limit: 2500, rollover: true },
+  { group: 'Salud', name: 'Salud y farmacia', icon: 'salud', monthly_limit: 1200, rollover: true },
+  { group: 'Restaurantes', name: 'Comer fuera', icon: 'restaurantes', monthly_limit: 2000, rollover: false },
+  { group: 'Ocio', name: 'Ocio y entretenimiento', icon: 'ocio', monthly_limit: 1200, rollover: false },
+  { group: 'Suscripciones', name: 'Suscripciones', icon: 'suscripciones', monthly_limit: 600, rollover: false },
+  { group: 'Educación', name: 'Educación', icon: 'educacion', monthly_limit: 1000, rollover: true },
+  { group: 'Ropa', name: 'Ropa', icon: 'ropa', monthly_limit: 800, rollover: true },
+  { group: 'Imprevistos', name: 'Imprevistos', icon: 'imprevistos', monthly_limit: 1000, rollover: true },
+  { group: 'Metas', name: 'Ahorro para metas', icon: 'metas', monthly_limit: 2000, rollover: true },
+  { group: 'Ingresos', name: 'Sueldo', icon: 'ingresos', monthly_limit: 0, rollover: false },
 ]
 
 const CORREO_RE = /^\S+@\S+\.\S+$/
@@ -510,7 +510,7 @@ export default function Onboarding({ onDone }: Props) {
                   {joinCode && <Alerta tono="info">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</Alerta>}
                   <div className="flex items-end gap-2">
                     <div className="flex-1">
-                      <Campo etiqueta="Código de invitación" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="Ej. K7X2Q9" className="uppercase tracking-widest" />
+                      <Campo etiqueta="Código de invitación" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="Ej. K7X2Q9" />
                     </div>
                     <Boton variante="oscuro" onClick={() => void joinHousehold()} cargando={busy} disabled={joinCode.trim().length < 4} className="mb-0.5">Unirme</Boton>
                   </div>
@@ -521,8 +521,8 @@ export default function Onboarding({ onDone }: Props) {
             </Tarjeta>
 
             <div className="mt-6 text-center">
-              <button type="button" onClick={async () => { await supabase.auth.signOut(); setStep(1); setVista('login'); setError(null) }} className="text-xs text-humo underline hover:text-crema">
-                ¿Quieres usar otra cuenta? Cerrar sesión
+              <button type="button" onClick={async () => { await supabase.auth.signOut(); setStep(1); setVista('login'); setError(null) }} className="whitespace-nowrap text-xs text-humo underline hover:text-crema">
+                Usar otra cuenta
               </button>
             </div>
           </section>

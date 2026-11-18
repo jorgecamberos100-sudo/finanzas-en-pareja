@@ -220,9 +220,9 @@ export default function Movimientos({ data, onRefresh }: Props) {
             </p>
             <button
               onClick={() => setPaywall(`Tienes ${antiguos.length} movimientos de hace más de 90 días. Con Plus ves todo tu historial, sin límite.`)}
-              className="mt-2 w-full rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
+              className="mt-2 w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
             >
-              Ver historial completo con Plus
+              Ver historial completo
             </button>
           </div>
         )}
@@ -251,7 +251,7 @@ function TxRow({ tx, currency, categoryById, accountById, userById, action, onDe
       <div className="min-w-0 pr-2">
         <p className="flex items-center gap-2 truncate font-semibold">{cat ? <><ChipCategoria nombre={cat.name} group={cat.group} className="h-7 w-7" />{cat.name}</> : tx.type === 'transferencia' ? 'Transferencia' : 'Sin categoría'}</p>
         <p className="truncate text-xs text-humo">
-          {tx.merchant ? `${tx.merchant} · ` : ''}{formatDateEs(tx.date)} · {accountById.get(tx.account_id)?.name} · pagó {userById.get(tx.paid_by) ?? '—'}
+          {tx.merchant ? `${tx.merchant} · ` : ''}{formatDateEs(tx.date)} · {accountById.get(tx.account_id)?.name} · pagó {userById.get(tx.paid_by) ?? 'sin registrar'}
           {tx.note ? ` · ${tx.note}` : ''}
         </p>
       </div>

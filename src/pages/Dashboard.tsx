@@ -232,7 +232,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
                 aria-label={`Progreso de meta ${g.name}`}
                 className="mt-2 h-2 overflow-hidden rounded-full bg-borde"
               >
-                <div className="h-full rounded-full bg-dorado transition-all" style={{ width: `${pct}%` }} />
+                <div className="h-full w-full origin-left rounded-full bg-dorado transition-transform duration-300" style={{ transform: `scaleX(${pct / 100})` }} />
               </div>
             </Link>
           )
@@ -274,7 +274,7 @@ export default function Dashboard({ data, onRefresh, onSignOut }: Props) {
                 aria-label={`Gasto en ${c.name}`}
                 className="mt-1 h-2 overflow-hidden rounded-full bg-borde"
               >
-                <div className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-rojosuave' : pct >= 80 ? 'bg-dorado' : 'bg-verde'}`} style={{ width: `${pct}%` }} />
+                <div className={`h-full w-full origin-left rounded-full transition-transform duration-300 ${pct >= 100 ? 'bg-rojosuave' : pct >= 80 ? 'bg-dorado' : 'bg-verde'}`} style={{ transform: `scaleX(${pct / 100})` }} />
               </div>
             </div>
           )

@@ -604,7 +604,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-crema">{ocr.fase} {ocr.pct > 0 ? `${ocr.pct}%` : ''}</p>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-borde">
-                <div className="h-full rounded-full bg-dorado transition-all duration-300" style={{ width: `${Math.max(4, ocr.pct)}%` }} />
+                <div className="h-full w-full origin-left rounded-full bg-dorado transition-transform duration-300" style={{ transform: `scaleX(${Math.max(4, ocr.pct) / 100})` }} />
               </div>
             </div>
           </Tarjeta>

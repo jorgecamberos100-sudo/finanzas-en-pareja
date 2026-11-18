@@ -277,18 +277,18 @@ export default function Reminders({ data, onRefresh }: Props) {
           {pushSupported() && <> · Push: <strong>{pushOn ? 'activado' : 'apagado'}</strong></>}
         </p>
         {notificationsSupported() && perm !== 'granted' && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            Activar notificaciones en este celular
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
+            Activar notificaciones
           </button>
         )}
         {perm === 'granted' && pushSupported() && !pushOn && (
-          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
-            {pushBusy ? 'Activando…' : 'Activar también cuando la app esté cerrada (push)'}
+          <button onClick={() => void enableNotifications()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
+            {pushBusy ? 'Activando…' : 'Activar push'}
           </button>
         )}
         {perm === 'granted' && pushOn && (
-          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full rounded-xl bg-elevado py-2 font-bold ">
-            Desactivar push en este celular
+          <button onClick={() => void disablePush()} disabled={pushBusy} className="w-full whitespace-nowrap rounded-xl bg-elevado py-2 text-sm font-bold ">
+            Desactivar push
           </button>
         )}
       </section>

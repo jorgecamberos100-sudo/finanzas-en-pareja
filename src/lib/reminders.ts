@@ -326,13 +326,13 @@ function markNotified(reminder: Reminder): void {
 export async function showReminderNotification(reminder: Reminder, currency = 'MXN'): Promise<boolean> {
   if (notificationPermission() !== 'granted') return false
   const amount = reminder.amount !== null && reminder.amount !== undefined
-    ? ` — ${new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(reminder.amount)}`
+    ? ` (${new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(reminder.amount)})`
     : ''
   const body = `Hoy vence: ${reminder.title}${amount}. Toca para ver tus recordatorios.`
   try {
     if ('serviceWorker' in navigator) {
       const reg = await navigator.serviceWorker.ready
-      await reg.showNotification(`🔔 Recordatorio: ${reminder.title}`, {
+      await reg.showNotification(`Recordatorio: ${reminder.title}`, {
         body,
         tag: `reminder-${reminder.id}-${reminder.due_date}`,
         icon: '/icons/icon-192.png',
@@ -344,7 +344,7 @@ export async function showReminderNotification(reminder: Reminder, currency = 'M
     /* cae al Notification directo */
   }
   try {
-    new Notification(`🔔 Recordatorio: ${reminder.title}`, { body, tag: `reminder-${reminder.id}-${reminder.due_date}` })
+    new Notification(`Recordatorio: ${reminder.title}`, { body, tag: `reminder-${reminder.id}-${reminder.due_date}` })
     return true
   } catch {
     return false

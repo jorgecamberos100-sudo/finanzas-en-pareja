@@ -145,7 +145,7 @@ export default function CsvImport({ data, onDone }: Props) {
                 {rows.map((r) => (
                   <tr key={r.hash} className={r.duplicate ? 'text-humo line-through' : ''}>
                     <td>{r.date}</td><td>{r.merchant}</td><td>{formatMoney(r.amount, currency)}</td>
-                    <td>{r.duplicate ? 'Duplicado — se omite' : r.ruleApplied ? 'Regla aplicada' : 'Nuevo'}</td>
+                    <td>{r.duplicate ? 'Duplicado, se omite' : r.ruleApplied ? 'Regla aplicada' : 'Nuevo'}</td>
                   </tr>
                 ))}
               </tbody>

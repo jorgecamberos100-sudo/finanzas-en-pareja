@@ -137,7 +137,7 @@ export default function Presupuesto({ data, onRefresh }: Props) {
         <div className="flex items-center gap-3 rounded-2xl border border-borde bg-tarjeta p-3">
           <Mascota pose="pensativo" className="h-14 w-14 shrink-0" />
           <p className="text-sm">
-            Te pasaste un poco en {pasados.map((c) => c.name).join(', ')}, sin drama — lo ajustamos el próximo mes.
+            Te pasaste un poco en {pasados.map((c) => c.name).join(', ')}, sin drama, lo ajustamos el próximo mes.
           </p>
         </div>
       )}

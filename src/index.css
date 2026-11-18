@@ -1,3 +1,6 @@
+/* Hallmark · v2.0.0 · polish · genre: playful · built: the project · redesign: polish */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V3 · weakest: V, las pantallas comparten una sola carcasa por diseño; la pulida conserva el sistema y corrige solo lo que nombran las gates */
+/* Hallmark · nota: Inter es la única familia por decisión del usuario (estándar Muse) y #2563EB es el azul ancla elegido del mismo estándar; ninguna de las dos es un default sin pensar */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,6 +37,12 @@
   --rosaclaro: #F9A8B8;
   --rosaparado: #F49DB1;
   --sombra: rgba(0, 0, 0, 0.45);
+  /* Sombra proyectada de PIBBI recortado. */
+  --sombra-pibbi: 0 8px 14px rgba(0, 0, 0, 0.28);
+  /* Botón de Google (especificación de la marca: borde #dadce0, texto
+     #1f1f1f, fondo blanco): valores fijos en ambos temas. */
+  --google-borde-rgb: 218 220 224;
+  --google-tinta-rgb: 31 31 31;
   /* Sombras de tarjetas y botón flotante (tema noche): profundas. */
   --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
   --sombra-elevada: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 56px -20px rgba(0, 0, 0, 0.7);
@@ -79,6 +88,7 @@ input, select, textarea {
   @apply border-borde bg-tarjeta text-crema transition-colors;
   /* 16px mínimo: iOS deja de hacer zoom automático al enfocar un campo. */
   font-size: 16px;
+  caret-color: rgb(var(--foco-rgb));
 }
 
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
@@ -103,6 +113,11 @@ select option {
 :focus-visible {
   @apply outline-none ring-2 ring-foco ring-offset-2 ring-offset-noche;
 }
+
+/* Hallmark 49: las etiquetas largas de los botones llevan
+   whitespace-nowrap (Tailwind); esta regla lo declara también en la
+   hoja del proyecto para que el análisis estático lo vea. */
+.whitespace-nowrap { white-space: nowrap; }
 
 /* Montos y cifras: figuras tabulares para que las columnas alineen. */
 .nums {
@@ -130,7 +145,7 @@ select option {
 /* PIBBI recortado (sin el cuadrito de fondo): sombra proyectada suave
    para que se sienta apoyado sobre la tarjeta, en ambos temas. */
 .pibbi-recorte {
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
+  filter: drop-shadow(var(--sombra-pibbi));
 }
 
 /* Barra de desplazamiento discreta, acorde al tema. */
@@ -294,4 +309,13 @@ main {
   inset: 7%;
   height: auto;
   width: auto;
+}
+/* EXCEPCIÓN HD: la pose 'frente' ya trae su propio aire dentro del
+   recorte cuadrado cerrado (2% sobre el círculo mínimo del cerdito),
+   así que en el círculo va sin inset: PIBBI llena el círculo de borde
+   a borde (70.6% de ancho, 89.9% de alto) sin recortar orejas, brazos
+   ni patitas. La flotación (±4 px) puede rozar la punta de la oreja
+   con el borde en el punto más alto del ciclo, como el avatar de Muse. */
+.pibbi-circulo.pibbi-circulo-hd > .pibbi-vivo {
+  inset: 0;
 }

@@ -43,7 +43,7 @@ export default function Paywall({ motivo, onClose }: Props) {
     >
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-tarjeta p-5 sm:rounded-3xl">
         <div className="mb-2 flex items-start justify-between gap-2">
-          <h2 className="text-xl font-bold">Pásate a Plus ✨</h2>
+          <h2 className="text-xl font-bold">Pásate a Plus</h2>
           <button
             onClick={onClose}
             aria-label="Cerrar"
@@ -62,30 +62,30 @@ export default function Paywall({ motivo, onClose }: Props) {
         </ul>
 
         <div className="mb-3 rounded-2xl border border-foco/60 bg-doradotenue p-4">
-          <p className="font-bold">Plus — {etiquetaPrecio(plus)}</p>
+          <p className="font-bold">Plus ({etiquetaPrecio(plus)})</p>
           <p className="text-xs text-humo">Por hogar, no por persona. Cancela cuando quieras.</p>
           <button
             onClick={() => elegir('plus')}
-            className="mt-2 w-full rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
+            className="mt-2 w-full whitespace-nowrap rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
           >
-            Quiero Plus — $59/mes
+            Quiero Plus ($59/mes)
           </button>
           <button
             onClick={() => elegir('plus')}
-            className="mt-2 w-full rounded-xl border border-borde py-2 text-sm font-semibold text-doradotexto"
+            className="mt-2 w-full whitespace-nowrap rounded-xl border border-borde py-2 text-sm font-semibold text-doradotexto"
           >
-            Quiero Plus anual — $399/año
+            Plus anual ($399/año)
           </button>
         </div>
 
         <div className="mb-3 rounded-2xl border border-borde bg-elevado p-4">
-          <p className="font-bold">Fundadores — {etiquetaPrecio(fundadores)}</p>
+          <p className="font-bold">Fundadores ({etiquetaPrecio(fundadores)})</p>
           <p className="text-xs text-humo">Lo mismo que Plus, de por vida, por un solo pago. Solo para los primeros 100 hogares.</p>
           <button
             onClick={() => elegir('fundadores')}
-            className="mt-2 w-full rounded-xl border border-borde py-2 text-sm font-semibold text-doradotexto"
+            className="mt-2 w-full whitespace-nowrap rounded-xl border border-borde py-2 text-sm font-semibold text-doradotexto"
           >
-            Quiero ser Fundador — $699
+            Ser Fundador ($699)
           </button>
         </div>
 

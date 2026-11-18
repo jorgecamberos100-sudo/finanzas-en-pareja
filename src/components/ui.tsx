@@ -124,7 +124,7 @@ export function Boton({ variante = 'primario', tamano = 'md', cargando = false, 
     <button
       type={type}
       disabled={disabled || cargando}
-      className={`inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-bold tracking-wide transition-all duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 ${pad} ${ESTILO_VARIANTE[variante]} ${className}`}
+      className={`inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-bold tracking-wide transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 ${pad} ${ESTILO_VARIANTE[variante]} ${className}`}
       {...rest}
     >
       {cargando && <Spinner className="h-4 w-4" />}
@@ -227,7 +227,7 @@ export function PasoBarra({ paso, total }: { paso: number; total: number }) {
         <p className="text-xs font-semibold text-humo">Paso {paso} de {total}</p>
         <div className="flex gap-1.5" aria-hidden="true">
           {Array.from({ length: total }, (_, i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i < paso ? 'w-5 bg-foco' : 'w-1.5 bg-borde'}`} />
+            <span key={i} className={`h-1.5 rounded-full transition-colors duration-300 ${i < paso ? 'w-5 bg-foco' : 'w-1.5 bg-borde'}`} />
           ))}
         </div>
       </div>

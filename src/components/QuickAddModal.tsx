@@ -106,7 +106,7 @@ export default function QuickAddModal({ data, onClose, onSave }: Props) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="quick-add-title"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-[2px] animate-aparecer sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-aparecer sm:items-center"
       onClick={onClose}
     >
       <div

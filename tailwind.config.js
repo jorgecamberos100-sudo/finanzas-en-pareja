@@ -38,6 +38,10 @@ export default {
         // Atención (anillo de foco, barra de progreso, bordes de
         // aviso/selección): menta en noche, esmeralda en día.
         foco: 'rgb(var(--foco-rgb) / <alpha-value>)',
+        // Botón de Google (especificación de la marca: borde #dadce0,
+        // texto #1f1f1f, fondo blanco): valores fijos en ambos temas.
+        googleborde: 'rgb(var(--google-borde-rgb) / <alpha-value>)',
+        googletinta: 'rgb(var(--google-tinta-rgb) / <alpha-value>)',
       },
       // Tipografía: una sola familia, Inter, en todo (estándar limpio).
       fontFamily: {

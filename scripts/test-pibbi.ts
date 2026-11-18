@@ -87,12 +87,16 @@ check('calculadora no lleva prendas', PIBBI_POSES.calculadora.accessories, false
 check('perfil con lápiz tiene un solo ojo visible', PIBBI_POSES.perfilLapiz.eyelids.length, 1)
 check('avatar tiene dos ojos', PIBBI_POSES.avatarCircular.eyelids.length, 2)
 // 5b. Pose principal en HD (George, 18 nov 2026): imagen nueva 1231×1278,
-//     JPEG, y la pose 'frente' la usa como círculo negro.
+//     recorte cuadrado cerrado 1134×1134 (círculo mínimo del cerdito + 2%
+//     de aire, 18 nov 2026): JPEG, y la pose 'frente' la usa como círculo
+//     negro. Párpados medidos en el recorte (ojos a 35.8% / 62.7% de ancho
+//     y 30.0% de alto).
 check('frente HD es data URI JPEG', MASCOTA_HD.startsWith('data:image/jpeg;base64,'), true)
 check('frente HD no está vacía', MASCOTA_HD.length > 10000, true)
 check('frente usa la imagen HD', PIBBI_POSES.frente.image, MASCOTA_HD)
 check('frente HD es avatar negro', PIBBI_POSES.frente.avatarNegro, true)
 check('frente HD no es circular (ese flag es solo del avatarCircular)', PIBBI_POSES.frente.circular, undefined)
+check('frente: párpados medidos en el recorte cerrado', PIBBI_POSES.frente.eyelids, [{ left: 26.8, top: 22.5 }, { left: 53.7, top: 22.5 }])
 for (const [pose, cfg] of Object.entries(PIBBI_POSES)) {
   for (const e of cfg.eyelids) {
     check(`párpado de ${pose} dentro del marco`, e.left >= 0 && e.left + 18 <= 100 && e.top >= 0 && e.top + 15 <= 100, true)

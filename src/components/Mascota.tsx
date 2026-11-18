@@ -30,16 +30,21 @@ interface Props {
    * Marco de presentación. 'libre' (por defecto): cuerpo entero con el
    * fondo recortado, como hasta ahora. 'circulo': círculo grande y
    * centrado estilo avatar (como el de Muse): fondo suave, anillo tenue,
-   * la imagen va con aire interior (padding 6%) para que nunca se
+   * la imagen va con aire interior (inset 7%) para que nunca se
    * recorten orejas, brazos ni patitas, y sin sombra de suelo.
    * La imagen fuente es pequeña (frente 224×258, las demás 138–194 px):
    * a más de ~112 px de ancho en pantalla 2x ya se nota suave al
    * acercar. El círculo se usa a h-28 (112 px) como máximo.
    *
    * EXCEPCIÓN: la pose principal 'frente' ya no usa esa fuente vieja:
-   * desde nov 2026 usa la imagen HD de George (1231×1278, fondo negro)
-   * y se presenta como círculo negro (avatarNegro), nítida a cualquier
-   * tamaño razonable. Las demás poses siguen con sus fuentes pequeñas.
+   * desde nov 2026 usa la imagen HD de George (recorte cuadrado cerrado
+   * 1134×1134, el cerdito ocupa 70.6% del ancho y 89.9% del alto) y se
+   * presenta como círculo negro (avatarNegro), nítida a cualquier
+   * tamaño razonable. Como el recorte ya trae su propio aire (2% sobre
+   * el círculo mínimo del cerdito), en marco 'circulo' la HD va SIN el
+   * inset del 7% (clase pibbi-circulo-hd): así PIBBI llena el círculo
+   * de borde a borde sin recortar nada. Las demás poses siguen con sus
+   * fuentes pequeñas y su inset del 7%.
    */
   marco?: 'libre' | 'circulo'
 }
@@ -99,8 +104,12 @@ function recortarFondo(img: HTMLImageElement): string | null {
 /** Prendas dibujadas en SVG sobre la foto de PIBBI (posiciones relativas). */
 function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
   if (accessory === 'lentes') {
+    // Lentes centrados en los ojos de la pose 'frente' HD (recorte cerrado
+    // 1134×1134: ojos a 35.8% / 62.7% de ancho y 30.0% de alto). El SVG
+    // 100×40 con círculos en cx 28/72 y cy 20: con w 61%, los círculos
+    // quedan en 35.8% / 62.7% y su centro vertical en 30.0%.
     return (
-      <svg viewBox="0 0 100 40" aria-hidden="true" className="pointer-events-none absolute left-[11%] top-[30%] w-[78%]">
+      <svg viewBox="0 0 100 40" aria-hidden="true" className="pointer-events-none absolute left-[19%] top-[18%] w-[61%]">
         <circle cx="28" cy="20" r="14" fill="rgba(255,255,255,0.10)" stroke="#0F1530" strokeWidth="5" />
         <circle cx="72" cy="20" r="14" fill="rgba(255,255,255,0.10)" stroke="#0F1530" strokeWidth="5" />
         <path d="M42 18 Q50 13 58 18" fill="none" stroke="#0F1530" strokeWidth="5" strokeLinecap="round" />
@@ -118,8 +127,12 @@ function Accesorio({ accessory }: { accessory: PibbiAccessory }) {
     )
   }
   if (accessory === 'mono') {
+    // Moño en el cuello de la pose 'frente' HD (recorte cerrado
+    // 1134×1134: el cuello está al ~46% de alto). El SVG 100×44 con
+    // w 44% mide ~19.4% de alto: con top 36% su centro queda en ~46%.
+    // Antes estaba abajo (bottom 4%, ~77-86% de alto) y caía en la panza.
     return (
-      <svg viewBox="0 0 100 44" aria-hidden="true" className="pointer-events-none absolute bottom-[4%] left-[28%] w-[44%]">
+      <svg viewBox="0 0 100 44" aria-hidden="true" className="pointer-events-none absolute left-[28%] top-[36%] w-[44%]">
         <path d="M50 22 L12 6 Q6 22 12 38 Z" fill="#F5C542" />
         <path d="M50 22 L88 6 Q94 22 88 38 Z" fill="#F5C542" />
         <circle cx="50" cy="22" r="9" fill="#D9A41F" />
@@ -207,7 +220,7 @@ export default function Mascota({ pose = 'frente', accessory, alt = 'PIBBI, nues
   // de .pibbi-vivo pisa el transform de su propio elemento, por eso la
   // escala vive en el envoltorio y no en el mismo div.
   return (
-    <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${marco === 'circulo' ? 'pibbi-circulo' : ''} ${className}`} style={delays}>
+    <div className={`relative shrink-0 transition-transform duration-150 hover:scale-105 active:scale-95 ${marco === 'circulo' ? 'pibbi-circulo' : ''} ${marco === 'circulo' && esAvatarNegro ? 'pibbi-circulo-hd' : ''} ${className}`} style={delays}>
       <div className="pibbi-vivo relative h-full w-full">
         {/* La respiración (escala leve) vive en su propio div, anidado:
             así no pelea con la flotación (translate) del padre y la imagen,

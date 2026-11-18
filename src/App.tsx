@@ -299,7 +299,7 @@ export default function App() {
         <div className="flex justify-around px-2">
           {tabs.map((t) => (
             <NavLink key={t.to} to={t.to} end={t.to === '/'}
-              className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center gap-1 text-[10px] font-medium transition-colors ${isActive ? 'text-doradotexto' : 'text-humo'}`}>
+              className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center gap-1 text-[11px] font-medium transition-colors ${isActive ? 'text-doradotexto' : 'text-humo'}`}>
               {({ isActive }) => (
                 <>
                   <span className={`rounded-full px-4 py-1.5 transition-colors ${isActive ? 'bg-tarjeta shadow-tarjeta' : ''}`}>

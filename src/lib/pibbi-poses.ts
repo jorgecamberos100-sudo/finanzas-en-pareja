@@ -40,10 +40,12 @@ export interface PibbiPoseConfig {
 }
 
 export const PIBBI_POSES: Record<MascotaPose, PibbiPoseConfig> = {
-  // Pose principal en HD (imagen nueva de George, 1231×1278): ojos a ~37%
-  // de altura y ~37% / ~62% de ancho (medidos en la imagen). Las demás
-  // poses de frente (hoja de personaje) tienen los ojos a ~30% / ~28-72%.
-  frente: { image: MASCOTA_HD, eyelids: [{ left: 28, top: 30 }, { left: 53, top: 30 }], avatarNegro: true },
+  // Pose principal en HD (imagen nueva de George, 1231×1278; recorte
+  // cuadrado cerrado 1134×1134, 18 nov 2026): ojos medidos en el recorte
+  // a 35.8% / 62.7% de ancho y 30.0% de alto (párpado = ojo − 9% / − 7.5%).
+  // Las demás poses de frente (hoja de personaje) tienen los ojos a
+  // ~30% / ~28-72%.
+  frente: { image: MASCOTA_HD, eyelids: [{ left: 26.8, top: 22.5 }, { left: 53.7, top: 22.5 }], avatarNegro: true },
   celebrando: { image: MASCOTA_CELEBRANDO, eyelids: [{ left: 19, top: 22 }, { left: 63, top: 22 }] },
   ahorrando: { image: MASCOTA_AHORRANDO, eyelids: [{ left: 19, top: 22 }, { left: 63, top: 22 }] },
   saludando: { image: MASCOTA_SALUDANDO, eyelids: [{ left: 19, top: 22 }, { left: 63, top: 22 }] },

@@ -40,7 +40,7 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
         aria-label={`Gasto en ${category.name}`}
         className="mt-3 h-3 overflow-hidden rounded-full bg-borde "
       >
-        <div className={`h-full rounded-full transition-all ${bar}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full w-full origin-left rounded-full transition-transform duration-300 ${bar}`} style={{ transform: `scaleX(${pct / 100})` }} />
       </div>
       <div className="mt-2 flex justify-between text-sm">
         <span>Gastado: <strong className="text-rojosuave ">{formatMoney(spent, currency)}</strong></span>

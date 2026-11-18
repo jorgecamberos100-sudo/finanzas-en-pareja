@@ -67,7 +67,7 @@ export default function GoogleSignInButton({ disabled, onError }: Props) {
         type="button"
         onClick={() => void entrar()}
         disabled={ocupado}
-        className="flex w-full items-center justify-center gap-3 whitespace-nowrap rounded-xl border border-[#dadce0] bg-white py-3 font-bold text-[#1f1f1f] disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 whitespace-nowrap rounded-xl border border-googleborde bg-white py-3 font-bold text-googletinta disabled:cursor-not-allowed disabled:opacity-50"
       >
         <LogoGoogle />
         {busy ? 'Abriendo Google…' : 'Continuar con Google'}
