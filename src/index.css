@@ -119,6 +119,56 @@ select option {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/* Kit de componentes estilo Muse (rediseño estético, nov 2026): botones
+   píldora (primario azul, secundario con borde, fantasma de solo texto,
+   icono circular 40×40), chips de 32 px, campos de radio 14 px y
+   tarjetas de 20 px. Las pantallas usan estas clases en vez de armar
+   cada estilo a mano: un solo lugar para ajustar la estética. */
+@layer components {
+  /* Tarjeta base: radio 20 px, borde y sombra por tema. */
+  .tarjeta {
+    @apply rounded-[20px] border border-borde bg-tarjeta shadow-tarjeta;
+  }
+
+  /* Botones píldora. */
+  .btn-primario {
+    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full bg-dorado px-5 py-3 text-[15px] font-semibold text-tinta shadow-fab transition hover:bg-dorado/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-primario-chico {
+    @apply inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-dorado px-4 py-2 text-[13px] font-semibold text-tinta transition hover:bg-dorado/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-secundario {
+    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-borde bg-tarjeta px-5 py-3 text-[15px] font-semibold text-crema transition hover:border-foco/60 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-secundario-chico {
+    @apply inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-borde bg-tarjeta px-4 py-2 text-[13px] font-semibold text-crema transition hover:border-foco/60 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-fantasma {
+    @apply inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold text-humo transition hover:text-crema active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  /* Botón solo icono: círculo de 40×40. */
+  .btn-icono {
+    @apply inline-flex h-10 w-10 shrink-0 select-none items-center justify-center rounded-full text-humo transition hover:bg-elevado hover:text-crema active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+
+  /* Chips (segmentos, filtros, badges): 32 px de alto. */
+  .chip {
+    @apply inline-flex h-8 select-none items-center justify-center gap-1 whitespace-nowrap rounded-full bg-elevado px-3 text-[13px] font-semibold text-humo transition active:scale-[0.98];
+  }
+  .chip-activo {
+    @apply inline-flex h-8 select-none items-center justify-center gap-1 whitespace-nowrap rounded-full bg-dorado px-3 text-[13px] font-semibold text-tinta transition active:scale-[0.98];
+  }
+
+  /* Campos (inputs/selects/textareas): radio 14 px, 16 px de fuente
+     (evita el zoom de iOS al enfocar). */
+  .campo {
+    @apply w-full rounded-[14px] border border-borde bg-tarjeta px-3.5 py-2.5 text-crema placeholder:text-humo/70 transition-colors focus:border-foco;
+  }
+  .campo-chico {
+    @apply w-full rounded-[14px] border border-borde bg-tarjeta px-3 py-1.5 text-crema placeholder:text-humo/70 transition-colors focus:border-foco;
+  }
+}
+
 /* Esqueleto de carga con brillo que barre (nunca texto plano "Cargando…"). */
 .esqueleto {
   position: relative;

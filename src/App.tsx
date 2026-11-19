@@ -7,6 +7,8 @@ import { onUpdateAvailable, applyUpdate } from './lib/sw-update'
 import { PibbiProvider } from './lib/pibbi'
 import { leerNombreMascota } from './lib/pibbi-identidad'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
+import Mascota from './components/Mascota'
+import { Icono, type NombreIcono } from './components/ui'
 import type { Account, Category, Goal, Household, HouseholdPlan, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
@@ -51,16 +53,13 @@ function UpdateBanner() {
   return (
     <div className="fixed inset-x-0 top-0 z-50">
       <div className="mx-auto max-w-lg px-3 pt-3">
-        <div role="alert" className="flex items-center gap-2 rounded-xl border border-dorado bg-tarjeta p-3 shadow-lg">
-          <span className="flex-1 text-sm text-crema">✨ Nueva versión disponible</span>
-          <button
-            onClick={applyUpdate}
-            className="rounded-lg bg-dorado px-3 py-1.5 text-sm font-extrabold tracking-wide text-tinta"
-          >
+        <div role="alert" className="flex items-center gap-2 rounded-[14px] border border-borde bg-tarjeta p-3 shadow-elevado">
+          <span className="flex-1 text-sm text-crema">Nueva versión disponible</span>
+          <button onClick={applyUpdate} className="btn-primario-chico">
             Actualizar ahora
           </button>
-          <button aria-label="Cerrar aviso" onClick={() => setShow(false)} className="px-2 text-lg text-humo">
-            ✕
+          <button aria-label="Cerrar aviso" onClick={() => setShow(false)} className="btn-icono h-8 w-8">
+            <Icono nombre="cerrar" className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -223,12 +222,12 @@ export default function App() {
       setData((d) => ({ ...d, transactions: d.transactions.filter((t) => t.id !== optimistic.id) }))
     } else {
       setSyncError(null)
-      showReaction('calculando', `¡Guardado! ${leerNombreMascota()} ya hizo las cuentas 🧮`)
+      showReaction('calculando', `¡Guardado! ${leerNombreMascota()} ya hizo las cuentas`)
       await loadAll()
     }
   }
 
-  if (loading) return <PibbiProvider><UpdateBanner /><div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div></PibbiProvider>
+  if (loading) return <PibbiProvider><UpdateBanner /><div className="flex min-h-screen flex-col items-center justify-center gap-3"><Mascota pose="frente" alt="PIBBI" className="h-24 w-24" /><p className="text-[13px] text-humo">Cargando…</p></div></PibbiProvider>
   if (!householdId || !data.household) return <PibbiProvider><UpdateBanner /><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
 
   // Etiqueta corta para pantallas angostas (360 px): con 6 pestañas y

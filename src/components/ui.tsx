@@ -6,7 +6,7 @@
  * - Tarjetas con sombra por tema, esqueletos de carga y logo con PIBBI.
  * Todo usa los tokens del tema (noche/día): funciona igual en ambos.
  */
-import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
+import { useEffect, useState, type ButtonHTMLAttributes, type ComponentType, type InputHTMLAttributes, type ReactNode } from 'react'
 import Mascota from './Mascota'
 
 // ---------- Iconos SVG ----------
@@ -66,6 +66,60 @@ export const IconoBasura = ({ className }: PIcono) => <Svg className={className}
 export const IconoMaletin = ({ className }: PIcono) => <Svg className={className}><rect x="3.5" y="8" width="17" height="12" rx="2.5" /><path d="M9 8V6.5A2.5 2.5 0 0 1 11.5 4h1A2.5 2.5 0 0 1 15 6.5V8M3.5 13h17" /></Svg>
 export const IconoSol = ({ className }: PIcono) => <Svg className={className}><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19" /></Svg>
 export const IconoLuna = ({ className }: PIcono) => <Svg className={className}><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z" /></Svg>
+export const IconoUsuarios = ({ className }: PIcono) => <Svg className={className}><circle cx="9" cy="8.5" r="3.2" /><path d="M3 19.5c1-3 3.3-4.6 6-4.6s5 1.6 6 4.6" /><path d="M15.5 5.8a3.2 3.2 0 0 1 0 5.4M17.5 14.9c1.5.6 2.7 1.9 3.5 3.6" /></Svg>
+export const IconoRepetir = ({ className }: PIcono) => <Svg className={className}><path d="M17 3.5 20 6.5l-3 3" /><path d="M4 12V10a3.5 3.5 0 0 1 3.5-3.5H20" /><path d="M7 20.5 4 17.5l3-3" /><path d="M20 12v2a3.5 3.5 0 0 1-3.5 3.5H4" /></Svg>
+export const IconoFlechaArriba = ({ className }: PIcono) => <Svg className={className}><path d="M12 19V5m0 0 6 6m-6-6-6 6" /></Svg>
+
+// ---------- Dispatcher de iconos ----------
+// Uso: <Icono nombre="mas" className="h-6 w-6" />. Un solo punto de entrada
+// para toda la app (pestañas, botones de icono, badges): los iconos son SVG
+// con stroke currentColor, nunca emojis.
+export type NombreIcono =
+  | 'inicio' | 'movimientos' | 'presupuesto' | 'plan' | 'chat' | 'avisos'
+  | 'mas' | 'cerrar' | 'ojo' | 'ojoCerrado' | 'alerta' | 'basura' | 'candado'
+  | 'usuario' | 'usuarios' | 'repetir' | 'camara' | 'microfono'
+  | 'flechaArriba' | 'flecha' | 'flechaDer' | 'flechaIzq' | 'check' | 'correo'
+  | 'copiar' | 'salir' | 'brillo' | 'reloj' | 'buscar' | 'lapiz' | 'sol' | 'luna'
+
+const ICONOS: Record<NombreIcono, ComponentType<PIcono>> = {
+  inicio: IconoInicio,
+  movimientos: IconoLista,
+  presupuesto: IconoSobre,
+  plan: IconoMeta,
+  chat: IconoChat,
+  avisos: IconoCampana,
+  mas: IconoMas,
+  cerrar: IconoX,
+  ojo: IconoOjo,
+  ojoCerrado: IconoOjoCerrado,
+  alerta: IconoAlerta,
+  basura: IconoBasura,
+  candado: IconoCandado,
+  usuario: IconoUsuario,
+  usuarios: IconoUsuarios,
+  repetir: IconoRepetir,
+  camara: IconoCamara,
+  microfono: IconoMicrofono,
+  flechaArriba: IconoFlechaArriba,
+  flecha: IconoFlechaArriba,
+  flechaDer: IconoFlechaDer,
+  flechaIzq: IconoFlechaIzq,
+  check: IconoCheck,
+  correo: IconoCorreo,
+  copiar: IconoCopiar,
+  salir: IconoSalir,
+  brillo: IconoBrillo,
+  reloj: IconoReloj,
+  buscar: IconoBuscar,
+  lapiz: IconoLapiz,
+  sol: IconoSol,
+  luna: IconoLuna,
+}
+
+export function Icono({ nombre, className = 'h-5 w-5' }: { nombre: NombreIcono; className?: string }) {
+  const Componente = ICONOS[nombre]
+  return <Componente className={className} />
+}
 
 // ---------- Icono de categoría (SVG, nunca emoji) ----------
 // Las categorías guardan un emoji en `icon` (dato viejo de la semilla);
@@ -188,7 +242,7 @@ function MarcoCampo({ etiqueta, icono, error, ayuda, children }: {
     </label>
   )
 }
-const CLASE_INPUT = 'w-full rounded-xl border bg-tarjeta px-3.5 py-3 text-base text-crema placeholder:text-humo/70 transition-colors focus:border-foco'
+const CLASE_INPUT = 'w-full rounded-[14px] border bg-tarjeta px-3.5 py-3 text-base text-crema placeholder:text-humo/70 transition-colors focus:border-foco'
 function claseBorde(error?: string | null) {
   return error ? 'border-rojosuave ring-1 ring-rojosuave/40' : 'border-borde'
 }
@@ -235,7 +289,7 @@ export function CampoClave({ etiqueta, error, ayuda, className = '', ...rest }: 
 
 // ---------- Tarjeta / esqueleto / alerta ----------
 export function Tarjeta({ className = '', children }: { className?: string; children: ReactNode }) {
-  return <div className={`rounded-[28px] border border-borde/70 bg-tarjeta shadow-tarjeta ${className}`}>{children}</div>
+  return <div className={`tarjeta ${className}`}>{children}</div>
 }
 export function Esqueleto({ className = '' }: { className?: string }) {
   return <div className={`esqueleto rounded-2xl ${className}`} aria-hidden="true" />
@@ -247,7 +301,7 @@ export function Alerta({ children, tono = 'error' }: { children: ReactNode; tono
       ? 'border-verde/30 bg-verde/10 text-verde'
       : 'border-foco/30 bg-doradotenue text-doradotexto'
   return (
-    <div role={tono === 'error' ? 'alert' : 'status'} className={`flex items-start gap-2 rounded-xl border p-3 text-sm ${estilo}`}>
+    <div role={tono === 'error' ? 'alert' : 'status'} className={`flex items-start gap-2 rounded-[14px] border p-3 text-sm ${estilo}`}>
       {tono === 'error' ? <IconoAlerta className="mt-0.5 h-4 w-4 shrink-0" /> : <IconoCheck className="mt-0.5 h-4 w-4 shrink-0" />}
       <div className="min-w-0">{children}</div>
     </div>
@@ -255,19 +309,21 @@ export function Alerta({ children, tono = 'error' }: { children: ReactNode; tono
 }
 
 // ---------- Barra de pasos del onboarding ----------
-export function PasoBarra({ paso, total }: { paso: number; total: number }) {
+// Píldoras de 4 px (estilo Muse): los pasos hechos en dorado tenue, el
+// actual en dorado pleno y los pendientes en la superficie elevada.
+export function PasoBarra({ paso, total, className = '' }: { paso: number; total: number; className?: string }) {
   return (
-    <div className="mb-5">
+    <div className={className}>
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-semibold text-humo">Paso {paso} de {total}</p>
-        <div className="flex gap-1.5" aria-hidden="true">
-          {Array.from({ length: total }, (_, i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-colors duration-300 ${i < paso ? 'w-5 bg-foco' : 'w-1.5 bg-borde'}`} />
-          ))}
-        </div>
+        <p className="text-[13px] font-semibold text-humo">Paso {paso} de {total}</p>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-borde">
-        <div className="h-full rounded-full bg-foco transition-transform duration-500" style={{ transform: `scaleX(${paso / total})`, transformOrigin: 'left' }} />
+      <div className="flex gap-1.5" aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => (
+          <span
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i < paso - 1 ? 'bg-dorado/40' : i === paso - 1 ? 'bg-dorado' : 'bg-elevado'}`}
+          />
+        ))}
       </div>
     </div>
   )
