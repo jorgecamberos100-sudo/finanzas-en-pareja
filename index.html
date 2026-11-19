@@ -7,6 +7,19 @@
     <meta name="description" content="Finanzas en Pareja: control mutuo de ingresos, gastos, presupuesto por sobres, metas y deuda mutua. Gratis para los dos." />
     <title>Finanzas en Pareja</title>
 
+    <!-- Script inline para aplicar tema guardado antes de la primera pintura -->
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('finanzas-tema');
+          var tema = (t === 'dia' || t === 'esmeralda') ? 'dia' : 'noche';
+          document.documentElement.dataset.theme = tema;
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute('content', tema === 'dia' ? '#F7F7F8' : '#0A0A0C');
+        } catch (_) {}
+      })();
+    </script>
+
     <!-- Iconos: favicon.ico real (lo genera scripts/generate-icons.mjs en postinstall),
          SVG diseñado para navegadores modernos y apple-touch-icon para iOS. -->
     <link rel="icon" href="/favicon.ico" sizes="any" />

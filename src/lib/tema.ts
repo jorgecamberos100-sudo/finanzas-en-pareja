@@ -47,7 +47,13 @@ export function siguienteTema(tema: Tema): Tema {
 /** Tema guardado en este dispositivo (noche si no hay nada guardado). */
 export function leerTema(): Tema {
   try {
-    return temaDesdeStorage(window.localStorage.getItem(TEMA_KEY))
+    const raw = window.localStorage.getItem(TEMA_KEY)
+    const tema = temaDesdeStorage(raw)
+    // Normalizar al escribir: persistir siempre el valor normalizado para que un tema legacy no sobreviva
+    if (raw !== tema) {
+      window.localStorage.setItem(TEMA_KEY, tema)
+    }
+    return tema
   } catch {
     return 'noche'
   }
@@ -56,11 +62,12 @@ export function leerTema(): Tema {
 /** Aplica el tema: atributo en <html> (lo leen las variables CSS),
  *  meta theme-color y persistencia en localStorage. */
 export function aplicarTema(tema: Tema): void {
-  document.documentElement.dataset.theme = tema
+  const normalizado = temaDesdeStorage(tema)
+  document.documentElement.dataset.theme = normalizado
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', META_THEME_COLOR[tema])
+  if (meta) meta.setAttribute('content', META_THEME_COLOR[normalizado])
   try {
-    window.localStorage.setItem(TEMA_KEY, tema)
+    window.localStorage.setItem(TEMA_KEY, normalizado)
   } catch {
     // Modo privado o almacenamiento bloqueado: el tema aplica igual
     // en esta sesión, solo no se recuerda para la próxima.

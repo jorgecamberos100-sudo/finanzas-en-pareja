@@ -5,6 +5,56 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Tarjetas planas estilo Muse con hairline y radio 20px */
+  .tarjeta {
+    @apply rounded-[20px] bg-tarjeta border border-borde shadow-tarjeta;
+  }
+
+  /* Botones en píldora estilo Muse */
+  .btn-primario {
+    @apply inline-flex items-center justify-center rounded-full bg-dorado text-tinta font-semibold text-[15px] h-12 px-6 transition-all active:scale-[0.98] hover:bg-dorado/90 disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-primario-chico {
+    @apply inline-flex items-center justify-center rounded-full bg-dorado text-tinta font-semibold text-[14px] h-9 px-4 transition-all active:scale-[0.98] hover:bg-dorado/90 disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-secundario {
+    @apply inline-flex items-center justify-center rounded-full bg-tarjeta border border-borde text-crema font-semibold text-[15px] h-12 px-6 transition-all active:scale-[0.98] hover:bg-elevado disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-secundario-chico {
+    @apply inline-flex items-center justify-center rounded-full bg-tarjeta border border-borde text-crema font-semibold text-[13px] h-9 px-3.5 transition-all active:scale-[0.98] hover:bg-elevado disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-fantasma {
+    @apply inline-flex items-center justify-center rounded-full bg-transparent text-humo font-medium text-[14px] h-10 px-4 transition-all active:scale-[0.98] hover:text-crema hover:bg-dorado/10 disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .btn-icono {
+    @apply inline-flex items-center justify-center rounded-full h-10 w-10 text-humo transition-all active:scale-[0.98] hover:text-crema hover:bg-elevado disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  /* Chips de filtro y selección */
+  .chip {
+    @apply inline-flex items-center justify-center rounded-full bg-elevado text-humo border border-transparent font-medium text-[13px] h-8 px-3 transition-all hover:text-crema disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .chip-activo {
+    @apply inline-flex items-center justify-center rounded-full bg-doradotenue text-doradotexto border border-dorado/30 font-semibold text-[13px] h-8 px-3 transition-all;
+  }
+
+  /* Campos de formulario con radio 14px */
+  .campo {
+    @apply w-full rounded-[14px] bg-tarjeta border border-borde text-crema placeholder:text-humo h-12 px-4 text-[16px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foco focus-visible:ring-offset-2 focus-visible:ring-offset-noche;
+  }
+
+  .campo-chico {
+    @apply rounded-[14px] bg-tarjeta border border-borde text-crema placeholder:text-humo h-10 px-3 text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foco focus-visible:ring-offset-2 focus-visible:ring-offset-noche;
+  }
+}
+
 /* Dos temas, paleta "negro + azul" (estándar Muse, referencia del usuario):
    noche = fondo casi negro, superficies gris oscuro, acento azul brillante;
    día = fondo gris muy claro, tarjetas blancas, mismo acento azul.
@@ -43,10 +93,10 @@
      #1f1f1f, fondo blanco): valores fijos en ambos temas. */
   --google-borde-rgb: 218 220 224;
   --google-tinta-rgb: 31 31 31;
-  /* Sombras de tarjetas y botón flotante (tema noche): profundas. */
-  --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
-  --sombra-elevada: 0 2px 6px rgba(0, 0, 0, 0.4), 0 24px 56px -20px rgba(0, 0, 0, 0.7);
-  --sombra-fab: 0 8px 24px rgba(37, 99, 235, 0.45), 0 3px 8px rgba(0, 0, 0, 0.4);
+  /* Sombras de tarjetas y botón flotante (tema noche, estilo Muse). */
+  --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --sombra-elevada: 0 2px 8px rgba(0, 0, 0, 0.40), 0 24px 64px -24px rgba(0, 0, 0, 0.70);
+  --sombra-fab: 0 8px 24px rgba(37, 99, 235, 0.35), 0 2px 8px rgba(0, 0, 0, 0.40);
 }
 
 :root[data-theme='dia'] {
@@ -66,10 +116,10 @@
   --rojosuave-rgb: 220 38 38;
   --tinta-rgb: 255 255 255;
   --foco-rgb: 37 99 235;
-  /* Sombras suaves de día: tarjetas blancas que flotan sobre el fondo. */
-  --sombra-tarjeta: 0 1px 2px rgba(17, 17, 19, 0.05), 0 12px 32px -18px rgba(17, 17, 19, 0.16);
-  --sombra-elevada: 0 2px 6px rgba(17, 17, 19, 0.06), 0 24px 56px -22px rgba(17, 17, 19, 0.22);
-  --sombra-fab: 0 8px 24px rgba(37, 99, 235, 0.35), 0 3px 8px rgba(17, 17, 19, 0.15);
+  /* Sombras suaves de día: tarjetas blancas estilo Muse. */
+  --sombra-tarjeta: 0 1px 2px rgba(17, 17, 19, 0.04);
+  --sombra-elevada: 0 2px 8px rgba(17, 17, 19, 0.06), 0 24px 64px -28px rgba(17, 17, 19, 0.20);
+  --sombra-fab: 0 8px 24px rgba(37, 99, 235, 0.28), 0 2px 8px rgba(17, 17, 19, 0.12);
 }
 
 html, body {
@@ -280,6 +330,17 @@ select option {
   .animate-aparecer,
   .animate-latido-suave {
     animation: none;
+  }
+  .btn-primario,
+  .btn-primario-chico,
+  .btn-secundario,
+  .btn-secundario-chico,
+  .btn-fantasma,
+  .btn-icono,
+  .chip,
+  .chip-activo {
+    transition: none;
+    transform: none;
   }
 }
 
