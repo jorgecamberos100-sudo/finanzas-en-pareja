@@ -66,6 +66,52 @@ export const IconoBasura = ({ className }: PIcono) => <Svg className={className}
 export const IconoMaletin = ({ className }: PIcono) => <Svg className={className}><rect x="3.5" y="8" width="17" height="12" rx="2.5" /><path d="M9 8V6.5A2.5 2.5 0 0 1 11.5 4h1A2.5 2.5 0 0 1 15 6.5V8M3.5 13h17" /></Svg>
 export const IconoSol = ({ className }: PIcono) => <Svg className={className}><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19" /></Svg>
 export const IconoLuna = ({ className }: PIcono) => <Svg className={className}><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z" /></Svg>
+export const IconoFlechaArriba = ({ className }: PIcono) => <Svg className={className}><path d="M12 19V5m0 0-6 6m6-6 6 6" /></Svg>
+export const IconoRepetir = ({ className }: PIcono) => <Svg className={className}><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></Svg>
+export const IconoUsuarios = ({ className }: PIcono) => <Svg className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></Svg>
+
+export function Icono({ nombre, className = 'h-5 w-5' }: { nombre: string; className?: string }) {
+  switch (nombre) {
+    case 'inicio': return <IconoInicio className={className} />
+    case 'movimientos':
+    case 'lista': return <IconoLista className={className} />
+    case 'presupuesto':
+    case 'sobre': return <IconoSobre className={className} />
+    case 'plan':
+    case 'meta': return <IconoMeta className={className} />
+    case 'chat': return <IconoChat className={className} />
+    case 'avisos':
+    case 'campana': return <IconoCampana className={className} />
+    case 'mas': return <IconoMas className={className} />
+    case 'cerrar':
+    case 'x': return <IconoX className={className} />
+    case 'ojo': return <IconoOjo className={className} />
+    case 'ojoCerrado': return <IconoOjoCerrado className={className} />
+    case 'alerta': return <IconoAlerta className={className} />
+    case 'basura': return <IconoBasura className={className} />
+    case 'candado': return <IconoCandado className={className} />
+    case 'usuario': return <IconoUsuario className={className} />
+    case 'usuarios': return <IconoUsuarios className={className} />
+    case 'repetir': return <IconoRepetir className={className} />
+    case 'camara': return <IconoCamara className={className} />
+    case 'microfono': return <IconoMicrofono className={className} />
+    case 'flechaArriba':
+    case 'flecha': return <IconoFlechaArriba className={className} />
+    case 'flechaDer': return <IconoFlechaDer className={className} />
+    case 'flechaIzq': return <IconoFlechaIzq className={className} />
+    case 'check': return <IconoCheck className={className} />
+    case 'correo': return <IconoCorreo className={className} />
+    case 'copiar': return <IconoCopiar className={className} />
+    case 'salir': return <IconoSalir className={className} />
+    case 'brillo': return <IconoBrillo className={className} />
+    case 'reloj': return <IconoReloj className={className} />
+    case 'buscar': return <IconoBuscar className={className} />
+    case 'lapiz': return <IconoLapiz className={className} />
+    case 'sol': return <IconoSol className={className} />
+    case 'luna': return <IconoLuna className={className} />
+    default: return <IconoAlerta className={className} />
+  }
+}
 
 // ---------- Icono de categoría (SVG, nunca emoji) ----------
 // Las categorías guardan un emoji en `icon` (dato viejo de la semilla);
@@ -235,7 +281,7 @@ export function CampoClave({ etiqueta, error, ayuda, className = '', ...rest }: 
 
 // ---------- Tarjeta / esqueleto / alerta ----------
 export function Tarjeta({ className = '', children }: { className?: string; children: ReactNode }) {
-  return <div className={`rounded-[28px] border border-borde/70 bg-tarjeta shadow-tarjeta ${className}`}>{children}</div>
+  return <div className={`tarjeta p-4 ${className}`}>{children}</div>
 }
 export function Esqueleto({ className = '' }: { className?: string }) {
   return <div className={`esqueleto rounded-2xl ${className}`} aria-hidden="true" />
@@ -247,27 +293,26 @@ export function Alerta({ children, tono = 'error' }: { children: ReactNode; tono
       ? 'border-verde/30 bg-verde/10 text-verde'
       : 'border-foco/30 bg-doradotenue text-doradotexto'
   return (
-    <div role={tono === 'error' ? 'alert' : 'status'} className={`flex items-start gap-2 rounded-xl border p-3 text-sm ${estilo}`}>
+    <div role={tono === 'error' ? 'alert' : 'status'} className={`flex items-start gap-2 rounded-[14px] border p-3 text-sm ${estilo}`}>
       {tono === 'error' ? <IconoAlerta className="mt-0.5 h-4 w-4 shrink-0" /> : <IconoCheck className="mt-0.5 h-4 w-4 shrink-0" />}
       <div className="min-w-0">{children}</div>
     </div>
   )
 }
 
-// ---------- Barra de pasos del onboarding ----------
+// ---------- Barra de pasos del onboarding (5 píldoras de 4px) ----------
 export function PasoBarra({ paso, total }: { paso: number; total: number }) {
   return (
     <div className="mb-5">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-semibold text-humo">Paso {paso} de {total}</p>
-        <div className="flex gap-1.5" aria-hidden="true">
-          {Array.from({ length: total }, (_, i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-colors duration-300 ${i < paso ? 'w-5 bg-foco' : 'w-1.5 bg-borde'}`} />
-          ))}
-        </div>
+        <p className="text-[13px] font-medium text-humo">Paso {paso} de {total}</p>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-borde">
-        <div className="h-full rounded-full bg-foco transition-transform duration-500" style={{ transform: `scaleX(${paso / total})`, transformOrigin: 'left' }} />
+      <div className="flex gap-1.5" aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => {
+          const index = i + 1
+          const bg = index < paso ? 'bg-dorado/40' : index === paso ? 'bg-dorado' : 'bg-elevado'
+          return <span key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${bg}`} />
+        })}
       </div>
     </div>
   )

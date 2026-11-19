@@ -79,11 +79,11 @@ export function saludoPibbi(vibe: PibbiVibe, name: string): string {
     case 'tranquilo':
       return `Hola, soy ${name}. Tranquilo: te ayudo a cuidar cada peso, en pareja.`
     case 'motivador':
-      return `¡Hola! Soy ${name} 💪 ¡Vamos por cada peso, en pareja!`
+      return `¡Hola! Soy ${name}. ¡Vamos por cada peso, en pareja!`
     case 'bromista':
-      return `¡Hola! Soy ${name} 🐷 El cerdito que cuida tus pesos (y a veces se ríe de ellos).`
+      return `¡Hola! Soy ${name}. El cerdito que cuida tus pesos (y a veces se ríe de ellos).`
     default:
-      return `¡Hola! Soy ${name}, tu cerdito de los ahorros 🐷 Te ayudo a cuidar cada peso, en pareja.`
+      return `¡Hola! Soy ${name}, tu cerdito de los ahorros. Te ayudo a cuidar cada peso, en pareja.`
   }
 }
 
@@ -95,9 +95,9 @@ export function celebracionPibbi(vibe: PibbiVibe, name: string): string {
     case 'motivador':
       return '¡Meta alcanzada! Lo lograste con constancia. ¡A por la siguiente!'
     case 'bromista':
-      return '¡Meta alcanzada! ¡Ni el cochinito se lo cree! 🎉'
+      return '¡Meta alcanzada! ¡Ni el cochinito se lo cree!'
     default:
-      return `¡Meta alcanzada! 🎉 ${name} celebra contigo.`
+      return `¡Meta alcanzada! ${name} celebra contigo.`
   }
 }
 
@@ -105,21 +105,21 @@ export function celebracionPibbi(vibe: PibbiVibe, name: string): string {
 export function textoReaccion(contexto: ReactionContext, vibe: PibbiVibe, name: string): string {
   switch (contexto) {
     case 'saludando':
-      if (vibe === 'tranquilo') return 'Hola 👋'
-      if (vibe === 'motivador') return '¡Hola! ¡A por ello! 💪'
-      if (vibe === 'bromista') return '¡Hola! ¿Qué se cuenta? 🐷'
-      return '¡Hola! 👋'
+      if (vibe === 'tranquilo') return 'Hola'
+      if (vibe === 'motivador') return '¡Hola! ¡A por ello!'
+      if (vibe === 'bromista') return '¡Hola! ¿Qué se cuenta?'
+      return '¡Hola!'
     case 'apuntando':
-      return '¡Anotado! 📝'
+      return '¡Anotado!'
     case 'calculando':
-      return 'Haciendo cuentas… 🧮'
+      return 'Haciendo cuentas…'
     case 'pensando':
-      return 'Déjame pensar… 🤔'
+      return 'Déjame pensar…'
     case 'celebrando':
       return celebracionPibbi(vibe, name)
     case 'progreso':
-      return '¡Vas muy bien! 📈'
+      return '¡Vas muy bien!'
     case 'ahorrando':
-      return '¡A ahorrar! 🪙'
+      return '¡A ahorrar!'
   }
 }

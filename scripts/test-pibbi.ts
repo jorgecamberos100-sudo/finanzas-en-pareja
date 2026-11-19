@@ -155,7 +155,7 @@ check('saludo alegre por defecto dice PIBBI', saludoPibbi('alegre', 'PIBBI').inc
 check('celebración alegre usa el nombre', celebracionPibbi('alegre', 'Chonchito').includes('Chonchito'), true)
 check('reacción celebrando usa el nombre', textoReaccion('celebrando', 'alegre', 'Chonchito').includes('Chonchito'), true)
 check('reacción saludando no está vacía', textoReaccion('saludando', 'tranquilo', 'PIBBI').length > 0, true)
-check('reacción apuntando sigue igual', textoReaccion('apuntando', 'alegre', 'PIBBI'), '¡Anotado! 📝')
+check('reacción apuntando sigue igual', textoReaccion('apuntando', 'alegre', 'PIBBI'), '¡Anotado!')
 
 // Migración 007: la identidad vive en pibbi_customization.
 const mig007 = readFileSync(join(root, 'supabase/migrations/007_mascota_identidad.sql'), 'utf8')
