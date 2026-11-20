@@ -13,24 +13,24 @@ interface Props {
 }
 
 /**
- * PIBBI reaccionando según el contexto, sin bloquear nada: aparece junto
- * a la confirmación (un banner o un globo), nunca como modal. El texto
- * depende de su personalidad (vibe) y usa su nombre. Al celebrar (meta
- * lograda, pago hecho) baila a 120 px, como en el panel.
+ * PIBBI reaccionando según el contexto, sin bloquear nada: píldora estilo
+ * Muse con su avatar y una frase según su personalidad. El texto depende
+ * de su personalidad (vibe) y usa su nombre. Al celebrar (meta lograda,
+ * pago hecho) baila, como en el panel. Sin emoji en la UI.
  */
 export default function PibbiReaction({ contexto, mensaje, className = '' }: Props) {
   const { name, vibe } = usePibbi()
   const pose = REACTION_POSES[contexto]
   const celebrando = contexto === 'celebrando'
   return (
-    <div className={`flex items-center gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-3 ${className}`}>
+    <div className={`flex items-center gap-3 rounded-full border border-borde bg-elevado py-2 pl-2 pr-4 ${className}`}>
       <Mascota
         pose={pose}
         dancing={celebrando}
         alt={`${name} ${contexto}`}
-        className={celebrando ? 'h-[120px] w-[120px] shrink-0' : 'h-12 w-12 shrink-0'}
+        className={celebrando ? 'h-[120px] w-[120px] shrink-0' : 'h-8 w-8 shrink-0'}
       />
-      <p className="text-sm font-semibold text-crema">{mensaje ?? textoReaccion(contexto, vibe, name)}</p>
+      <p className="min-w-0 text-[13px] font-medium text-crema">{mensaje ?? textoReaccion(contexto, vibe, name)}</p>
     </div>
   )
 }

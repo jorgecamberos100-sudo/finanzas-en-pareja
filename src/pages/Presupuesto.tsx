@@ -9,7 +9,7 @@ import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import Paywall from '../components/Paywall'
-import { ChipCategoria, IconoAlerta, IconoReloj } from '../components/ui'
+import { ChipCategoria, Icono, IconoAlerta } from '../components/ui'
 import type { Category } from '../types'
 
 interface Props { data: AppData; onRefresh: () => void }
@@ -125,17 +125,27 @@ export default function Presupuesto({ data, onRefresh }: Props) {
         subtitle={<>Plan {defPlan(data.plan).nombre} · {budgeted.length} de {Number.isFinite(defPlan(data.plan).sobresMax) ? defPlan(data.plan).sobresMax : '∞'} sobres</>}
       />
 
-      <section className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Ingresos</p><p className="font-bold text-verde">{formatMoney(ingresos, currency)}</p></div>
-        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Presupuestado</p><p className="font-bold">{formatMoney(totalBudget, currency)}</p></div>
-        <div className="rounded-2xl bg-tarjeta p-3 "><p className="text-xs text-humo">Por asignar</p><p className="font-bold text-doradotexto">{formatMoney(porAsignar, currency)}</p></div>
+      <section className="tarjeta grid grid-cols-3 divide-x divide-borde text-center">
+        <div className="min-w-0 p-3">
+          <p className="text-xs text-humo">Ingresos</p>
+          <p className="nums text-sm font-bold text-verde">{formatMoney(ingresos, currency)}</p>
+        </div>
+        <div className="min-w-0 p-3">
+          <p className="text-xs text-humo">Presupuestado</p>
+          <p className="nums text-sm font-bold">{formatMoney(totalBudget, currency)}</p>
+        </div>
+        <div className="min-w-0 p-3">
+          <p className="text-xs text-humo">Por asignar</p>
+          <p className="nums text-sm font-bold text-crema">{formatMoney(porAsignar, currency)}</p>
+        </div>
       </section>
+
       <p className="text-sm text-humo">
         Recurrentes proyectados este mes: <strong>{formatMoney(recurringTotal, currency)}</strong> · Disponible real tras recurrentes: <strong>{formatMoney(disponibleReal, currency)}</strong>
       </p>
 
       {pasados.length > 0 && (
-        <div className="flex items-center gap-3 rounded-2xl border border-borde bg-tarjeta p-3">
+        <div className="tarjeta flex items-center gap-3 border border-borde p-3">
           <Mascota pose="pensativo" className="h-14 w-14 shrink-0" />
           <p className="text-sm">
             Te pasaste un poco en {pasados.map((c) => c.name).join(', ')}, sin drama, lo ajustamos el próximo mes.
@@ -150,27 +160,30 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       )}
 
       {editingCategory && (
-        <div className="rounded-2xl border border-foco/60 bg-doradotenue p-4">
-          <h3 className="flex items-center gap-2 font-bold"><ChipCategoria nombre={editingCategory.name} group={editingCategory.group} className="h-7 w-7" /> Ajustar límite mensual: {editingCategory.name}</h3>
+        <div className="tarjeta border border-dorado/40 bg-dorado/5 p-4">
+          <h3 className="flex items-center gap-2 font-bold">
+            <ChipCategoria nombre={editingCategory.name} group={editingCategory.group} className="h-7 w-7" />
+            Ajustar límite mensual: {editingCategory.name}
+          </h3>
           <p className="mt-1 text-xs text-humo">Escribe el nuevo monto presupuestado para este sobre.</p>
           <input
             value={newLimit}
             onChange={(e) => setNewLimit(e.target.value)}
             inputMode="decimal"
             placeholder="Nuevo límite mensual (ej. 3500)"
-            className="my-2 w-full rounded-xl border p-2"
+            className="campo-chico my-2 w-full"
           />
           <div className="flex gap-2">
             <button
               onClick={saveCategoryLimit}
               disabled={busy}
-              className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50"
+              className="btn-primario-chico flex-1"
             >
               {busy ? 'Guardando…' : 'Guardar nuevo límite'}
             </button>
             <button
               onClick={() => { setEditingCategory(null); setError(null) }}
-              className="rounded-xl bg-borde px-4 text-sm font-semibold"
+              className="btn-fantasma"
             >
               Cancelar
             </button>
@@ -191,15 +204,18 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       {budgeted.length === 0 && <p className="text-sm text-humo">Todavía no tienes sobres. Asigna presupuesto a una categoría de abajo.</p>}
 
       {unbudgeted.length > 0 && (
-        <section className="rounded-2xl border border-borde bg-tarjeta p-4">
+        <section className="tarjeta border border-borde p-4">
           <h2 className="mb-2 text-sm font-bold text-humo">Otras categorías (sin presupuesto asignado)</h2>
           <div className="space-y-2">
             {unbudgeted.map((c) => (
-              <div key={c.id} className="flex items-center justify-between rounded-xl bg-elevado p-2.5 text-sm">
-                <span className="flex items-center gap-2 font-medium"><ChipCategoria nombre={c.name} group={c.group} className="h-7 w-7" />{c.name}</span>
+              <div key={c.id} className="flex items-center justify-between gap-2 rounded-xl bg-elevado p-2.5 text-sm">
+                <span className="flex min-w-0 items-center gap-2 font-medium">
+                  <ChipCategoria nombre={c.name} group={c.group} className="h-7 w-7" />
+                  <span className="truncate">{c.name}</span>
+                </span>
                 <button
                   onClick={() => intentarAsignarSobre(c)}
-                  className="rounded-lg bg-tarjeta border border-borde px-2.5 py-1 text-xs font-semibold text-doradotexto hover:border-foco"
+                  className="btn-secundario-chico shrink-0"
                 >
                   + Asignar presupuesto
                 </button>
@@ -210,18 +226,30 @@ export default function Presupuesto({ data, onRefresh }: Props) {
       )}
 
       {transferFrom && (
-        <div className="rounded-2xl border border-foco bg-doradotenue p-4  ">
+        <div className="tarjeta border border-dorado/40 bg-dorado/5 p-4">
           <h3 className="font-bold">Traspasar desde {transferFrom.name}</h3>
-          <select value={transferTo} onChange={(e) => setTransferTo(e.target.value)} className="mb-2 mt-2 w-full rounded-xl border p-2">
+          <select
+            value={transferTo}
+            onChange={(e) => setTransferTo(e.target.value)}
+            className="campo-chico mb-2 mt-2 w-full"
+          >
             <option value="">Hacia…</option>
             {budgeted.filter((c) => c.id !== transferFrom.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <input value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} inputMode="decimal" placeholder="Monto" className="mb-2 w-full rounded-xl border p-2" />
+          <input
+            value={transferAmount}
+            onChange={(e) => setTransferAmount(e.target.value)}
+            inputMode="decimal"
+            placeholder="Monto"
+            className="campo-chico mb-2 w-full"
+          />
           <div className="flex gap-2">
-            <button onClick={doTransfer} disabled={busy} className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
+            <button onClick={doTransfer} disabled={busy} className="btn-primario-chico flex-1">
               {busy ? 'Traspasando…' : 'Confirmar traspaso'}
             </button>
-            <button onClick={() => { setTransferFrom(null); setError(null) }} className="rounded-xl bg-borde px-4 ">Cancelar</button>
+            <button onClick={() => { setTransferFrom(null); setError(null) }} className="btn-fantasma">
+              Cancelar
+            </button>
           </div>
         </div>
       )}
@@ -230,8 +258,12 @@ export default function Presupuesto({ data, onRefresh }: Props) {
         <h2 className="mb-2 font-bold">Recurrentes (gastos fijos y suscripciones)</h2>
         {data.recurring.length === 0 && <p className="text-sm text-humo">Sin recurrentes. Las suscripciones se restan del disponible del mes.</p>}
         {data.recurring.map((r) => (
-          <div key={r.id} className="mb-2 flex justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
-            <span className="flex items-center gap-2"><IconoReloj className="h-4 w-4 text-humo" />{r.title} · día {r.due_day}</span><strong>{formatMoney(r.amount, currency)}</strong>
+          <div key={r.id} className="tarjeta mb-2 flex justify-between rounded-2xl border border-borde p-3 text-sm">
+            <span className="flex items-center gap-2">
+              <Icono nombre="repetir" className="h-4 w-4 text-humo" />
+              {r.title} · día {r.due_day}
+            </span>
+            <strong className="nums">{formatMoney(r.amount, currency)}</strong>
           </div>
         ))}
         <p className="text-xs text-humo">Total gastado en sobres este mes: {formatMoney(totalSpent, currency)} de {formatMoney(totalBudget, currency)} presupuestados.</p>

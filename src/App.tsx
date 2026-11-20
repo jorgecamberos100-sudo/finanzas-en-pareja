@@ -234,13 +234,13 @@ export default function App() {
   // px-3, la última ("Avisos") se salía 46 px de la pantalla y no se podía
   // tocar. En móvil se reparte el ancho en partes iguales (flex-1) y se
   // usan las etiquetas cortas; en ≥640 px, las completas.
-  const tabs = [
-    { to: '/', label: 'Inicio', short: 'Inicio', icon: '🏠' },
-    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icon: '🧾' },
-    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icon: '💰' },
-    { to: '/plan', label: 'Plan', short: 'Plan', icon: '🎯' },
-    { to: '/chat', label: 'Chat', short: 'Chat', icon: '💬' },
-    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icon: '🔔' },
+  const tabs: { to: string; label: string; short: string; icon: NombreIcono }[] = [
+    { to: '/', label: 'Inicio', short: 'Inicio', icon: 'inicio' },
+    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icon: 'movimientos' },
+    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icon: 'presupuesto' },
+    { to: '/plan', label: 'Plan', short: 'Plan', icon: 'plan' },
+    { to: '/chat', label: 'Chat', short: 'Chat', icon: 'chat' },
+    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icon: 'avisos' },
   ]
 
   return (
@@ -248,8 +248,9 @@ export default function App() {
     <UpdateBanner />
     <div className="mx-auto min-h-screen max-w-lg pb-28">
       {syncError && (
-        <div role="alert" className="m-3 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave  ">
-          ⚠️ {syncError}
+        <div role="alert" className="m-3 flex items-start gap-2 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
+          <Icono nombre="alerta" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{syncError}</span>
         </div>
       )}
       {reaction && (
@@ -279,7 +280,7 @@ export default function App() {
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
             className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center px-1 text-center text-[11px] leading-tight sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-doradotexto ' : 'text-humo'}`}>
-            <span className="text-xl" aria-hidden="true">{t.icon}</span>
+            <span className="text-xl" aria-hidden="true"><Icono nombre={t.icon} className="h-5 w-5" /></span>
             <span className="sm:hidden">{t.short}</span>
             <span className="hidden sm:inline">{t.label}</span>
           </NavLink>

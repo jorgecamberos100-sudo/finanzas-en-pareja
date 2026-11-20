@@ -36,7 +36,10 @@ export default function Plan({ data, onRefresh }: Props) {
   async function createGoal() {
     if (!data.household || !goalName.trim() || !goalTarget.trim() || busy) return
     const target = parseAmount(goalTarget)
-    if (!target || target <= 0) { setError('El monto objetivo debe ser mayor a $0.'); return }
+    if (!target || target <= 0) {
+      setError('El monto objetivo debe ser mayor a $0.');
+      return
+    }
     // En Free el límite es 1 meta: la 2.ª abre el paywall de Plus en vez
     // de crearla. Aportar a una meta que ya existe no está limitado.
     if (!puedeCrearMeta(data.plan, data.goals.length)) {
@@ -48,11 +51,17 @@ export default function Plan({ data, onRefresh }: Props) {
     setError(null)
     setMessage(null)
     const { error: err } = await supabase.from('goals').insert({
-      household_id: data.household.id, name: goalName.trim(), target,
-      current: 0, due_date: goalDate || null,
+      household_id: data.household.id,
+      name: goalName.trim(),
+      target,
+      current: 0,
+      due_date: goalDate || null,
     })
     setBusy(false)
-    if (err) { setError(`No se pudo crear la meta: ${err.message}`); return }
+    if (err) {
+      setError(`No se pudo crear la meta: ${err.message}`);
+      return
+    }
     setGoalName(''); setGoalTarget(''); setGoalDate(''); setMessage('Meta creada')
     setReaction('ahorrando')
     onRefresh()
@@ -63,11 +72,20 @@ export default function Plan({ data, onRefresh }: Props) {
     setBusy(true)
     setError(null)
     setMessage(null)
-    const { error: err1 } = await supabase.from('goal_contributions').insert({ goal_id: goal.id, user_id: data.me.id, amount, date: todayIso() })
-    if (err1) { setBusy(false); setError(`Error al registrar aportación: ${err1.message}`); return }
+    const { error: err1 } = await supabase.from('goal_contributions').insert({
+      goal_id: goal.id,
+      user_id: data.me.id,
+      amount,
+      date: todayIso()
+    })
+    if (err1) {
+      setBusy(false); setError(`Error al registrar aportación: ${err1.message}`); return
+    }
     const { error: err2 } = await supabase.from('goals').update({ current: goal.current + amount }).eq('id', goal.id)
     setBusy(false)
-    if (err2) { setError(`Error al actualizar meta: ${err2.message}`); return }
+    if (err2) {
+      setError(`Error al actualizar meta: ${err2.message}`); return
+    }
     setMessage(`Aportaste ${formatMoney(amount, currency)} a “${goal.name}”.`)
     setReaction(goal.current + amount >= goal.target ? 'celebrando' : 'progreso')
     onRefresh()
@@ -80,7 +98,9 @@ export default function Plan({ data, onRefresh }: Props) {
     setMessage(null)
     const { error: err } = await supabase.from('goals').delete().eq('id', goal.id)
     setBusy(false)
-    if (err) { setError(`No se pudo eliminar la meta: ${err.message}`); return }
+    if (err) {
+      setError(`No se pudo eliminar la meta: ${err.message}`); return
+    }
     setMessage(`Meta “${goal.name}” eliminada.`)
     onRefresh()
   }
@@ -93,7 +113,9 @@ export default function Plan({ data, onRefresh }: Props) {
     setMessage(null)
     const { error: err } = await supabase.from('accounts').update({ balance }).eq('id', editingAccount.id)
     setBusy(false)
-    if (err) { setError(`No se pudo actualizar el saldo: ${err.message}`); return }
+    if (err) {
+      setError(`No se pudo actualizar el saldo: ${err.message}`); return
+    }
     setMessage(`Saldo de “${editingAccount.name}” actualizado a ${formatMoney(balance, currency)}.`)
     setEditingAccount(null)
     setAccountBalance('')
@@ -106,11 +128,15 @@ export default function Plan({ data, onRefresh }: Props) {
     setError(null)
     setMessage(null)
     const { error: err } = await supabase.from('money_dates').insert({
-      household_id: data.household.id, date: todayIso(),
-      notes: moneyNotes || null, settled_amount: 0,
+      household_id: data.household.id,
+      date: todayIso(),
+      notes: moneyNotes || null,
+      settled_amount: 0,
     })
     setBusy(false)
-    if (err) { setError(`No se pudo guardar la revisión: ${err.message}`); return }
+    if (err) {
+      setError(`No se pudo guardar la revisión: ${err.message}`); return
+    }
     setMoneyNotes(''); setMessage(data.partner ? 'Money date guardado. Recuerden exportar su CSV de respaldo en Movimientos.' : 'Revisión guardada. Recuerda exportar tu CSV de respaldo en Movimientos.')
     setReaction('pensando')
     onRefresh()
@@ -118,7 +144,12 @@ export default function Plan({ data, onRefresh }: Props) {
 
   return (
     <main className="space-y-5 p-5">
-      <PibbiHeader pose={PAGE_PIBBI_POSES.plan} title="Plan" subtitle="Tus metas, tus cuentas y tu revisión." className="-mx-5 -mt-5 px-5 pb-3 pt-3" />
+      <PibbiHeader
+        pose={PAGE_PIBBI_POSES.plan}
+        title="Plan"
+        subtitle="Tus metas, tus cuentas y tu revisión."
+        className="-mx-5 -mt-5 px-5 pb-3 pt-3"
+      />
 
       {error && (
         <div role="alert" className="flex items-start gap-2 rounded-2xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
@@ -143,7 +174,7 @@ export default function Plan({ data, onRefresh }: Props) {
             role="tab"
             aria-selected={seccion === clave}
             onClick={() => setSeccion(clave)}
-            className={`flex-1 rounded-full px-2 py-2 text-sm font-semibold ${seccion === clave ? 'bg-azul text-white shadow-tarjeta' : 'text-humo'}`}
+            className={`flex-1 rounded-full px-2 py-2 text-sm font-semibold ${seccion === clave ? 'bg-dorado text-tinta shadow-tarjeta' : 'text-humo'}`}
           >
             {etiqueta}
           </button>
@@ -162,14 +193,34 @@ export default function Plan({ data, onRefresh }: Props) {
           </div>
         ))}
         {data.goals.length === 0 && <p className="mb-3 text-sm text-humo">Sin metas todavía. Crea la primera abajo.</p>}
-        <div className="rounded-2xl border border-borde bg-tarjeta p-4  ">
+        <div className="tarjeta p-4">
           <h3 className="mb-2 font-bold">Nueva meta</h3>
-          <input value={goalName} onChange={(e) => setGoalName(e.target.value)} placeholder="Nombre (ej. Vacaciones en la playa)" className="mb-2 w-full rounded-xl border p-2" />
+          <input
+            value={goalName}
+            onChange={(e) => setGoalName(e.target.value)}
+            placeholder="Nombre (ej. Vacaciones en la playa)"
+            className="campo-chico mb-2"
+          />
           <div className="flex flex-col gap-2 sm:flex-row">
-            <input value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} inputMode="decimal" placeholder="Monto objetivo" className="min-w-0 flex-1 rounded-xl border p-2" />
-            <input value={goalDate} onChange={(e) => setGoalDate(e.target.value)} type="date" className="min-w-0 flex-1 rounded-xl border p-2" />
+            <input
+              value={goalTarget}
+              onChange={(e) => setGoalTarget(e.target.value)}
+              inputMode="decimal"
+              placeholder="Monto objetivo"
+              className="campo-chico min-w-0 flex-1"
+            />
+            <input
+              value={goalDate}
+              onChange={(e) => setGoalDate(e.target.value)}
+              type="date"
+              className="campo-chico min-w-0 flex-1"
+            />
           </div>
-          <button onClick={createGoal} disabled={busy} className="mt-2 w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
+          <button
+            onClick={createGoal}
+            disabled={busy}
+            className="btn-primario mt-2 w-full"
+          >
             {busy ? 'Creando…' : 'Crear meta'}
           </button>
         </div>
@@ -187,19 +238,19 @@ export default function Plan({ data, onRefresh }: Props) {
               onChange={(e) => setAccountBalance(e.target.value)}
               inputMode="decimal"
               placeholder="Saldo actual"
-              className="my-2 w-full rounded-xl border p-2"
+              className="campo-chico my-2"
             />
             <div className="flex gap-2">
               <button
                 onClick={updateAccountBalance}
                 disabled={busy}
-                className="flex-1 rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50"
+                className="btn-primario flex-1"
               >
                 {busy ? 'Actualizando…' : 'Guardar saldo'}
               </button>
               <button
                 onClick={() => setEditingAccount(null)}
-                className="rounded-xl bg-borde px-4 text-sm font-semibold"
+                className="btn-secundario-chico"
               >
                 Cancelar
               </button>
@@ -208,34 +259,44 @@ export default function Plan({ data, onRefresh }: Props) {
         )}
 
         {data.accounts.map((a) => (
-          <div key={a.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm  ">
+          <div key={a.id} className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3 text-sm">
             <div className="min-w-0 pr-2">
-              <p className="font-semibold truncate">{a.name}</p>
+              <p className="truncate font-semibold">{a.name}</p>
               <p className="text-xs text-humo">{a.type} · {a.visibility === 'privada' ? 'privada' : a.visibility === 'solo_saldo' ? 'solo saldo' : 'compartida'}</p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex shrink-0 items-center gap-2">
               <strong className={a.type === 'deuda' || a.type === 'tarjeta' ? 'text-rojosuave' : ''}>{formatMoney(a.balance, currency)}</strong>
               <button
                 onClick={() => { setEditingAccount(a); setAccountBalance(String(a.balance)); setError(null); setMessage(null) }}
                 title="Ajustar saldo"
                 aria-label={`Ajustar saldo de ${a.name}`}
-                className="rounded-lg border border-borde px-2 py-1 text-xs text-humo hover:text-crema"
+                className="btn-icono"
               >
                 <IconoLapiz className="h-4 w-4" />
               </button>
             </div>
           </div>
         ))}
-        <p className="text-sm mt-3">Patrimonio (activos − deudas): <strong>{formatMoney(patrimonio, currency)}</strong></p>
+        <p className="mt-3 text-sm">Patrimonio (activos − deudas): <strong>{formatMoney(patrimonio, currency)}</strong></p>
       </section>)}
 
       {seccion === 'revision' && (
-      <section className="rounded-2xl border border-borde bg-tarjeta p-4  ">
+      <section className="tarjeta p-4">
         <h2 className="font-bold">{data.partner ? 'Money date' : 'Mi revisión'}</h2>
         <p className="mb-2 text-sm text-humo">{data.partner ? 'Revisión en pareja: resumen del período, notas y acuerdos, y liquidación de la deuda mutua (se liquida desde el chat con PIBBI).' : 'Tu revisión: resumen del período, notas y acuerdos.'}</p>
-        <textarea value={moneyNotes} onChange={(e) => setMoneyNotes(e.target.value)} placeholder="Notas y acuerdos de hoy…" rows={3} className="mb-2 w-full rounded-xl border p-2" />
-        <button onClick={saveMoneyDate} disabled={busy} className="w-full rounded-xl bg-dorado py-2 font-extrabold tracking-wide text-tinta disabled:opacity-50">
-          {busy ? 'Guardando…' : 'Guardar money date'}
+        <textarea
+          value={moneyNotes}
+          onChange={(e) => setMoneyNotes(e.target.value)}
+          placeholder="Notas y acuerdos de hoy…"
+          rows={3}
+          className="campo-chico mb-2"
+        />
+        <button
+          onClick={saveMoneyDate}
+          disabled={busy}
+          className="btn-primario w-full"
+        >
+          {busy ? 'Guardando…' : data.partner ? 'Guardar money date' : 'Guardar revisión'}
         </button>
         {reaction && <div className="mt-2"><PibbiReaction contexto={reaction} /></div>}
       </section>)}

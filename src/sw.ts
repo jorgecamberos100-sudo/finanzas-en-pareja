@@ -106,7 +106,7 @@ self.addEventListener('push', (event) => {
   } catch {
     payload = { title: 'Recordatorio' }
   }
-  const title = payload.title ?? '🔔 Recordatorio de pago'
+  const title = payload.title ?? 'Recordatorio de pago'
   const body = payload.body ?? 'Tienes un pago pendiente. Toca para verlo.'
   event.waitUntil(
     self.registration.showNotification(title, {

@@ -23,6 +23,7 @@ import Paywall from './Paywall'
 import PibbiReaction, { type ReactionContext } from './PibbiReaction'
 import Mascota from './Mascota'
 import PibbiPanel from './PibbiPanel'
+import { Icono } from './ui'
 import { usePibbi } from '../lib/pibbi'
 
 interface Props {
@@ -80,7 +81,10 @@ interface SpeechRecognitionInstance {
 type SpeechRecognitionCtor = new () => SpeechRecognitionInstance
 
 function getSpeechRecognition(): SpeechRecognitionCtor | null {
-  const w = window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor }
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor
+    webkitSpeechRecognition?: SpeechRecognitionCtor
+  }
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
 }
 
@@ -124,13 +128,7 @@ const REVIEW_LABELS: Record<string, string> = {
 export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   const { name } = usePibbi()
   const [panelOpen, setPanelOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'bienvenida',
-      role: 'assistant',
-      text: 'Escríbeme un gasto, mándame la foto de un ticket o de tu libreta, o graba una nota de voz. Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo. Y si quieres un aviso, dime “recuérdame pagar la renta el 1ro”.',
-    },
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [reminderDrafts, setReminderDrafts] = useState<ReminderDraft[]>([])
   const [input, setInput] = useState('')
@@ -141,19 +139,30 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   // PIBBI reacciona al registrar un dato (sin bloquear nada).
   const [reaction, setReaction] = useState<ReactionContext | null>(null)
   const reactionTimer = useRef<number | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
+  // Motivo del paywall (null = cerrado).
+  const [paywall, setPaywall] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const firstRenderRef = useRef(true)
 
   function showReaction(ctx: ReactionContext) {
     if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
     setReaction(ctx)
-    reactionTimer.current = window.setTimeout(() => setReaction(null), 5000)
+    reactionTimer.current = window.setTimeout(() => setReaction(null), 4500)
   }
-  // Al salir del chat (cambio de pestaña) se limpia el temporizador de la
-  // reacción de PIBBI y se detienen grabaciones o dictados activos.
+
+  // Al salir del chat (cambio de pestaña) se limpia el temporizador y se
+  // detienen grabaciones o dictados activos.
   useEffect(() => () => {
     if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try {
-        mediaRecorderRef.current.stream?.getTracks().forEach((t) => t.stop())
+        mediaRecorderRef.current.stream?.getTracks().forEach((track) => track.stop())
         mediaRecorderRef.current.stop()
       } catch {
         // stream ya cerrado
@@ -165,21 +174,7 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       // reconocimiento ya cerrado
     }
   }, [])
-  const [savingId, setSavingId] = useState<string | null>(null)
-  // Motivo del paywall (null = cerrado).
-  const [paywall, setPaywall] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  // El saludo inicial debe verse completo al entrar: el autoscroll solo
-  // sigue los mensajes nuevos; en el primer render no se mueve la página
-  // (antes bajaba sola y las primeras líneas del saludo quedaban fuera
-  // de la vista en pantallas de 360 px).
-  const firstRenderRef = useRef(true)
 
-  // Desplazamiento automático al llegar nuevos mensajes o propuestas
   useEffect(() => {
     if (firstRenderRef.current) {
       firstRenderRef.current = false
@@ -188,29 +183,31 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, drafts.length, reminderDrafts.length, busy])
 
-  // Zona horaria del dispositivo que captura (ej. "America/Tijuana").
-  // Se envía en cada llamada a capture-parse para que "hoy"/"ayer" se
-  // calculen en esta zona y no en una hardcodeada.
+  // Zona horaria del dispositivo que captura. Se envía en cada llamada a
+  // capture-parse para calcular "hoy" y "ayer" en esta zona.
   const deviceTimezone = deviceTimeZone()
   const currency = data.household?.currency ?? 'MXN'
   const categories = data.categories
   const accounts = data.accounts
 
-  /** Mensaje del límite de capturas con IA del plan (Free: 10/mes). */
   function mensajeLimiteIA(): string {
     const def = defPlan(data.plan)
     return `Ya usaste tus ${def.capturasIaMes} capturas con IA de este mes (plan ${def.nombre}). Con Plus las capturas con IA son ilimitadas (uso justo: 300 al mes). La captura manual con el botón + sigue disponible.`
   }
 
   function pushMessage(role: 'user' | 'assistant', text: string, imageUrl?: string) {
-    setMessages((m) => [...m, { id: `m-${Date.now()}-${Math.random().toString(36).slice(2)}`, role, text, imageUrl }])
+    setMessages((current) => [
+      ...current,
+      { id: `m-${Date.now()}-${Math.random().toString(36).slice(2)}`, role, text, imageUrl },
+    ])
   }
 
   function entryToDraft(entry: ProposedEntry, index: number): Draft {
     const categoryId =
-      (entry.category_id && categories.some((c) => c.id === entry.category_id) ? entry.category_id : null) ??
-      categories.find((c) => c.name === entry.category)?.id ??
+      (entry.category_id && categories.some((category) => category.id === entry.category_id) ? entry.category_id : null) ??
+      categories.find((category) => category.name === entry.category)?.id ??
       ''
+
     return {
       id: `draft-${Date.now()}-${index}`,
       entry,
@@ -227,27 +224,33 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
     }
   }
 
-  function proposalToReminderDraft(p: ProposedReminder, index: number): ReminderDraft {
+  function proposalToReminderDraft(proposal: ProposedReminder, index: number): ReminderDraft {
     const categoryId =
-      (p.category_id && categories.some((c) => c.id === p.category_id) ? p.category_id : null) ??
-      categories.find((c) => c.name === p.category)?.id ??
+      (proposal.category_id && categories.some((category) => category.id === proposal.category_id)
+        ? proposal.category_id
+        : null) ??
+      categories.find((category) => category.name === proposal.category)?.id ??
       ''
+
     return {
       id: `reminder-draft-${Date.now()}-${index}`,
-      proposal: p,
-      title: p.title,
-      amount: p.amount_minor !== null ? amountMinorToUnits(p.amount_minor).toFixed(2) : '',
-      dueDate: p.due_date,
-      dueTime: p.due_time ?? DEFAULT_NOTIFICATION_TIME,
-      recurrence: p.recurrence,
+      proposal,
+      title: proposal.title,
+      amount: proposal.amount_minor !== null ? amountMinorToUnits(proposal.amount_minor).toFixed(2) : '',
+      dueDate: proposal.due_date,
+      dueTime: proposal.due_time ?? DEFAULT_NOTIFICATION_TIME,
+      recurrence: proposal.recurrence,
       categoryId,
-      note: p.note ?? '',
+      note: proposal.note ?? '',
     }
   }
 
   function showReminderProposals(proposals: ProposedReminder[]) {
     if (proposals.length === 0) return
-    setReminderDrafts((d) => [...d, ...proposals.map((p, i) => proposalToReminderDraft(p, i))])
+    setReminderDrafts((current) => [
+      ...current,
+      ...proposals.map((proposal, index) => proposalToReminderDraft(proposal, index)),
+    ])
     pushMessage(
       'assistant',
       proposals.length === 1
@@ -264,8 +267,9 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       }
       return
     }
-    setDrafts((d) => [...d, ...result.entries.map((e, i) => entryToDraft(e, i))])
-    const total = result.entries.reduce((s, e) => s + amountMinorToUnits(e.amount_minor), 0)
+
+    setDrafts((current) => [...current, ...result.entries.map((entry, index) => entryToDraft(entry, index))])
+    const total = result.entries.reduce((sum, entry) => sum + amountMinorToUnits(entry.amount_minor), 0)
     pushMessage(
       'assistant',
       result.entries.length === 1
@@ -276,11 +280,20 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
 
   async function invokeParse(body: Record<string, unknown>): Promise<CaptureResult | null> {
     try {
-      const { data: res, error: err } = await supabase.functions.invoke('capture-parse', { body: { ...body, timezone: deviceTimezone } })
-      if (err || !res) return null
-      const clean = sanitizeCaptureResult(res, (body.source_type as CaptureResult['source_type']) ?? 'text', deviceTimezone)
+      const { data: response, error: invokeError } = await supabase.functions.invoke('capture-parse', {
+        body: { ...body, timezone: deviceTimezone },
+      })
+      if (invokeError || !response) return null
+      const clean = sanitizeCaptureResult(
+        response,
+        (body.source_type as CaptureResult['source_type']) ?? 'text',
+        deviceTimezone,
+      )
       if (!clean) return null
-      return { ...clean, provider: typeof res.provider === 'string' ? res.provider : clean.provider }
+      return {
+        ...clean,
+        provider: typeof response.provider === 'string' ? response.provider : clean.provider,
+      }
     } catch {
       return null
     }
@@ -289,27 +302,31 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   async function handleText(text: string) {
     const trimmed = text.trim()
     if (!trimmed || busy) return
+
     setBusy(true)
     setError(null)
     pushMessage('user', trimmed)
     setInput('')
-    // Intención de recordatorio: "recuérdame pagar..." no es un movimiento.
-    // - strong (recuérdame/avísame): solo recordatorio, con el parser local.
-    // - weak (habla de pagar a futuro sin el verbo): ambiguo -> propón ambas
-    //   cosas y que el usuario elija; nunca se guarda nada sin confirmar.
+
+    // La intención fuerte solo propone un recordatorio. La débil es ambigua:
+    // propone recordatorio y movimiento para que el usuario elija.
     const intent = detectReminderIntent(trimmed)
-    // El límite de IA no bloquea los recordatorios (son locales, no usan IA).
     const iaBloqueada = !puedeUsarIA(data.plan)
+
     if (intent === 'strong') {
       const proposal = parseReminderText(trimmed, { categories, timezone: deviceTimezone })
       if (proposal) {
         showReminderProposals([proposal])
       } else {
-        pushMessage('assistant', '¿De qué pago quieres que te avise y para cuándo? Por ejemplo: “recuérdame pagar $1,500 de renta el 1 de diciembre”.')
+        pushMessage(
+          'assistant',
+          '¿De qué pago quieres que te avise y para cuándo? Por ejemplo: “recuérdame pagar $1,500 de renta el 1 de diciembre”.',
+        )
       }
       setBusy(false)
       return
     }
+
     if (intent === 'weak') {
       const proposal = parseReminderText(trimmed, { categories, timezone: deviceTimezone })
       if (proposal) {
@@ -322,98 +339,110 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         )
       }
     }
-    // Límite de capturas con IA (plan Free: 10/mes): sin IA no hay propuesta
-    // de movimiento, ni remota ni local — el parser local es el respaldo de
-    // la IA, no una vía para saltarse el límite. Los recordatorios ya se
-    // propusieron arriba (son locales) y la captura manual (+) sigue libre.
+
+    // El parser local no se usa para saltarse el límite de IA. Los
+    // recordatorios y la captura manual siguen disponibles.
     if (iaBloqueada) {
       pushMessage('assistant', mensajeLimiteIA())
       setPaywall(mensajeLimiteIA())
       setBusy(false)
       return
     }
-    // 1. Edge Function con Cloudflare (texto -> GLM-4.7-Flash). 2. Parser local.
+
     const remote = await invokeParse({
       input_type: 'text',
       text: trimmed,
-      categories: categories.map((c) => c.name),
+      categories: categories.map((category) => category.name),
       source_type: 'text',
     })
+
     if (remote) {
       showResult(remote)
     } else {
-      showResult(parseCaptureText(trimmed, { categories, partnerName: data.partner?.name ?? null, sourceType: 'text', timezone: deviceTimezone }))
+      showResult(
+        parseCaptureText(trimmed, {
+          categories,
+          partnerName: data.partner?.name ?? null,
+          sourceType: 'text',
+          timezone: deviceTimezone,
+        }),
+      )
     }
     setBusy(false)
   }
 
   async function handleImage(file: File) {
     if (busy) return
-    // La foto de ticket/libreta se lee con IA (visión): también consume
-    // del límite mensual del plan.
     if (!puedeUsarIA(data.plan)) {
       pushMessage('assistant', mensajeLimiteIA())
       setPaywall(mensajeLimiteIA())
       return
     }
+
     setBusy(true)
     setError(null)
     let compressed: { dataUrl: string; base64: string }
+
     try {
       compressed = await compressImage(file)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo procesar la imagen.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo procesar la imagen.')
       setBusy(false)
       return
     }
-    pushMessage('user', 'Foto enviada 📷', compressed.dataUrl)
+
+    pushMessage('user', 'Foto enviada', compressed.dataUrl)
     const remote = await invokeParse({
       input_type: 'image',
       image_base64: compressed.base64,
       image_mime: 'image/jpeg',
-      categories: categories.map((c) => c.name),
+      categories: categories.map((category) => category.name),
       source_type: 'ticket',
     })
+
     if (remote) {
       showResult(remote)
     } else {
-      setError('No pude leer la foto: la función capture-parse aún no está configurada (faltan los secretos de Cloudflare en Supabase). Mientras tanto, usa el botón + para capturarla manualmente.')
+      setError(
+        'No pude leer la foto: la función capture-parse aún no está configurada (faltan los secretos de Cloudflare en Supabase). Mientras tanto, usa el botón + para capturarla manualmente.',
+      )
       pushMessage('assistant', 'No pude leer esa foto todavía. Si es un ticket, dime el monto y el comercio en texto y lo propongo.')
     }
     setBusy(false)
   }
 
   async function handleAudioBlob(blob: Blob, mime: string) {
-    // La nota de voz se transcribe con IA (Whisper): también consume del
-    // límite mensual del plan.
     if (!puedeUsarIA(data.plan)) {
-      pushMessage('user', 'Nota de voz 🎙️')
+      pushMessage('user', 'Nota de voz')
       pushMessage('assistant', mensajeLimiteIA())
       setPaywall(mensajeLimiteIA())
       return
     }
+
     setBusy(true)
     setError(null)
-    pushMessage('user', 'Nota de voz 🎙️')
-    // try/finally: si leer el audio falla, el chat se desbloquea igual.
-    // Antes blobToBase64() sin try/catch dejaba busy en true para siempre.
+    pushMessage('user', 'Nota de voz')
+
     try {
       const base64 = await blobToBase64(blob)
       const remote = await invokeParse({
         input_type: 'audio',
         audio_base64: base64,
         audio_mime: mime,
-        categories: categories.map((c) => c.name),
+        categories: categories.map((category) => category.name),
         source_type: 'voice',
       })
+
       if (remote) {
         showResult(remote)
       } else {
-        setError('No pude transcribir la nota de voz: falta configurar capture-parse (Cloudflare Whisper o Groq). Prueba con el dictado por voz del teclado o escríbelo en texto.')
+        setError(
+          'No pude transcribir la nota de voz: falta configurar capture-parse (Cloudflare Whisper o Groq). Prueba con el dictado por voz del teclado o escríbelo en texto.',
+        )
         pushMessage('assistant', 'No pude transcribir ese audio todavía. ¿Me lo escribes en texto?')
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo leer la nota de voz. Inténtalo de nuevo.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo leer la nota de voz. Inténtalo de nuevo.')
       pushMessage('assistant', 'No pude leer esa nota de voz. ¿Me lo escribes en texto?')
     } finally {
       setBusy(false)
@@ -421,31 +450,36 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   }
 
   function startDictation() {
-    const Ctor = getSpeechRecognition()
-    if (!Ctor) {
+    const Constructor = getSpeechRecognition()
+    if (!Constructor) {
       void startRecording()
       return
     }
-    const rec = new Ctor()
-    recognitionRef.current = rec
-    rec.lang = 'es-MX'
-    rec.interimResults = false
-    rec.continuous = false
+
+    const recognition = new Constructor()
+    recognitionRef.current = recognition
+    recognition.lang = 'es-MX'
+    recognition.interimResults = false
+    recognition.continuous = false
     setListening(true)
-    rec.onresult = (e) => {
-      const transcript = e.results[0]?.[0]?.transcript ?? ''
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript ?? ''
       if (transcript.trim()) {
-        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript))
+        setInput((previous) => (previous ? `${previous} ${transcript}` : transcript))
         pushMessage('assistant', `Te entendí: “${transcript}”. Revisa el texto y envíalo si está bien.`)
       }
     }
-    rec.onerror = (e) => {
+    recognition.onerror = (event) => {
       setListening(false)
-      if (e.error === 'not-allowed') setError('El navegador no permitió usar el micrófono. Revisa el permiso de micrófono.')
+      if (event.error === 'not-allowed') {
+        setError('El navegador no permitió usar el micrófono. Revisa el permiso de micrófono.')
+      }
     }
-    rec.onend = () => setListening(false)
+    recognition.onend = () => setListening(false)
+
     try {
-      rec.start()
+      recognition.start()
     } catch {
       setListening(false)
       void startRecording()
@@ -455,19 +489,21 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const rec = new MediaRecorder(stream)
-      mediaRecorderRef.current = rec
+      const recorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = recorder
       audioChunksRef.current = []
-      rec.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data)
       }
-      rec.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop())
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop())
         setRecording(false)
-        const blob = new Blob(audioChunksRef.current, { type: rec.mimeType || 'audio/webm' })
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
         if (blob.size > 0) void handleAudioBlob(blob, blob.type || 'audio/webm')
       }
-      rec.start()
+
+      recorder.start()
       setRecording(true)
     } catch {
       setError('No pude acceder al micrófono. Revisa el permiso de micrófono del navegador.')
@@ -479,11 +515,12 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
   }
 
   function updateDraft(id: string, patch: Partial<Draft>) {
-    setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)))
+    setDrafts((current) => current.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft)))
   }
 
   async function confirmDraft(draft: Draft) {
     if (!data.me || !data.household) return
+
     const amount = parseAmount(draft.amount)
     if (!amount) {
       setError('Escribe un monto mayor a $0 en la tarjeta antes de confirmar.')
@@ -501,8 +538,10 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       setError('Elige una cuenta en la tarjeta antes de confirmar.')
       return
     }
+
     setSavingId(draft.id)
     setError(null)
+
     try {
       await onSave({
         account_id: draft.accountId,
@@ -517,33 +556,43 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         split_pct: draft.type === 'transferencia' ? 100 : draft.splitPct,
         visibility: 'compartida',
         review_status: 'aprobado',
-        dedupe_hash: await dedupeHash({ date: draft.date, amount, merchant: draft.merchant.trim() || '', account_id: draft.accountId }),
+        dedupe_hash: await dedupeHash({
+          date: draft.date,
+          amount,
+          merchant: draft.merchant.trim() || '',
+          account_id: draft.accountId,
+        }),
       })
-      setDrafts((ds) => ds.filter((d) => d.id !== draft.id))
-      pushMessage('assistant', `Guardado: ${formatMoney(amount, currency)}${draft.merchant ? ` en ${draft.merchant}` : ''} (${draft.date}). ${data.partner ? 'Ya se ve en ambos teléfonos.' : 'Ya se ve en tu app.'}`)
-      // Contador de capturas con IA (migración 005): cada captura confirmada
-      // suma 1 al mes del hogar. Nunca rompe el guardado: si el contador
-      // falla (migración sin aplicar, sin red), el movimiento ya quedó.
-      // Se recarga el plan para que el contador se vea al instante.
+
+      setDrafts((current) => current.filter((item) => item.id !== draft.id))
+      pushMessage(
+        'assistant',
+        `Guardado: ${formatMoney(amount, currency)}${draft.merchant ? ` en ${draft.merchant}` : ''} (${draft.date}). ${data.partner ? 'Ya se ve en ambos teléfonos.' : 'Ya se ve en tu app.'}`,
+      )
+
+      // Cada captura confirmada suma al contador mensual del hogar.
       try {
-        const inc = await registrarCapturaIA(data.household.id)
-        if (inc && !inc.allowed) {
-          pushMessage('assistant', `Llegaste al límite de capturas con IA de este mes (${inc.used}/${inc.limit}). Con Plus son ilimitadas (uso justo: 300 al mes).`)
+        const increment = await registrarCapturaIA(data.household.id)
+        if (increment && !increment.allowed) {
+          pushMessage(
+            'assistant',
+            `Llegaste al límite de capturas con IA de este mes (${increment.used}/${increment.limit}). Con Plus son ilimitadas (uso justo: 300 al mes).`,
+          )
           setPaywall(mensajeLimiteIA())
         }
       } catch {
         // El contador es secundario: el movimiento ya está guardado.
       }
       onRefresh()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar el movimiento.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo guardar el movimiento.')
     } finally {
       setSavingId(null)
     }
   }
 
   function updateReminderDraft(id: string, patch: Partial<ReminderDraft>) {
-    setReminderDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)))
+    setReminderDrafts((current) => current.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft)))
   }
 
   async function confirmReminderDraft(draft: ReminderDraft) {
@@ -556,15 +605,18 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       setError('Elige la fecha del recordatorio en la tarjeta antes de confirmar.')
       return
     }
+
     const amount = draft.amount.trim() ? parseAmount(draft.amount) : null
     if (draft.amount.trim() && !amount) {
       setError('El monto del recordatorio debe ser mayor a $0.')
       return
     }
+
     setSavingId(draft.id)
     setError(null)
+
     try {
-      const { error } = await supabase.from('reminders').insert({
+      const { error: insertError } = await supabase.from('reminders').insert({
         household_id: data.household.id,
         created_by: data.me.id,
         title: draft.title.trim().slice(0, 200),
@@ -576,143 +628,224 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         note: draft.note.trim() || null,
         timezone: deviceTimezone,
       })
-      if (error) throw new Error(error.message)
-      setReminderDrafts((ds) => ds.filter((d) => d.id !== draft.id))
+      if (insertError) throw new Error(insertError.message)
+
+      setReminderDrafts((current) => current.filter((item) => item.id !== draft.id))
       showReaction('apuntando')
       pushMessage(
         'assistant',
-        `Recordatorio creado 🔔 ${draft.title.trim()} para el ${draft.dueDate}${amount ? ` por ${formatMoney(amount, currency)}` : ''}. Te avisaré ese día; también lo ves en la pestaña Avisos.`,
+        `Recordatorio creado: ${draft.title.trim()} para el ${draft.dueDate}${amount ? ` por ${formatMoney(amount, currency)}` : ''}. Te avisaré ese día; también lo ves en la pestaña Avisos.`,
       )
       onRefresh()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar el recordatorio.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo guardar el recordatorio.')
     } finally {
       setSavingId(null)
     }
   }
 
-  const speechSupported = getSpeechRecognition() !== null || Boolean(navigator.mediaDevices?.getUserMedia)
+  const speechSupported =
+    getSpeechRecognition() !== null || Boolean(navigator.mediaDevices?.getUserMedia)
+  const isEmpty = messages.length === 0 && drafts.length === 0 && reminderDrafts.length === 0
+
+  function resizeTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = 'auto'
+    const lineHeight = Number.parseFloat(window.getComputedStyle(textarea).lineHeight) || 24
+    textarea.style.height = `${Math.min(textarea.scrollHeight, lineHeight * 5)}px`
+    textarea.style.overflowY = textarea.scrollHeight > lineHeight * 5 ? 'auto' : 'hidden'
+  }
 
   return (
-    <div className="flex flex-col gap-3 p-4">
-      <div className="space-y-2" aria-live="polite">
-        {messages.map((m) => (
-          <div key={m.id} className={`flex items-start gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {m.role === 'assistant' && (
+    <div className="flex min-h-full flex-col gap-4 px-4 pb-40 pt-4">
+      {isEmpty ? (
+        <section className="flex flex-1 flex-col items-center justify-center py-10 text-center">
+          <button
+            type="button"
+            onClick={() => setPanelOpen(true)}
+            aria-label={`Abrir el panel de ${name}`}
+            title={name}
+            className="mb-4 rounded-full transition-transform hover:scale-105 active:scale-95"
+          >
+            <Mascota pose="avatarCircular" circular alt={`${name}, tu cerdito`} className="h-24 w-24" />
+          </button>
+          <h1 className="mb-2 text-2xl font-bold text-crema">{name}</h1>
+          <p className="mb-2 text-sm text-crema">Hola, ¿qué registramos hoy?</p>
+          <p className="max-w-[36ch] text-[13px] leading-relaxed text-humo">
+            Escríbeme un gasto, mándame la foto de un ticket o de tu libreta, o graba una nota de voz.
+            Te propongo los movimientos y tú confirmas antes de guardar. Nada se guarda solo. Y si
+            quieres un aviso, dime “recuérdame pagar la renta”.
+          </p>
+        </section>
+      ) : (
+        <div className="space-y-3" aria-live="polite">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex items-start gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {message.role === 'assistant' && (
+                <button
+                  type="button"
+                  onClick={() => setPanelOpen(true)}
+                  aria-label={`Abrir el panel de ${name}`}
+                  title={name}
+                  className="mt-0.5 shrink-0 rounded-full transition-transform hover:scale-105 active:scale-95"
+                >
+                  <Mascota pose="avatarCircular" circular alt={`${name}, tu cerdito`} className="h-8 w-8" />
+                </button>
+              )}
+              {message.role === 'user' ? (
+                <div className="max-w-[85%] rounded-2xl bg-elevado px-3 py-2 text-sm text-crema">
+                  {message.imageUrl && (
+                    <img
+                      src={message.imageUrl}
+                      alt="Foto enviada para capturar"
+                      className="mb-2 max-h-48 rounded-xl object-cover"
+                    />
+                  )}
+                  {message.text}
+                </div>
+              ) : (
+                <div className="max-w-[85%] py-2 text-sm leading-relaxed text-crema">
+                  {message.imageUrl && (
+                    <img
+                      src={message.imageUrl}
+                      alt="Foto enviada para capturar"
+                      className="mb-2 max-h-48 rounded-xl object-cover"
+                    />
+                  )}
+                  {message.text}
+                </div>
+              )}
+            </div>
+          ))}
+          {busy && (
+            <div className="flex items-start gap-2">
               <button
                 type="button"
                 onClick={() => setPanelOpen(true)}
                 aria-label={`Abrir el panel de ${name}`}
-                title={name}
-                className="mt-0.5 shrink-0 rounded-full transition-transform hover:scale-105 active:scale-95"
+                className="mt-0.5 shrink-0 rounded-full"
               >
                 <Mascota pose="avatarCircular" circular alt={`${name}, tu cerdito`} className="h-8 w-8" />
               </button>
-            )}
-            <div
-              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                m.role === 'user' ? 'bg-dorado text-tinta' : 'bg-elevado text-crema  '
-              }`}
-            >
-              {m.imageUrl && <img src={m.imageUrl} alt="Foto enviada para capturar" className="mb-2 max-h-48 rounded-xl object-cover" />}
-              {m.text}
+              <div
+                className="flex h-8 items-center gap-1.5 rounded-full bg-elevado px-3"
+                role="status"
+                aria-label={`${name} está escribiendo`}
+              >
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-humo" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-humo [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-humo [animation-delay:300ms]" />
+              </div>
             </div>
-          </div>
-        ))}
-        {busy && <PibbiReaction contexto="pensando" mensaje={`${name} está revisando tu mensaje…`} />}
-      </div>
-      {panelOpen && <PibbiPanel open={panelOpen} onClose={() => setPanelOpen(false)} />}
+          )}
+        </div>
+      )}
 
+      {panelOpen && <PibbiPanel open={panelOpen} onClose={() => setPanelOpen(false)} />}
       {reaction && <PibbiReaction contexto={reaction} />}
 
-      {reminderDrafts.map((d) => (
-        <article key={d.id} className="rounded-2xl border border-amber-500/40 bg-tarjeta p-3 shadow-sm ">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-bold">🔔 Recordatorio propuesto</h3>
-            <span className="rounded-full bg-dorado/15 px-2 py-0.5 text-xs font-semibold text-doradotexto">Sin guardar aún · no es un gasto</span>
+      {reminderDrafts.map((draft) => (
+        <article key={draft.id} className="tarjeta p-5 shadow-tarjeta">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-crema">Recordatorio propuesto</h3>
+            <span className="chip">Sin guardar aún · no es un gasto</span>
           </div>
-          {d.proposal.needs_review.length > 0 && (
-            <p className="mb-2 text-xs text-doradotexto ">
-              Revisar: {d.proposal.needs_review.map((r) => (r === 'date' ? 'fecha' : r === 'amount' ? 'monto' : r === 'category' ? 'categoría' : r)).join(', ')}
+
+          {draft.proposal.needs_review.length > 0 && (
+            <p className="mb-3 text-xs text-rojosuave">
+              Revisar: {draft.proposal.needs_review
+                .map((item) => (item === 'date' ? 'fecha' : item === 'amount' ? 'monto' : item === 'category' ? 'categoría' : item))
+                .join(', ')}
             </p>
           )}
+
           <label className="mb-1 block text-xs text-humo">Título</label>
           <input
-            value={d.title}
-            onChange={(e) => updateReminderDraft(d.id, { title: e.target.value })}
-            className="mb-2 w-full rounded-xl border border-borde p-2 text-sm font-bold "
+            value={draft.title}
+            onChange={(event) => updateReminderDraft(draft.id, { title: event.target.value })}
+            className="campo-chico mb-3 w-full font-bold"
           />
-          <div className="mb-2 grid grid-cols-2 gap-2">
+
+          <div className="mb-3 grid grid-cols-2 gap-2">
             <div>
               <label className="mb-1 block text-xs text-humo">Monto ({currency}, opcional)</label>
               <input
                 inputMode="decimal"
-                value={d.amount}
-                onChange={(e) => updateReminderDraft(d.id, { amount: e.target.value })}
+                value={draft.amount}
+                onChange={(event) => updateReminderDraft(draft.id, { amount: event.target.value })}
                 placeholder="Sin monto"
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                className="campo-chico w-full"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs text-humo">Categoría</label>
               <select
-                value={d.categoryId}
-                onChange={(e) => updateReminderDraft(d.id, { categoryId: e.target.value })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.categoryId}
+                onChange={(event) => updateReminderDraft(draft.id, { categoryId: event.target.value })}
+                className="campo-chico w-full"
               >
                 <option value="">Sin categoría</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
                 ))}
               </select>
             </div>
           </div>
-          <div className="mb-2 grid grid-cols-3 gap-2">
+
+          <div className="mb-3 grid grid-cols-3 gap-2">
             <div>
               <label className="mb-1 block text-xs text-humo">Fecha</label>
               <input
                 type="date"
-                value={d.dueDate}
-                onChange={(e) => updateReminderDraft(d.id, { dueDate: e.target.value })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.dueDate}
+                onChange={(event) => updateReminderDraft(draft.id, { dueDate: event.target.value })}
+                className="campo-chico w-full"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs text-humo">Hora</label>
               <input
                 type="time"
-                value={d.dueTime}
-                onChange={(e) => updateReminderDraft(d.id, { dueTime: e.target.value })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.dueTime}
+                onChange={(event) => updateReminderDraft(draft.id, { dueTime: event.target.value })}
+                className="campo-chico w-full"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs text-humo">Se repite</label>
               <select
-                value={d.recurrence}
-                onChange={(e) => updateReminderDraft(d.id, { recurrence: e.target.value as ReminderRecurrence })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.recurrence}
+                onChange={(event) =>
+                  updateReminderDraft(draft.id, { recurrence: event.target.value as ReminderRecurrence })
+                }
+                className="campo-chico w-full"
               >
-                {(Object.keys(RECURRENCE_LABELS) as ReminderRecurrence[]).map((k) => (
-                  <option key={k} value={k}>{RECURRENCE_LABELS[k]}</option>
+                {(Object.keys(RECURRENCE_LABELS) as ReminderRecurrence[]).map((key) => (
+                  <option key={key} value={key}>{RECURRENCE_LABELS[key]}</option>
                 ))}
               </select>
             </div>
           </div>
-          {d.proposal.original_text && <p className="mb-2 text-xs italic text-humo">“{d.proposal.original_text}”</p>}
+
+          {draft.proposal.original_text && (
+            <p className="mb-3 text-xs italic text-humo">“{draft.proposal.original_text}”</p>
+          )}
+
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => void confirmReminderDraft(d)}
-              disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50"
+              onClick={() => void confirmReminderDraft(draft)}
+              disabled={savingId === draft.id}
+              className="btn-primario-chico flex-1 disabled:opacity-50"
             >
-              {savingId === d.id ? 'Guardando…' : 'Crear recordatorio 🔔'}
+              {savingId === draft.id ? 'Guardando…' : 'Crear recordatorio'}
             </button>
             <button
               type="button"
-              onClick={() => setReminderDrafts((ds) => ds.filter((x) => x.id !== d.id))}
-              className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold text-humo "
+              onClick={() => setReminderDrafts((current) => current.filter((item) => item.id !== draft.id))}
+              className="btn-fantasma"
             >
               Descartar
             </button>
@@ -720,81 +853,85 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
         </article>
       ))}
 
-      {drafts.map((d) => (
-        <article key={d.id} className="rounded-2xl border border-foco/60 bg-tarjeta p-3 shadow-sm ">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-bold">Propuesta para revisar</h3>
-            <span className="rounded-full bg-doradotenue px-2 py-0.5 text-xs font-semibold text-doradotexto">Sin guardar aún</span>
+      {drafts.map((draft) => (
+        <article key={draft.id} className="tarjeta p-5 shadow-tarjeta">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-crema">Propuesta para revisar</h3>
+            <span className="chip">Sin guardar aún</span>
           </div>
-          {d.entry.needs_review.length > 0 && (
-            <p className="mb-2 text-xs text-doradotexto ">
-              Revisar: {d.entry.needs_review.map((r) => REVIEW_LABELS[r] ?? r).join(', ')}
+
+          {draft.entry.needs_review.length > 0 && (
+            <p className="mb-3 text-xs text-rojosuave">
+              Revisar: {draft.entry.needs_review.map((item) => REVIEW_LABELS[item] ?? item).join(', ')}
             </p>
           )}
-          <div className="mb-2 grid grid-cols-3 gap-2">
-            {(['gasto', 'ingreso', 'transferencia'] as TxType[]).map((t) => (
+
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {(['gasto', 'ingreso', 'transferencia'] as TxType[]).map((type) => (
               <button
-                key={t}
+                key={type}
                 type="button"
-                onClick={() => updateDraft(d.id, { type: t, splitPct: t === 'transferencia' ? 100 : d.splitPct })}
-                className={`rounded-xl py-1.5 text-xs font-semibold capitalize ${d.type === t ? 'bg-dorado text-tinta' : 'bg-elevado text-humo '}`}
+                onClick={() =>
+                  updateDraft(draft.id, {
+                    type,
+                    splitPct: type === 'transferencia' ? 100 : draft.splitPct,
+                  })
+                }
+                className={draft.type === type ? 'chip-activo capitalize' : 'chip capitalize'}
               >
-                {t}
+                {type}
               </button>
             ))}
           </div>
+
           <label className="mb-1 block text-xs text-humo">Monto ({currency})</label>
           <input
             inputMode="decimal"
-            value={d.amount}
-            onChange={(e) => updateDraft(d.id, { amount: e.target.value })}
-            className="mb-2 w-full rounded-xl border border-borde p-2 text-lg font-bold "
+            value={draft.amount}
+            onChange={(event) => updateDraft(draft.id, { amount: event.target.value })}
+            className="campo-chico mb-3 w-full text-lg font-bold"
           />
-          <div className="mb-2 grid grid-cols-2 gap-2">
+
+          <div className="mb-3 grid grid-cols-2 gap-2">
             <div>
               <label className="mb-1 block text-xs text-humo">Categoría</label>
               <select
-                value={d.categoryId}
-                onChange={(e) => updateDraft(d.id, { categoryId: e.target.value })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.categoryId}
+                onChange={(event) => updateDraft(draft.id, { categoryId: event.target.value })}
+                className="campo-chico w-full"
               >
                 <option value="">Elige…</option>
                 {categories
-                  .filter((c) => (d.type === 'ingreso' ? c.group === 'Ingresos' : c.group !== 'Ingresos'))
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.icon} {c.name}
-                    </option>
+                  .filter((category) => (draft.type === 'ingreso' ? category.group === 'Ingresos' : category.group !== 'Ingresos'))
+                  .map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
               </select>
             </div>
             <div>
               <label className="mb-1 block text-xs text-humo">Cuenta</label>
               <select
-                value={d.accountId}
-                onChange={(e) => updateDraft(d.id, { accountId: e.target.value })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.accountId}
+                onChange={(event) => updateDraft(draft.id, { accountId: event.target.value })}
+                className="campo-chico w-full"
               >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>{account.name}</option>
                 ))}
               </select>
             </div>
           </div>
-          <div className="mb-2 grid grid-cols-2 gap-2">
+
+          <div className="mb-3 grid grid-cols-2 gap-2">
             <div>
               <label className="mb-1 block text-xs text-humo">Quién pagó</label>
               <select
-                value={d.paidBy}
-                onChange={(e) => updateDraft(d.id, { paidBy: e.target.value })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.paidBy}
+                onChange={(event) => updateDraft(draft.id, { paidBy: event.target.value })}
+                className="campo-chico w-full"
               >
-                {[data.me, data.partner].filter(Boolean).map((u) => (
-                  <option key={u!.id} value={u!.id}>
-                    {u!.name}
-                  </option>
+                {[data.me, data.partner].filter((user) => user !== null).map((user) => (
+                  <option key={user.id} value={user.id}>{user.name}</option>
                 ))}
               </select>
             </div>
@@ -802,43 +939,57 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
               <label className="mb-1 block text-xs text-humo">Fecha</label>
               <input
                 type="date"
-                value={d.date}
-                onChange={(e) => updateDraft(d.id, { date: e.target.value })}
-                className="w-full rounded-xl border border-borde p-2 text-sm "
+                value={draft.date}
+                onChange={(event) => updateDraft(draft.id, { date: event.target.value })}
+                className="campo-chico w-full"
               />
             </div>
           </div>
+
           <input
-            value={d.merchant}
-            onChange={(e) => updateDraft(d.id, { merchant: e.target.value })}
+            value={draft.merchant}
+            onChange={(event) => updateDraft(draft.id, { merchant: event.target.value })}
             placeholder="Comercio (ej. Walmart)"
-            className="mb-2 w-full rounded-xl border border-borde p-2 text-sm "
+            className="campo-chico mb-3 w-full"
           />
           <input
-            value={d.note}
-            onChange={(e) => updateDraft(d.id, { note: e.target.value })}
+            value={draft.note}
+            onChange={(event) => updateDraft(draft.id, { note: event.target.value })}
             placeholder="Nota (opcional)"
-            className="mb-2 w-full rounded-xl border border-borde p-2 text-sm "
+            className="campo-chico mb-3 w-full"
           />
-          {d.type === 'gasto' && data.partner && (
-            <p className="mb-2 text-xs text-humo">
-              Split: {d.splitPct}% lo asume {d.paidBy === data.me?.id ? 'quien pagó (tú)' : (data.partner.name || 'tu pareja')} · {d.paidBy === data.me?.id ? (data.partner.name || 'tu pareja') + ' te debe' : 'le debes a tu pareja'} {formatMoney((parseAmount(d.amount) * (100 - d.splitPct)) / 100, currency)}
+
+          {draft.type === 'gasto' && data.partner && (
+            <p className="mb-3 text-xs text-humo">
+              Split: {draft.splitPct}% lo asume{' '}
+              {draft.paidBy === data.me?.id ? 'quien pagó (tú)' : (data.partner.name || 'tu pareja')} ·{' '}
+              {draft.paidBy === data.me?.id
+                ? `${data.partner.name || 'tu pareja'} te debe`
+                : 'le debes a tu pareja'}{' '}
+              {formatMoney(
+                (parseAmount(draft.amount) * (100 - draft.splitPct)) / 100,
+                currency,
+              )}
             </p>
           )}
-          {d.entry.original_text && <p className="mb-2 text-xs italic text-humo">“{d.entry.original_text}”</p>}
+
+          {draft.entry.original_text && (
+            <p className="mb-3 text-xs italic text-humo">“{draft.entry.original_text}”</p>
+          )}
+
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => void confirmDraft(d)}
-              disabled={savingId === d.id}
-              className="flex-1 rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50"
+              onClick={() => void confirmDraft(draft)}
+              disabled={savingId === draft.id}
+              className="btn-primario-chico flex-1 disabled:opacity-50"
             >
-              {savingId === d.id ? 'Guardando…' : 'Confirmar y guardar'}
+              {savingId === draft.id ? 'Guardando…' : 'Confirmar y guardar'}
             </button>
             <button
               type="button"
-              onClick={() => setDrafts((ds) => ds.filter((x) => x.id !== d.id))}
-              className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold text-humo "
+              onClick={() => setDrafts((current) => current.filter((item) => item.id !== draft.id))}
+              className="btn-fantasma"
             >
               Descartar
             </button>
@@ -847,17 +998,18 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
       ))}
 
       {error && (
-        <p role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave  ">
+        <p role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
           {error}
         </p>
       )}
 
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
+        onSubmit={(event) => {
+          event.preventDefault()
           void handleText(input)
         }}
-        className="flex items-end gap-2"
+        className="fixed inset-x-4 z-40 mx-auto flex max-w-2xl items-end gap-2 rounded-full border border-borde bg-tarjeta p-2 shadow-elevada"
+        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
       >
         <input
           ref={fileRef}
@@ -866,21 +1018,23 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
           capture="environment"
           className="hidden"
           aria-label="Subir foto de ticket o libreta"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) void handleImage(f)
-            e.target.value = ''
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) void handleImage(file)
+            event.target.value = ''
           }}
         />
+
         <button
           type="button"
           aria-label="Subir foto de ticket o libreta"
           onClick={() => fileRef.current?.click()}
           disabled={busy}
-          className="rounded-full bg-elevado px-3 py-2 text-lg "
+          className="btn-icono h-10 w-10 shrink-0 disabled:opacity-50"
         >
-          📷
+          <Icono nombre="camara" className="h-5 w-5" />
         </button>
+
         <button
           type="button"
           aria-label={recording ? 'Detener grabación de voz' : listening ? 'Escuchando…' : 'Grabar nota de voz'}
@@ -890,24 +1044,42 @@ export default function ChatCapture({ data, onSave, onRefresh }: Props) {
             else startDictation()
           }}
           disabled={busy || !speechSupported}
-          className={`rounded-full px-3 py-2 text-lg ${recording || listening ? 'bg-rojosuave/15' : 'bg-elevado '}`}
+          className={`btn-icono h-10 w-10 shrink-0 disabled:opacity-50 ${
+            recording || listening ? 'text-rojosuave' : ''
+          }`}
         >
-          🎙️
+          <Icono nombre="microfono" className="h-5 w-5" />
         </button>
-        <input
+
+        <textarea
+          ref={textareaRef}
+          rows={1}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(event) => {
+            setInput(event.target.value)
+            resizeTextarea(event.currentTarget)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              void handleText(input)
+            }
+          }}
           placeholder="Ej. Gasté $350 en Walmart…"
           aria-label="Escribe un gasto, ingreso o transferencia"
-          className="min-w-0 flex-1 rounded-xl border border-borde p-3 text-sm "
+          className="min-h-10 min-w-0 flex-1 resize-none self-center bg-transparent px-1 py-2 text-sm leading-6 text-crema outline-none placeholder:text-humo"
         />
-        <button type="submit" disabled={busy || !input.trim()} className="rounded-xl bg-dorado px-4 py-3 text-sm font-extrabold tracking-wide text-tinta disabled:opacity-50">
-          Enviar
+
+        <button
+          type="submit"
+          aria-label="Enviar"
+          disabled={busy || !input.trim()}
+          className="btn-primario flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 disabled:opacity-50"
+        >
+          <Icono nombre="flechaArriba" className="h-5 w-5" />
         </button>
       </form>
-      <p className="text-center text-xs text-humo">
-        La captura manual con el botón + sigue disponible. El chat nunca guarda sin tu confirmación.
-      </p>
+
       {paywall && <Paywall motivo={paywall} onClose={() => setPaywall(null)} />}
       <div ref={messagesEndRef} />
     </div>
