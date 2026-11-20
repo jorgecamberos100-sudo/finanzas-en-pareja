@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { AppData } from '../App'
 import { formatDateEs, formatMoney, todayIso } from '../lib/format'
 import { defPlan, esMovimientoAntiguo, puedeExportarCsv } from '../lib/planes'
@@ -9,6 +10,8 @@ import Mascota from '../components/Mascota'
 import PibbiHeader from '../components/PibbiHeader'
 import { PAGE_PIBBI_POSES } from '../lib/pibbi-poses'
 import { usePibbi } from '../lib/pibbi'
+import { Alerta, ChipCategoria, Icono } from '../components/ui'
+import type { Account, Category, Transaction } from '../types'
 
 interface Props { data: AppData; onRefresh: () => void }
 
@@ -109,8 +112,18 @@ export default function Movimientos({ data, onRefresh }: Props) {
       return
     }
     const header = 'fecha,comercio,monto,tipo,categoria,cuenta,quien_pago,nota\n'
+    const escapeCsv = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`
     const body = data.transactions.map((tx) =>
-      [tx.date, `"${tx.merchant ?? ''}"`, tx.amount, tx.type, categoryById.get(tx.category_id ?? '')?.name ?? '', accountById.get(tx.account_id)?.name ?? '', userById.get(tx.paid_by) ?? '', `"${tx.note ?? ''}"`].join(','),
+      [
+        tx.date,
+        escapeCsv(tx.merchant ?? ''),
+        tx.amount,
+        tx.type,
+        escapeCsv(categoryById.get(tx.category_id ?? '')?.name ?? ''),
+        escapeCsv(accountById.get(tx.account_id)?.name ?? ''),
+        escapeCsv(userById.get(tx.paid_by) ?? ''),
+        escapeCsv(tx.note ?? ''),
+      ].join(','),
     ).join('\n')
     const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -126,15 +139,11 @@ export default function Movimientos({ data, onRefresh }: Props) {
   return (
     <main className="space-y-4 p-4">
       <PibbiHeader pose={PAGE_PIBBI_POSES.movimientos} title="Movimientos">
-        <button onClick={() => setShowImport((v) => !v)} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Importar CSV</button>
-        <button onClick={exportCsv} className="rounded-xl bg-elevado px-3 py-2 text-sm font-semibold ">Exportar CSV</button>
+        <button onClick={() => setShowImport((v) => !v)} className="btn-secundario-chico">Importar CSV</button>
+        <button onClick={exportCsv} className="btn-secundario-chico">Exportar CSV</button>
       </PibbiHeader>
 
-      {txError && (
-        <div role="alert" className="rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
-          ⚠️ {txError}
-        </div>
-      )}
+      {txError && <Alerta>{txError}</Alerta>}
 
       {showImport && <CsvImport data={data} onDone={onRefresh} />}
 
@@ -145,33 +154,41 @@ export default function Movimientos({ data, onRefresh }: Props) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por comercio, nota o monto…"
             aria-label="Buscar movimientos"
-            className="w-full rounded-xl border border-borde p-2.5 pl-9 text-sm"
+            className="campo w-full pr-10"
           />
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-humo" aria-hidden="true">🔍</span>
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-humo" aria-hidden="true">
+            <Icono nombre="buscar" className="h-5 w-5" />
+          </span>
           {search && (
-            <button onClick={() => setSearch('')} aria-label="Limpiar búsqueda" className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-humo hover:text-crema">✕</button>
+            <button
+              onClick={() => setSearch('')}
+              aria-label="Limpiar búsqueda"
+              className="btn-icono absolute right-9 top-1/2 h-8 w-8 -translate-y-1/2"
+            >
+              <Icono nombre="cerrar" className="h-4 w-4" />
+            </button>
           )}
         </div>
 
-        {/* Filtros apilados en móvil: en 3 columnas a 360 px cada uno
-            quedaba en ~109 px y el texto se cortaba ("Persona: tod"). */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label="Filtrar por persona" className="rounded-xl border p-2 text-sm">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <select value={filterPerson} onChange={(e) => setFilterPerson(e.target.value)} aria-label="Filtrar por persona" className="campo-chico min-w-[150px] shrink-0">
             <option value="">Persona: todas</option>
-            {[data.me, data.partner].filter(Boolean).map((u) => <option key={u!.id} value={u!.id}>{u!.name}</option>)}
+            {[data.me, data.partner].filter((u): u is NonNullable<typeof u> => Boolean(u)).map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
           </select>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} aria-label="Filtrar por categoría" className="rounded-xl border p-2 text-sm">
+          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} aria-label="Filtrar por categoría" className="campo-chico min-w-[160px] shrink-0">
             <option value="">Categoría: todas</option>
             {data.categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} aria-label="Filtrar por cuenta" className="rounded-xl border p-2 text-sm">
+          <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} aria-label="Filtrar por cuenta" className="campo-chico min-w-[145px] shrink-0">
             <option value="">Cuenta: todas</option>
             {data.accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
 
         {hasActiveFilters && (
-          <div className="flex items-center justify-between text-xs text-humo px-1">
+          <div className="flex items-center justify-between px-1 text-xs text-humo">
             <span>Filtrando {filtered.length} de {data.transactions.length} movimientos</span>
             <button onClick={clearFilters} className="font-semibold text-doradotexto hover:underline">Limpiar filtros</button>
           </div>
@@ -180,14 +197,31 @@ export default function Movimientos({ data, onRefresh }: Props) {
 
       {pending.length > 0 && (
         <section>
-          <h2 className="mb-2 font-bold">⏳ Por revisar ({pending.length})</h2>
+          <h2 className="mb-2 font-bold">Por revisar ({pending.length})</h2>
           <p className="mb-2 text-sm text-humo">Movimientos importados o con nota. Tu pareja puede aprobarlos.</p>
-          {pending.map((tx) => (
-            <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
-              isDeleting={deletingId === tx.id}
-              onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)}
-              action={<button onClick={() => approve(tx.id)} disabled={approvingId === tx.id} className="rounded-lg bg-dorado px-3 py-1 text-xs font-bold text-tinta disabled:opacity-50">{approvingId === tx.id ? '…' : 'Aprobar'}</button>} />
-          ))}
+          <div className="tarjeta divide-y divide-borde overflow-hidden">
+            {pending.map((tx) => (
+              <TxRow
+                key={tx.id}
+                tx={tx}
+                currency={currency}
+                categoryById={categoryById}
+                accountById={accountById}
+                userById={userById}
+                isDeleting={deletingId === tx.id}
+                onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)}
+                action={(
+                  <button
+                    onClick={() => approve(tx.id)}
+                    disabled={approvingId === tx.id}
+                    className="btn-primario-chico"
+                  >
+                    {approvingId === tx.id ? 'Aprobando…' : 'Aprobar'}
+                  </button>
+                )}
+              />
+            ))}
+          </div>
         </section>
       )}
 
@@ -195,35 +229,44 @@ export default function Movimientos({ data, onRefresh }: Props) {
         <h2 className="mb-2 font-bold">Historial</h2>
         {approved.length === 0 && pending.length === 0 && (
           hasActiveFilters ? (
-            <div className="rounded-2xl border border-borde bg-tarjeta p-6 text-center">
+            <div className="tarjeta p-6 text-center">
               <p className="font-semibold text-crema">No se encontraron movimientos con los filtros actuales.</p>
               <p className="mt-1 text-sm text-humo">Prueba ajustando los términos de búsqueda o los filtros.</p>
-              <button onClick={clearFilters} className="mt-3 rounded-xl bg-elevado px-4 py-2 text-sm font-semibold text-doradotexto">Limpiar filtros</button>
+              <button onClick={clearFilters} className="btn-fantasma mt-3">Limpiar filtros</button>
             </div>
           ) : (
-            <div className="flex items-start gap-3 rounded-2xl border border-foco/60 bg-tarjeta p-4">
-              <Mascota pose="ahorrando" alt={`${mascotName} sentado con una moneda`} className="h-16 w-16 shrink-0" />
-              <div>
-                <p className="font-bold">Aún no hay movimientos 🐷</p>
-                <p className="text-sm text-humo">Toca “+” para registrar el primero, o mándale a {mascotName} la foto de un ticket en el Chat.</p>
-              </div>
+            <div className="tarjeta flex flex-col items-center p-6 text-center">
+              <Mascota pose="ahorrando" alt={`${mascotName} sentado con una moneda`} className="mb-3 h-24 w-24" />
+              <p className="font-bold">Aún no hay movimientos</p>
+              <p className="mt-1 max-w-sm text-sm text-humo">Toca “+” para registrar el primero, o mándale a {mascotName} la foto de un ticket en el Chat.</p>
             </div>
           )
         )}
-        {recientes.map((tx) => (
-          <TxRow key={tx.id} tx={tx} currency={currency} categoryById={categoryById} accountById={accountById} userById={userById}
-            isDeleting={deletingId === tx.id}
-            onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)} />
-        ))}
+        {recientes.length > 0 && (
+          <div className="tarjeta divide-y divide-borde overflow-hidden">
+            {recientes.map((tx) => (
+              <TxRow
+                key={tx.id}
+                tx={tx}
+                currency={currency}
+                categoryById={categoryById}
+                accountById={accountById}
+                userById={userById}
+                isDeleting={deletingId === tx.id}
+                onDelete={() => deleteTx(tx.id, tx.merchant, tx.amount)}
+              />
+            ))}
+          </div>
+        )}
         {antiguos.length > 0 && (
-          <div className="rounded-2xl border border-foco/60 bg-doradotenue p-4">
-            <p className="font-bold">📦 {antiguos.length} movimientos de hace más de 90 días</p>
+          <div className="tarjeta mt-3 border border-dorado/40 bg-dorado/5 p-4">
+            <p className="font-bold">{antiguos.length} movimientos de hace más de 90 días</p>
             <p className="mt-1 text-sm text-humo">
               El plan {defPlan(data.plan).nombre} muestra los últimos 90 días. Con Plus ves todo tu historial.
             </p>
             <button
               onClick={() => setPaywall(`Tienes ${antiguos.length} movimientos de hace más de 90 días. Con Plus ves todo tu historial, sin límite.`)}
-              className="mt-2 w-full rounded-xl bg-dorado py-2 text-sm font-extrabold tracking-wide text-tinta"
+              className="btn-primario mt-3 w-full"
             >
               Ver historial completo con Plus
             </button>
@@ -237,29 +280,34 @@ export default function Movimientos({ data, onRefresh }: Props) {
 }
 
 function TxRow({ tx, currency, categoryById, accountById, userById, action, onDelete, isDeleting }: {
-  tx: import('../types').Transaction
+  tx: Transaction
   currency: string
-  categoryById: Map<string, import('../types').Category>
-  accountById: Map<string, import('../types').Account>
+  categoryById: Map<string, Category>
+  accountById: Map<string, Account>
   userById: Map<string, string>
-  action?: React.ReactNode
+  action?: ReactNode
   onDelete?: () => void
   isDeleting?: boolean
 }) {
   const cat = tx.category_id ? categoryById.get(tx.category_id) : undefined
   const sign = tx.type === 'ingreso' ? '+' : tx.type === 'gasto' ? '−' : '⇄'
-  const color = tx.type === 'ingreso' ? 'text-verde' : tx.type === 'gasto' ? 'text-rojosuave' : 'text-menta'
+  const color = tx.type === 'ingreso' ? 'text-verde' : tx.type === 'gasto' ? 'text-crema' : 'text-menta'
   return (
-    <div className="mb-2 flex items-center justify-between rounded-2xl border border-borde bg-tarjeta p-3  ">
-      <div className="min-w-0 pr-2">
-        <p className="truncate font-semibold">{cat ? `${cat.icon} ${cat.name}` : tx.type === 'transferencia' ? '⇄ Transferencia' : 'Sin categoría'}</p>
-        <p className="truncate text-xs text-humo">
-          {tx.merchant ? `${tx.merchant} · ` : ''}{formatDateEs(tx.date)} · {accountById.get(tx.account_id)?.name} · pagó {userById.get(tx.paid_by) ?? '—'}
-          {tx.note ? ` · ${tx.note}` : ''}
-        </p>
+    <div className="flex items-center justify-between gap-2 p-3">
+      <div className="flex min-w-0 items-center gap-3">
+        {cat && <ChipCategoria nombre={cat.name} group={cat.group} className="h-8 w-8" />}
+        <div className="min-w-0">
+          <p className="truncate font-semibold">
+            {cat ? cat.name : tx.type === 'transferencia' ? 'Transferencia' : 'Sin categoría'}
+          </p>
+          <p className="truncate text-xs text-humo">
+            {tx.merchant ? `${tx.merchant} · ` : ''}{formatDateEs(tx.date)} · {accountById.get(tx.account_id)?.name} · pagó {userById.get(tx.paid_by) ?? '—'}
+            {tx.note ? ` · ${tx.note}` : ''}
+          </p>
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className={`font-bold ${color}`}>{sign}{formatMoney(tx.amount, currency)}</span>
+        <span className={`nums whitespace-nowrap text-sm font-bold ${color}`}>{sign}{formatMoney(tx.amount, currency)}</span>
         {action}
         {onDelete && (
           <button
@@ -267,9 +315,9 @@ function TxRow({ tx, currency, categoryById, accountById, userById, action, onDe
             disabled={isDeleting}
             aria-label={`Eliminar movimiento de ${tx.merchant ?? 'comercio'} por ${formatMoney(tx.amount, currency)}`}
             title="Eliminar movimiento"
-            className="rounded-lg bg-elevado px-2 py-1 text-xs text-humo transition hover:text-rojosuave disabled:opacity-50"
+            className="btn-icono h-9 w-9 text-humo hover:text-rojosuave disabled:opacity-50"
           >
-            🗑️
+            <Icono nombre="basura" className="h-4 w-4" />
           </button>
         )}
       </div>
