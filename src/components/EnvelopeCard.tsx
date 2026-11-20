@@ -19,10 +19,10 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
   const limit = category.monthly_limit + (category.rollover ? rolloverBalance : 0)
   const available = Math.round((limit - spent) * 100) / 100
   const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0
-  const bar = pct >= 100 ? 'bg-rojosuave' : pct >= 80 ? 'bg-dorado' : 'bg-verde'
+  const bar = pct >= 100 ? 'bg-rojosuave' : pct >= 80 ? 'bg-rojosuave/70' : 'bg-dorado'
 
   return (
-    <article className="rounded-[28px] border border-borde/70 bg-tarjeta p-4 shadow-tarjeta">
+    <article className="rounded-[20px] border border-borde bg-tarjeta p-4 shadow-elevada">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="flex items-center gap-2 font-bold"><ChipCategoria nombre={category.name} group={category.group} className="h-8 w-8" />{category.name}</h3>
@@ -43,7 +43,7 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
         <div className={`h-full w-full origin-left rounded-full transition-transform duration-300 ${bar}`} style={{ transform: `scaleX(${pct / 100})` }} />
       </div>
       <div className="mt-2 flex justify-between text-sm">
-        <span>Gastado: <strong className="text-rojosuave ">{formatMoney(spent, currency)}</strong></span>
+        <span>Gastado: <strong className="text-crema">{formatMoney(spent, currency)}</strong></span>
         <span>De {formatMoney(limit, currency)}</span>
       </div>
       <p className="mt-1 text-sm">
@@ -52,11 +52,11 @@ export default function EnvelopeCard({ category, spent, rolloverBalance = 0, cur
         {pct >= 100 && <span className="ml-2 inline-flex items-center gap-1 text-rojosuave"><IconoAlerta className="h-3.5 w-3.5" />Sobre al 100% o excedido</span>}
       </p>
       <div className="mt-3 flex gap-2">
-        <button onClick={() => onTransfer(category)} className="flex-1 rounded-xl bg-elevado py-2 text-sm font-semibold transition hover:bg-borde">
+        <button onClick={() => onTransfer(category)} className="btn-secundario-chico flex-1">
           Traspasar
         </button>
         {onEditLimit && (
-          <button onClick={() => onEditLimit(category)} className="rounded-xl border border-borde bg-tarjeta px-3 py-2 text-sm font-semibold text-humo transition hover:border-foco/60 hover:text-crema">
+          <button onClick={() => onEditLimit(category)} className="btn-secundario-chico">
             <span className="flex items-center gap-1.5"><IconoLapiz className="h-4 w-4" />Ajustar límite</span>
           </button>
         )}

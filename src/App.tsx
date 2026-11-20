@@ -7,6 +7,8 @@ import { onUpdateAvailable, applyUpdate } from './lib/sw-update'
 import { PibbiProvider } from './lib/pibbi'
 import { leerNombreMascota } from './lib/pibbi-identidad'
 import PibbiReaction, { type ReactionContext } from './components/PibbiReaction'
+import Mascota from './components/Mascota'
+import { Icono, type NombreIcono } from './components/ui'
 import type { Account, Category, Goal, Household, HouseholdPlan, MoneyDate, Recurring, Reminder, Transaction, UserProfile } from './types'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
@@ -51,16 +53,13 @@ function UpdateBanner() {
   return (
     <div className="fixed inset-x-0 top-0 z-50">
       <div className="mx-auto max-w-lg px-3 pt-3">
-        <div role="alert" className="flex items-center gap-2 rounded-xl border border-dorado bg-tarjeta p-3 shadow-lg">
-          <span className="flex-1 text-sm text-crema">✨ Nueva versión disponible</span>
-          <button
-            onClick={applyUpdate}
-            className="rounded-lg bg-dorado px-3 py-1.5 text-sm font-extrabold tracking-wide text-tinta"
-          >
+        <div role="alert" className="flex items-center gap-2 rounded-[14px] border border-borde bg-tarjeta p-3 shadow-elevado">
+          <span className="flex-1 text-sm text-crema">Nueva versión disponible</span>
+          <button onClick={applyUpdate} className="btn-primario-chico">
             Actualizar ahora
           </button>
-          <button aria-label="Cerrar aviso" onClick={() => setShow(false)} className="px-2 text-lg text-humo">
-            ✕
+          <button aria-label="Cerrar aviso" onClick={() => setShow(false)} className="btn-icono h-8 w-8">
+            <Icono nombre="cerrar" className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -223,25 +222,25 @@ export default function App() {
       setData((d) => ({ ...d, transactions: d.transactions.filter((t) => t.id !== optimistic.id) }))
     } else {
       setSyncError(null)
-      showReaction('calculando', `¡Guardado! ${leerNombreMascota()} ya hizo las cuentas 🧮`)
+      showReaction('calculando', `¡Guardado! ${leerNombreMascota()} ya hizo las cuentas`)
       await loadAll()
     }
   }
 
-  if (loading) return <PibbiProvider><UpdateBanner /><div className="flex min-h-screen items-center justify-center text-humo">Cargando…</div></PibbiProvider>
+  if (loading) return <PibbiProvider><UpdateBanner /><div className="flex min-h-screen flex-col items-center justify-center gap-3"><Mascota pose="frente" alt="PIBBI" className="h-24 w-24" /><p className="text-[13px] text-humo">Cargando…</p></div></PibbiProvider>
   if (!householdId || !data.household) return <PibbiProvider><UpdateBanner /><Onboarding onDone={() => { setLoading(true); loadAll(); navigate('/') }} /></PibbiProvider>
 
   // Etiqueta corta para pantallas angostas (360 px): con 6 pestañas y
   // px-3, la última ("Avisos") se salía 46 px de la pantalla y no se podía
   // tocar. En móvil se reparte el ancho en partes iguales (flex-1) y se
   // usan las etiquetas cortas; en ≥640 px, las completas.
-  const tabs = [
-    { to: '/', label: 'Inicio', short: 'Inicio', icon: '🏠' },
-    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icon: '🧾' },
-    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icon: '💰' },
-    { to: '/plan', label: 'Plan', short: 'Plan', icon: '🎯' },
-    { to: '/chat', label: 'Chat', short: 'Chat', icon: '💬' },
-    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icon: '🔔' },
+  const tabs: { to: string; label: string; short: string; icon: NombreIcono }[] = [
+    { to: '/', label: 'Inicio', short: 'Inicio', icon: 'inicio' },
+    { to: '/movimientos', label: 'Movimientos', short: 'Movim.', icon: 'movimientos' },
+    { to: '/presupuesto', label: 'Presupuesto', short: 'Presup.', icon: 'presupuesto' },
+    { to: '/plan', label: 'Plan', short: 'Plan', icon: 'plan' },
+    { to: '/chat', label: 'Chat', short: 'Chat', icon: 'chat' },
+    { to: '/recordatorios', label: 'Avisos', short: 'Avisos', icon: 'avisos' },
   ]
 
   return (
@@ -249,8 +248,9 @@ export default function App() {
     <UpdateBanner />
     <div className="mx-auto min-h-screen max-w-lg pb-28">
       {syncError && (
-        <div role="alert" className="m-3 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave  ">
-          ⚠️ {syncError}
+        <div role="alert" className="m-3 flex items-start gap-2 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
+          <Icono nombre="alerta" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{syncError}</span>
         </div>
       )}
       {reaction && (
@@ -280,7 +280,7 @@ export default function App() {
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}
             className={({ isActive }) => `flex min-w-0 flex-1 flex-col items-center px-1 text-center text-[11px] leading-tight sm:px-3 sm:text-xs ${isActive ? 'font-semibold text-doradotexto ' : 'text-humo'}`}>
-            <span className="text-xl" aria-hidden="true">{t.icon}</span>
+            <span className="text-xl" aria-hidden="true"><Icono nombre={t.icon} className="h-5 w-5" /></span>
             <span className="sm:hidden">{t.short}</span>
             <span className="hidden sm:inline">{t.label}</span>
           </NavLink>

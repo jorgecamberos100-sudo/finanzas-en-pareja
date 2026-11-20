@@ -28,6 +28,19 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Tema antes de la primera pintura (sin flash de tema equivocado):
+         lee la elección guardada (misma clave que src/lib/tema.ts) y pone
+         data-theme en <html> antes de que se cargue ningún CSS de React. -->
+    <script>
+      ;(function () {
+        var tema = 'noche'
+        try {
+          var guardado = localStorage.getItem('finanzas-tema')
+          if (guardado === 'dia' || guardado === 'esmeralda') tema = 'dia'
+        } catch (e) { /* almacenamiento bloqueado: noche */ }
+        document.documentElement.dataset.theme = tema
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

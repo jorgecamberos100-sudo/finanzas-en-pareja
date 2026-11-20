@@ -12,6 +12,7 @@ import ThemeToggle from '../components/ThemeToggle'
 import GoogleSignInButton from '../components/GoogleSignInButton'
 import { usePibbi } from '../lib/pibbi'
 import { saludoPibbi } from '../lib/pibbi-identidad'
+import { Icono, PasoBarra } from '../components/ui'
 
 interface Props { onDone: () => void }
 
@@ -211,60 +212,128 @@ export default function Onboarding({ onDone }: Props) {
 
   return (
     <div className="mx-auto max-w-lg p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-humo">Paso {step} de 5</p>
-        <ThemeToggle className="rounded-full border border-borde bg-tarjeta p-2 text-crema" />
-      </div>
-      <div className="mb-6 mt-1 h-2 overflow-hidden rounded-full bg-borde ">
-        <div className="h-full w-full origin-left bg-foco transition-transform" style={{ transform: `scaleX(${step / 5})` }} />
+      <div className="mb-6 flex items-center justify-between">
+        <PasoBarra paso={step} total={5} className="flex-1" />
+        <ThemeToggle className="ml-4 rounded-full border border-borde bg-tarjeta p-2 text-crema" />
       </div>
 
       {step === 1 && (
         <section>
           <div className="mb-4 flex items-start gap-3">
             <Mascota className="h-16 w-16 shrink-0" />
-            <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">{saludoPibbi(vibe, mascotName)}</p>
+            <p className="rounded-2xl rounded-tl-sm bg-elevado p-3 text-sm text-crema">
+              {saludoPibbi(vibe, mascotName).replace(/[🐷🙋🎉]/gu, '')}
+            </p>
           </div>
           {mode === 'login' ? (
             <>
               <h1 className="text-2xl font-bold">Inicia sesión</h1>
               <p className="mb-4 text-humo">Entra con el correo y la contraseña con los que creaste tu cuenta.</p>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" aria-label="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Correo electrónico"
+                aria-label="Correo electrónico"
+                type="email"
+                className="campo mb-2 w-full"
+              />
               <div className="relative mb-4">
-                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" aria-label="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-                  {showPassword ? '🙈' : '👁️'}
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Contraseña"
+                  aria-label="Contraseña"
+                  type={showPassword ? 'text' : 'password'}
+                  className="campo w-full pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="btn-icono absolute right-2 top-1/2 -translate-y-1/2"
+                >
+                  <Icono nombre={showPassword ? 'ojoCerrado' : 'ojo'} className="h-5 w-5" />
                 </button>
               </div>
-              <button onClick={login} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
+              <button onClick={login} disabled={busy} className="btn-primario w-full">
                 {busy ? 'Entrando…' : 'Entrar'}
               </button>
               <GoogleSignInButton disabled={busy} onError={setError} />
-              <button onClick={() => { setMode('registro'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿No tienes cuenta? Crea una</button>
+              <button
+                onClick={() => { setMode('registro'); setError(null) }}
+                className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto"
+              >
+                ¿No tienes cuenta? Crea una
+              </button>
             </>
           ) : (
             <>
               <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
               <p className="mb-4 text-humo">Si luego invitas a tu pareja, tendrá su propio login y todo se sincroniza en tiempo real.</p>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" aria-label="Tu nombre" className="mb-2 w-full rounded-xl border p-3" />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo electrónico" aria-label="Correo electrónico" type="email" className="mb-2 w-full rounded-xl border p-3" />
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Tu nombre"
+                aria-label="Tu nombre"
+                className="campo mb-2 w-full"
+              />
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Correo electrónico"
+                aria-label="Correo electrónico"
+                type="email"
+                className="campo mb-2 w-full"
+              />
               <div className="relative mb-2">
-                <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña (mín. 6 caracteres)" aria-label="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-                  {showPassword ? '🙈' : '👁️'}
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Contraseña (mín. 6 caracteres)"
+                  aria-label="Contraseña"
+                  type={showPassword ? 'text' : 'password'}
+                  className="campo w-full pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="btn-icono absolute right-2 top-1/2 -translate-y-1/2"
+                >
+                  <Icono nombre={showPassword ? 'ojoCerrado' : 'ojo'} className="h-5 w-5" />
                 </button>
               </div>
               <div className="relative mb-4">
-                <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar contraseña" aria-label="Confirmar contraseña" type={showPassword ? 'text' : 'password'} className="w-full rounded-xl border p-3 pr-12" />
-                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xl" title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-                  {showPassword ? '🙈' : '👁️'}
+                <input
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirmar contraseña"
+                  aria-label="Confirmar contraseña"
+                  type={showPassword ? 'text' : 'password'}
+                  className="campo w-full pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="btn-icono absolute right-2 top-1/2 -translate-y-1/2"
+                >
+                  <Icono nombre={showPassword ? 'ojoCerrado' : 'ojo'} className="h-5 w-5" />
                 </button>
               </div>
-              <button onClick={step1} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
+              <button onClick={step1} disabled={busy} className="btn-primario w-full">
                 {busy ? 'Guardando…' : 'Continuar'}
               </button>
               <GoogleSignInButton disabled={busy} onError={setError} />
-              <button onClick={() => { setMode('login'); setError(null) }} className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto">¿Ya tienes cuenta? Inicia sesión</button>
+              <button
+                onClick={() => { setMode('login'); setError(null) }}
+                className="mt-3 w-full whitespace-nowrap py-2 text-sm font-semibold text-doradotexto"
+              >
+                ¿Ya tienes cuenta? Inicia sesión
+              </button>
             </>
           )}
         </section>
@@ -280,57 +349,78 @@ export default function Onboarding({ onDone }: Props) {
           />
 
           {/* Modo individual: hogar de 1 persona, sin código ni invitación obligatoria. */}
-          <div className="mb-4 rounded-2xl border-2 border-foco p-4 ">
-            <p className="text-lg font-bold">🙋 Solo yo por ahora</p>
+          <div className="tarjeta mb-4 border border-borde p-4">
+            <p className="text-lg font-bold">Solo yo por ahora</p>
             <p className="mb-3 text-sm text-humo">Tu hogar es solo tuyo. Sin códigos y sin invitar a nadie por ahora; podrás invitar a tu pareja cuando quieras desde Inicio.</p>
-            <button onClick={() => void createHousehold(true)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
+            <button onClick={() => void createHousehold(true)} disabled={busy} className="btn-primario w-full">
               {busy ? 'Creando hogar…' : 'Usar solo por ahora'}
             </button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
-            <span className="h-px flex-1 bg-borde " />
+            <span className="h-px flex-1 bg-borde" />
             <span>o en pareja</span>
-            <span className="h-px flex-1 bg-borde " />
+            <span className="h-px flex-1 bg-borde" />
           </div>
 
           {/* Ruta principal en pareja: el primero crea el hogar. No necesita ningún código. */}
-          <div className="mb-4 rounded-2xl border-2 border-foco p-4 ">
+          <div className="tarjeta mb-4 border border-dorado/40 p-4">
             <p className="text-lg font-bold">Soy el primero: crear nuestro hogar</p>
             <p className="mb-3 text-sm text-humo">Tú creas el hogar y la app te da un código para compartir con tu pareja. No necesitas ningún código para esto.</p>
-            <input value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder="Nombre del hogar" className="mb-2 w-full rounded-xl border p-3" />
-            <button onClick={() => void createHousehold(false)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
+            <input
+              value={householdName}
+              onChange={(e) => setHouseholdName(e.target.value)}
+              placeholder="Nombre del hogar"
+              className="campo mb-2 w-full"
+            />
+            <button onClick={() => void createHousehold(false)} disabled={busy} className="btn-primario w-full">
               {busy ? 'Creando hogar…' : 'Crear hogar'}
             </button>
           </div>
 
           <div className="mb-4 flex items-center gap-3 text-sm text-humo">
-            <span className="h-px flex-1 bg-borde " />
+            <span className="h-px flex-1 bg-borde" />
             <span>o</span>
-            <span className="h-px flex-1 bg-borde " />
+            <span className="h-px flex-1 bg-borde" />
           </div>
 
           {/* Ruta secundaria: solo para quien ya recibió un código de su pareja. */}
-          <div className="rounded-2xl bg-elevado p-4 ">
+          <div className="tarjeta border border-borde bg-elevado p-4">
             <p className="text-lg font-bold">Mi pareja ya creó el hogar</p>
             <p className="mb-3 text-sm text-humo">Solo si tu pareja ya creó el hogar y te pasó su código.</p>
             {joinExpanded ? (
               <>
-                {joinCode && <p className="mb-2 rounded-lg bg-doradotenue p-2 text-sm text-doradotexto  ">Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.</p>}
+                {joinCode && (
+                  <p className="mb-2 rounded-lg bg-doradotenue p-2 text-sm text-doradotexto">
+                    Código recibido del enlace de invitación. Revisa que sea el correcto y pulsa “Unirme”.
+                  </p>
+                )}
                 <div className="flex gap-2">
-                  <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Código (ej. K7X2Q9)" aria-label="Código de invitación" className="flex-1 rounded-xl border p-3 uppercase" />
-                  <button onClick={joinHousehold} disabled={busy} className="rounded-xl bg-tinta px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                  <input
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value)}
+                    placeholder="Código (ej. K7X2Q9)"
+                    aria-label="Código de invitación"
+                    className="campo min-w-0 flex-1 uppercase"
+                  />
+                  <button onClick={joinHousehold} disabled={busy} className="btn-secundario">
                     {busy ? 'Uniendo…' : 'Unirme'}
                   </button>
                 </div>
               </>
             ) : (
-              <button onClick={() => setJoinExpanded(true)} className="w-full whitespace-nowrap rounded-xl border border-borde bg-tarjeta py-3 font-bold">Tengo un código de invitación</button>
+              <button onClick={() => setJoinExpanded(true)} className="btn-secundario w-full">
+                Tengo un código de invitación
+              </button>
             )}
           </div>
 
           <div className="mt-6 text-center">
-            <button type="button" onClick={async () => { await supabase.auth.signOut(); setStep(1); setMode('login'); setError(null) }} className="text-xs text-humo underline hover:text-crema">
+            <button
+              type="button"
+              onClick={async () => { await supabase.auth.signOut(); setStep(1); setMode('login'); setError(null) }}
+              className="text-xs text-humo underline hover:text-crema"
+            >
               ¿Quieres usar otra cuenta? Cerrar sesión
             </button>
           </div>
@@ -342,14 +432,18 @@ export default function Onboarding({ onDone }: Props) {
           <PibbiHeader
             pose={PAGE_PIBBI_POSES.onboarding}
             title={soloMode ? 'Invita a tu pareja (opcional)' : 'Invita a tu pareja'}
-            subtitle={soloMode ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.' : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}
+            subtitle={soloMode
+              ? 'Si algún día quieres compartir la app, este es tu código. No es obligatorio: puedes seguir usando la app solo.'
+              : 'Comparte este código o enlace. Tu pareja crea su cuenta y se une con él.'}
             className="mb-4"
           />
-          <div className="mb-4 rounded-2xl bg-doradotenue p-4 text-center ">
-            <p className="text-3xl font-black tracking-widest text-doradotexto ">{inviteCode}</p>
-            <p className="mt-1 text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
+          <div className="tarjeta mb-4 border border-borde bg-elevado p-4 text-center">
+            <p className="nums text-3xl font-extrabold tracking-widest text-crema">{inviteCode}</p>
+            <p className="mt-1 break-all text-sm text-humo">{`${window.location.origin}/onboarding?codigo=${inviteCode}`}</p>
           </div>
-          <button onClick={() => setStep(4)} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">{soloMode ? 'Lo haré después' : 'Continuar (se une después)'}</button>
+          <button onClick={() => setStep(4)} disabled={busy} className="btn-primario w-full">
+            {soloMode ? 'Lo haré después' : 'Continuar (se une después)'}
+          </button>
         </section>
       )}
 
@@ -357,14 +451,14 @@ export default function Onboarding({ onDone }: Props) {
         <section>
           <h1 className="text-2xl font-bold">Viste a {mascotName}</h1>
           <p className="mb-4 text-humo">Ponle nombre y elige la prenda de tu {mascotName}. Puedes cambiar todo cuando quieras desde Inicio, tocando a tu cerdito. Este paso es opcional.</p>
-          <div className="mb-4 rounded-2xl border border-borde bg-tarjeta p-4">
+          <div className="tarjeta mb-4 border border-borde p-4">
             <PibbiNameEditor title="Ponle nombre a tu cerdito" />
           </div>
-          <div className="mb-4 rounded-2xl border border-borde bg-tarjeta p-4">
+          <div className="tarjeta mb-4 border border-borde p-4">
             <PibbiDresser title="Prendas" />
           </div>
           <p className="mb-4 text-sm text-humo">Crearemos tus 3 cuentas (efectivo, banco y tarjeta) y 13 categorías con límites mensuales de ejemplo en MXN. Luego podrás editar todo.</p>
-          <button onClick={seedAccountsAndCategories} disabled={busy} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">
+          <button onClick={seedAccountsAndCategories} disabled={busy} className="btn-primario w-full">
             {busy ? 'Creando cuentas…' : 'Crear mis cuentas y terminar'}
           </button>
         </section>
@@ -373,13 +467,18 @@ export default function Onboarding({ onDone }: Props) {
       {step === 5 && (
         <section className="text-center">
           <Mascota pose="celebrando" dancing alt={`${mascotName} celebrando: tu hogar está listo`} className="mx-auto mb-4 h-[120px] w-[120px]" />
-          <h1 className="text-2xl font-bold">¡Listo! 🎉</h1>
+          <h1 className="text-2xl font-bold">¡Listo!</h1>
           <p className="mb-4 text-humo">Tu hogar está creado. Toca el botón “+” para registrar tu primer movimiento guiado: monto, categoría, quién pagó y listo.</p>
-          <button onClick={onDone} className="w-full whitespace-nowrap rounded-xl bg-dorado py-3 font-extrabold tracking-wide text-tinta disabled:cursor-not-allowed disabled:opacity-50">Ir al inicio</button>
+          <button onClick={onDone} className="btn-primario w-full">Ir al inicio</button>
         </section>
       )}
 
-      {error && <div role="alert" className="mt-4 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">⚠️ {error}</div>}
+      {error && (
+        <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl bg-rojosuave/10 p-3 text-sm text-rojosuave">
+          <Icono nombre="alerta" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   )
 }

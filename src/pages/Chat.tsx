@@ -27,7 +27,7 @@ export default function Chat({ data, onSave, onRefresh }: Props) {
         // Sin salto, el título conserva su ancho y el interruptor baja a
         // una segunda línea del encabezado (flex-wrap), como los botones
         // de Movimientos.
-        title={<span className="whitespace-nowrap">Chat de captura 💬</span>}
+        title={<span className="whitespace-nowrap">Chat de captura</span>}
         subtitle={
           <>
             <p className="text-sm text-humo">

@@ -3,7 +3,13 @@ import Mascota from './Mascota'
 import PibbiDresser from './PibbiDresser'
 import PibbiNameEditor from './PibbiNameEditor'
 import { usePibbi } from '../lib/pibbi'
-import { PIBBI_SIZES, PIBBI_VIBES, type PibbiSize, type PibbiVibe } from '../lib/pibbi-identidad'
+import {
+  PIBBI_SIZES,
+  PIBBI_VIBES,
+  type PibbiSize,
+  type PibbiVibe,
+} from '../lib/pibbi-identidad'
+import { Icono } from './ui'
 
 interface Props {
   open: boolean
@@ -11,12 +17,9 @@ interface Props {
 }
 
 /**
- * Panel de PIBBI (igualito al panel de la mascota de Muse): se abre al
- * tocar a PIBBI en cualquier encabezado o junto a sus mensajes del Chat.
- * Avatar grande en círculo + nombre, editar nombre, personalidad,
- * aspecto (prendas), tamaño del avatar y botón ¡Baila!. Se cierra con
- * la X, con Escape o tocando fuera. No reemplaza nada: las reacciones
- * y las prendas que ya existían se quedan; el panel las reúne.
+ * Panel de PIBBI: avatar grande en círculo, nombre, personalidad,
+ * aspecto, tamaño del avatar y botón para bailar. Se cierra con la X,
+ * con Escape o tocando fuera.
  */
 export default function PibbiPanel({ open, onClose }: Props) {
   const { name, vibe, setVibe, size, setSize } = usePibbi()
@@ -45,27 +48,21 @@ export default function PibbiPanel({ open, onClose }: Props) {
     timer.current = window.setTimeout(() => setDancing(false), 3600)
   }
 
-  function elegirVibe(v: PibbiVibe) {
-    setVibe(v)
+  function elegirVibe(value: PibbiVibe) {
+    setVibe(value)
   }
 
-  function elegirTamano(s: PibbiSize) {
-    setSize(s)
+  function elegirTamano(value: PibbiSize) {
+    setSize(value)
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={`Panel de ${name}`}>
-      <button aria-label="Cerrar el panel" onClick={onClose} className="absolute inset-0 bg-black/50" />
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-tarjeta p-5 sm:rounded-3xl">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Cerrar"
-          className="absolute right-3 top-3 rounded-full border border-borde bg-elevado px-3 py-1 text-lg text-humo"
-        >
-          ✕
+      <button type="button" aria-label="Cerrar el panel" onClick={onClose} className="absolute inset-0 bg-black/50" />
+      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-[28px] bg-tarjeta p-5 shadow-elevada animate-hoja-subir sm:rounded-[28px] sm:p-5">
+        <button type="button" onClick={onClose} aria-label="Cerrar" className="btn-icono absolute right-3 top-3">
+          <Icono nombre="cerrar" className="h-4 w-4" />
         </button>
-
         <div className="flex flex-col items-center">
           <Mascota
             pose="avatarCircular"
@@ -75,57 +72,53 @@ export default function PibbiPanel({ open, onClose }: Props) {
             className={`${dancing ? 'h-[120px] w-[120px]' : 'h-24 w-24'} transition-all`}
           />
           <p className="mt-2 text-xl font-black">{name}</p>
-          <p className="text-sm text-humo">Tu cerdito de los ahorros 🐷</p>
-          <button
-            type="button"
-            onClick={bailar}
-            className="mt-3 rounded-xl bg-dorado px-4 py-2 font-extrabold tracking-wide text-tinta"
-          >
-            💃 ¡Baila!
+          <p className="text-sm text-humo">Tu cerdito de los ahorros</p>
+          <button type="button" onClick={bailar} className="btn-primario-chico mt-3">
+            ¡Baila!
           </button>
         </div>
-
         <div className="mt-5 space-y-5">
           <PibbiNameEditor />
-
           <div>
             <p className="mb-2 font-bold">Personalidad</p>
             <div className="grid grid-cols-2 gap-2">
-              {PIBBI_VIBES.map((v) => (
+              {PIBBI_VIBES.map((item) => (
                 <button
-                  key={v.id}
+                  key={item.id}
                   type="button"
-                  onClick={() => elegirVibe(v.id)}
-                  aria-pressed={vibe === v.id}
+                  onClick={() => elegirVibe(item.id)}
+                  aria-pressed={vibe === item.id}
                   className={`rounded-2xl border-2 p-3 text-left ${
-                    vibe === v.id ? 'border-foco bg-doradotenue' : 'border-borde bg-elevado'
+                    vibe === item.id
+                      ? 'border-foco bg-doradotenue'
+                      : 'border-borde bg-elevado'
                   }`}
                 >
-                  <span className="block font-bold">{v.name}</span>
-                  <span className="text-xs text-humo">{v.desc}</span>
+                  <span className="block font-bold">{item.name}</span>
+                  <span className="text-xs text-humo">{item.desc}</span>
                 </button>
               ))}
             </div>
             <p className="mt-1 text-xs text-humo">Su personalidad cambia sus saludos y reacciones.</p>
           </div>
-
           <PibbiDresser title="Aspecto" />
-
           <div>
             <p className="mb-2 font-bold">Tamaño</p>
             <div className="grid grid-cols-3 gap-2">
-              {PIBBI_SIZES.map((s) => (
+              {PIBBI_SIZES.map((item) => (
                 <button
-                  key={s.id}
+                  key={item.id}
                   type="button"
-                  onClick={() => elegirTamano(s.id)}
-                  aria-pressed={size === s.id}
+                  onClick={() => elegirTamano(item.id)}
+                  aria-pressed={size === item.id}
                   className={`rounded-2xl border-2 p-3 text-center ${
-                    size === s.id ? 'border-foco bg-doradotenue' : 'border-borde bg-elevado'
+                    size === item.id
+                      ? 'border-foco bg-doradotenue'
+                      : 'border-borde bg-elevado'
                   }`}
                 >
-                  <span className="block font-bold">{s.name}</span>
-                  <span className="text-xs text-humo">{s.desc}</span>
+                  <span className="block font-bold">{item.name}</span>
+                  <span className="text-xs text-humo">{item.desc}</span>
                 </button>
               ))}
             </div>
